@@ -1,0 +1,35 @@
+{
+  "name": "ta-ssdlc-devops-akademik",
+  "version": "1.0.0",
+  "description": "Prototype backend sistem informasi akademik dengan SSDLC berbasis DevOps dan integrasi Gemini API untuk analisis keamanan. Tugas Akhir - S1 Teknologi Informasi, Telkom University.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik/issues"
+  },
+  "homepage": "https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
