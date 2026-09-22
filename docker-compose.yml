@@ -36,6 +36,15 @@ services:
     networks:
       - ta_ssdlc_network
 
+  adminer:
+    image: adminer
+    container_name: ta_ssdlc_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - ta_ssdlc_network
+
 volumes:
   db_data:
 
