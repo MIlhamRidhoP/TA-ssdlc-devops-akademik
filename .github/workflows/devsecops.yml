@@ -1,0 +1,70 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+    inputs:
+      use_gemini:
+        description: 'Jalankan step Gemini (true = Skenario B, false = Skenario A)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build dan uji API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependency
+        run: npm ci
+
+      # Database CI dibuang setiap run, jadi semua secret dibuat acak di sini
+      - name: Buat .env sementara
+        run: |
+          {
+            echo "PORT=3000"
+            echo "DB_HOST=db"
+            echo "DB_PORT=5432"
+            echo "DB_USER=ta_ci"
+            echo "DB_PASSWORD=$(openssl rand -hex 16)"
+            echo "DB_NAME=ta_ci"
+            echo "JWT_SECRET=$(openssl rand -hex 48)"
+            echo "PGCRYPTO_KEY=$(openssl rand -hex 48)"
+            echo "ADMIN_EMAIL=admin@akademik.local"
+            echo "ADMIN_PASSWORD=Adm$(openssl rand -hex 12)9"
+            echo "SEED_USER_PASSWORD=Seed$(openssl rand -hex 8)7"
+            echo "SEMESTER_AKTIF=2026-ganjil"
+          } > .env
+
+      - name: Jalankan container
+        run: docker compose up -d --build --wait app db
+
+      - name: Seed data
+        run: |
+          docker compose exec -T app npm run seed:admin
+          docker compose exec -T app npm run seed:dummy
+
+      - name: Uji API
+        run: npm test
+
+      - name: Log aplikasi
+        if: always()
+        run: docker compose logs app
+
+      - name: Bersihkan
+        if: always()
+        run: docker compose down -v
