@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-const NILAI_COLS = 'id, krs_id, nilai_huruf, nilai_angka, status, updated_at';
+const NILAI_COLS = 'id, krs_id, nilai_huruf, nilai_angka::float8 AS nilai_angka, status, updated_at';
 
 exports.findKrsItem = async (krsId) => {
   const { rows } = await pool.query(
@@ -63,7 +63,7 @@ exports.listAdmin = async ({ semester, mahasiswaId, mataKuliahId }) => {
     `SELECT k.id AS krs_id, ks.id AS krs_semester_id, ks.semester, ks.status AS krs_status,
             m.id AS mahasiswa_id, m.nim, m.nama,
             mk.id AS mata_kuliah_id, mk.kode, mk.nama AS nama_mata_kuliah, mk.sks,
-            n.id AS nilai_id, n.nilai_huruf, n.nilai_angka, n.status AS nilai_status
+            n.id AS nilai_id, n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka, n.status AS nilai_status
      FROM krs k
      JOIN krs_semester ks ON ks.id = k.krs_semester_id
      JOIN mahasiswa m ON m.id = ks.mahasiswa_id
@@ -80,7 +80,7 @@ exports.listAdmin = async ({ semester, mahasiswaId, mataKuliahId }) => {
 
 exports.publishedForMahasiswa = async (mahasiswaId) => {
   const { rows } = await pool.query(
-    `SELECT ks.semester, mk.kode, mk.nama, mk.sks, n.nilai_huruf, n.nilai_angka
+    `SELECT ks.semester, mk.kode, mk.nama, mk.sks, n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka
      FROM nilai n
      JOIN krs k ON k.id = n.krs_id
      JOIN krs_semester ks ON ks.id = k.krs_semester_id
