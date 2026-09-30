@@ -5,7 +5,7 @@ const { UUID_RE, isValidDate, requireUuid } = require('../utils/validators');
 
 const RULES = {
   nama: (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= 255,
-  nim: (v) => typeof v === 'string' && /^\d{8,20}$/.test(v),
+  nim: (v) => typeof v === 'string' && /^\d{12}$/.test(v),
   nik: (v) => typeof v === 'string' && /^\d{16}$/.test(v),
   nik_orang_tua: (v) => typeof v === 'string' && /^\d{16}$/.test(v),
   nomor_telepon: (v) => typeof v === 'string' && /^\+?\d{9,15}$/.test(v),

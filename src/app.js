@@ -17,6 +17,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/mahasiswa/:id/konsen', require('./routes/konsenRoutes'));
 app.use('/api/mahasiswa', require('./routes/mahasiswaRoutes'));
+app.use('/api/mata-kuliah', require('./routes/mataKuliahRoutes'));
+app.use('/api/krs', require('./routes/krsRoutes'));
 app.use((req, res, next) => next(new AppError(404, 'NOT_FOUND', 'Endpoint tidak ditemukan')));
 app.use(errorHandler);
 

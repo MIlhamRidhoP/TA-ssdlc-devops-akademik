@@ -4,7 +4,7 @@ module.exports = (err, req, res, next) => {
   if (err instanceof AppError) {
     return res.status(err.status).json({
       success: false,
-      error: { code: err.code, message: err.message },
+      error: { code: err.code, message: err.message, ...(err.details && { details: err.details }) },
     });
   }
 
@@ -20,6 +20,14 @@ module.exports = (err, req, res, next) => {
     return res.status(409).json({
       success: false,
       error: { code: 'CONFLICT', message: 'Data sudah terdaftar' },
+    });
+  }
+
+  // foreign_key_violation dari PostgreSQL
+  if (err.code === '23503') {
+    return res.status(409).json({
+      success: false,
+      error: { code: 'CONFLICT', message: 'Data masih dipakai atau terkait data lain' },
     });
   }
 

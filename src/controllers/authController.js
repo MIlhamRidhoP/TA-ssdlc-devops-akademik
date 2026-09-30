@@ -20,8 +20,14 @@ exports.register = async (req, res) => {
     throw new AppError(400, 'VALIDATION_ERROR', 'Format email tidak valid');
   }
   // bcrypt hanya membaca 72 byte pertama
-  if (password.length < 8 || Buffer.byteLength(password) > 72) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'Password harus 8 sampai 72 karakter');
+  if (
+    password.length < 8 ||
+    Buffer.byteLength(password) > 72 ||
+    !/[A-Z]/.test(password) ||
+    !/\d/.test(password)
+  ) {
+    throw new AppError(400, 'VALIDATION_ERROR',
+      'Password 8 sampai 72 karakter, minimal 1 huruf besar dan 1 angka');
   }
 
   const hash = await bcrypt.hash(password, SALT_ROUNDS);
