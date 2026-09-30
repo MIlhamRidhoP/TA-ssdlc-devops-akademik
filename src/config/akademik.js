@@ -43,4 +43,12 @@ const ipsSebelum = (grades, semester) => {
   return { semester: terakhir, ips: Math.round((bobot / sks) * 100) / 100 };
 };
 
-module.exports = { SEMESTER_RE, SEMESTER_AKTIF, semesterKey, BOBOT, kuotaDariIps, ipsSebelum };
+// IPS dari sekumpulan baris { nilai_huruf, sks }, dibulatkan 2 desimal
+const hitungIps = (rows) => {
+  const sks = rows.reduce((n, r) => n + r.sks, 0);
+  if (sks === 0) return null;
+  const bobot = rows.reduce((n, r) => n + BOBOT[r.nilai_huruf] * r.sks, 0);
+  return Math.round((bobot / sks) * 100) / 100;
+};
+
+module.exports = { SEMESTER_RE, SEMESTER_AKTIF, semesterKey, BOBOT, kuotaDariIps, ipsSebelum, hitungIps };
