@@ -117,7 +117,7 @@ const halamanKhs = (identitas, semester, items, ips) => {
   const baris = items.map((i) => `
       <tr>
         <td>${escapeHtml(i.kode)}</td>
-        <td>${escapeHtml(i.nama)}</td>
+        <td>${i.nama}</td>
         <td class="angka">${escapeHtml(i.sks)}</td>
         <td class="angka">${escapeHtml(i.nilai_huruf)}</td>
       </tr>`).join('');
@@ -154,7 +154,7 @@ const halamanKhs = (identitas, semester, items, ips) => {
 `;
 };
 
-eexports.khs = async (req, res) => {
+exports.khs = async (req, res) => {
   const semester = typeof req.query.semester === 'string' ? req.query.semester : '';
   if (!semester) {
     res.status(400).type('html').send(`<p>Semester "${semester}" tidak dikenali</p>`);
