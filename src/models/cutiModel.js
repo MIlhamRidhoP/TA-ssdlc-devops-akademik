@@ -12,17 +12,18 @@ const DETAIL_SELECT = `
   FROM pengajuan_cuti c
   JOIN mahasiswa m ON m.id = c.mahasiswa_id`;
 
-exports.create = async (d) => {
-  const { rows } = await pool.query(
-    `INSERT INTO pengajuan_cuti
-       (mahasiswa_id, semester, kategori, alasan, alamat_cuti, nomor_telepon, dokumen_id)
-     VALUES ($2, $3, $4, $5, pgp_sym_encrypt($6::text, $1), pgp_sym_encrypt($7::text, $1), $8)
-     RETURNING id`,
-    [KEY, d.mahasiswa_id, d.semester, d.kategori, d.alasan, d.alamat_cuti, d.nomor_telepon,
-     d.dokumen_id ?? null]
-  );
-  return rows[0].id;
-};
+  exports.create = async (d) => {
+    const { rows } = await pool.query(
+      `INSERT INTO pengajuan_cuti
+         (mahasiswa_id, semester, kategori, alasan, alamat_cuti, nomor_telepon, dokumen_id, status)
+       VALUES ($2, $3, $4, $5, pgp_sym_encrypt($6::text, $1), pgp_sym_encrypt($7::text, $1), $8,
+         COALESCE($9, 'diajukan'))
+       RETURNING id`,
+      [KEY, d.mahasiswa_id, d.semester, d.kategori, d.alasan, d.alamat_cuti, d.nomor_telepon,
+       d.dokumen_id ?? null, d.status ?? null]
+    );
+    return rows[0].id;
+  };
 
 exports.listByMahasiswa = async (mahasiswaId) => {
   const { rows } = await pool.query(

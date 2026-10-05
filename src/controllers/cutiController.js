@@ -47,7 +47,9 @@ exports.create = async (req, res) => {
     data.dokumen_id = dokumenId;
   }
 
+  if (req.body?.status) data.status = req.body.status;
   const id = await model.create({ ...data, mahasiswa_id: mahasiswaId });
+  
   const row = await model.findById(id);
   res.status(201).json({ success: true, data: row });
   audit(req, 'CREATE_CUTI', 'pengajuan_cuti', id);
