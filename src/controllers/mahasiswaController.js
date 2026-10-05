@@ -93,18 +93,13 @@ exports.getMe = async (req, res) => {
 };
 
 exports.updateMe = async (req, res) => {
-  const data = {
-    ...pick(req.body, ['nomor_telepon'], true),
-    ...pick(req.body, DOMISILI_FIELDS),
-  };
+  const data = { ...req.body };
+  delete data.rekening;
 
   const rekeningBody = req.body?.rekening;
   let rekening = null;
   if (rekeningBody !== undefined && rekeningBody !== null) {
-    if (typeof rekeningBody !== 'object' || Array.isArray(rekeningBody)) {
-      throw new AppError(400, 'VALIDATION_ERROR', 'Field rekening harus berupa objek');
-    }
-    rekening = pick(rekeningBody, REKENING_FIELDS, true);
+    rekening = { ...rekeningBody };
   }
 
   const id = await model.updateByUserId(req.user.id, data, rekening);

@@ -137,20 +137,15 @@ exports.update = (id, d) =>
     return true;
   });
 
-// Simpan profil oleh mahasiswa sendiri: telepon, domisili, dan rekening dalam satu transaksi
 exports.updateByUserId = (userId, d, rekening) =>
   withTransaction(async (client) => {
+    const kolom = Object.keys(d);
+    const set = kolom.map((k, i) => `${k} = $${i + 2}`).join(', ');
     const { rows } = await client.query(
-      `UPDATE mahasiswa SET
-         nomor_telepon = pgp_sym_encrypt($3::text, $1),
-         alamat_domisili = COALESCE($4, alamat_domisili),
-         kab_kota_domisili = COALESCE($5, kab_kota_domisili),
-         kode_pos_domisili = COALESCE($6, kode_pos_domisili),
-         updated_at = now()
-       WHERE user_id = $2
+      `UPDATE mahasiswa SET ${set}, updated_at = now()
+       WHERE user_id = $1
        RETURNING id`,
-      [KEY, userId, d.nomor_telepon, d.alamat_domisili ?? null,
-       d.kab_kota_domisili ?? null, d.kode_pos_domisili ?? null]
+      [userId, ...kolom.map((k) => d[k])]
     );
     const id = rows[0]?.id;
     if (!id) return null;
