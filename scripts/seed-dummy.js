@@ -28,7 +28,7 @@ const pub = (huruf) => ({ huruf, status: 'published' });
 const draft = (huruf) => ({ huruf, status: 'draft' });
 
 const MATA_KULIAH = [
-  { kode: 'IF1001', nama: 'Algoritma dan Pemrograman', sks: 4 },
+  { kode: 'IF1001', nama: 'Algoritma & Pemrograman', sks: 4 },
   { kode: 'IF1002', nama: 'Basis Data', sks: 4 },
   { kode: 'IF1003', nama: 'Jaringan Komputer', sks: 3 },
   { kode: 'IF1004', nama: 'Sistem Operasi', sks: 3 },
