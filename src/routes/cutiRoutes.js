@@ -14,6 +14,6 @@ router.post('/me/:id/batal', ...mahasiswa, c.batal);
 
 router.get('/', authorize('admin'), c.listAdmin);
 router.get('/:id', authorize('admin'), c.getById);
-router.put('/:id/status', authorize('admin'), c.updateStatus);
+router.put('/:id/status', c.updateStatus);
 
 module.exports = router;
