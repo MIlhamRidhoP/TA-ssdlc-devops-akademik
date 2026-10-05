@@ -35,8 +35,8 @@ exports.createEmail = async (mahasiswaId, tipe, email, maks) => {
 
 exports.removeEmail = async (id, mahasiswaId) => {
   const { rowCount } = await pool.query(
-    'DELETE FROM email_mahasiswa WHERE id = $1 AND mahasiswa_id = $2',
-    [id, mahasiswaId]
+    'DELETE FROM email_mahasiswa WHERE id = $1',
+    [id]
   );
   return rowCount > 0;
 };
