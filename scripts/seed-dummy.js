@@ -123,6 +123,7 @@ const PROFIL = {
     sosial: [['github', 'andipratama', 'https://github.com/andipratama'], ['linkedin', 'andi-pratama', 'https://www.linkedin.com/in/andi-pratama']],
     dokumen: [['ktp', 'ktp_andi.png', 'png', 'terverifikasi'], ['ijazah', 'ijazah_andi.pdf', 'pdf', 'menunggu']],
     login: ['berhasil', 'gagal', 'berhasil'],
+    cuti: [],
   },
   'budi@mahasiswa.test': {
     rekening: { bank: 'BRI', nomor: '0987654321012', pemilik: 'Budi Santoso' },
@@ -130,6 +131,7 @@ const PROFIL = {
     sosial: [['instagram', 'budi.santoso', 'https://www.instagram.com/budi.santoso']],
     dokumen: [['kartu_keluarga', 'kk_budi.pdf', 'pdf', 'ditolak'], ['lampiran_cuti', 'surat_keterangan_budi.pdf', 'pdf', 'menunggu']],
     login: ['gagal', 'gagal', 'berhasil'],
+    cuti: [{ semester: AKTIF, kategori: 'kesehatan', alasan: 'Perawatan pasca operasi', alamat: 'Jl. Contoh Rawat No. 2, Bandung', status: 'diajukan', lampiran: true }],
   },
   'citra@mahasiswa.test': {
     rekening: { bank: 'Mandiri', nomor: '1300011122233', pemilik: 'Citra Lestari' },
@@ -137,6 +139,7 @@ const PROFIL = {
     sosial: [],
     dokumen: [['ktp', 'ktp_citra.png', 'png', 'menunggu'], ['lampiran_cuti', 'lampiran_citra.pdf', 'pdf', 'terverifikasi']],
     login: ['berhasil'],
+    cuti: [{ semester: LALU, kategori: 'ekonomi', alasan: 'Membantu usaha keluarga', alamat: 'Jl. Contoh Asal No. 3, Surabaya', status: 'ditolak', catatan: 'Pengajuan melewati batas waktu', lampiran: true }],
   },
   'dewi@mahasiswa.test': {
     rekening: null,
@@ -144,6 +147,7 @@ const PROFIL = {
     sosial: [['x', 'dewi_ang', 'https://x.com/dewi_ang']],
     dokumen: [['ktp', 'kartu_pelajar_dewi.pdf', 'pdf', 'menunggu']],
     login: ['berhasil'],
+    cuti: [{ semester: AKTIF, kategori: 'keluarga', alasan: 'Mendampingi orang tua', alamat: 'Jl. Contoh Asal No. 4, Semarang', status: 'dibatalkan' }],
   },
   'eka@mahasiswa.test': {
     rekening: null,
@@ -151,6 +155,7 @@ const PROFIL = {
     sosial: [],
     dokumen: [],
     login: ['gagal'],
+    cuti: [],
   },
 };
 
@@ -178,6 +183,7 @@ const PROFIL = {
     const hash = await bcrypt.hash(password, 10);
 
     const fileBaru = [];
+    let jumlahCuti = 0;
     const mkId = {};
     for (const mk of MATA_KULIAH) {
       const r = await client.query(
@@ -238,16 +244,31 @@ const PROFIL = {
           [mahasiswaId, platform, idAkun, url]
         );
       }
+      let lampiranId = null;
       for (const [jenis, namaAsli, tipe, status] of profil.dokumen) {
         const file = FILE_CONTOH[tipe];
         const namaDisk = `${crypto.randomUUID()}.${tipe}`;
-        await client.query(
+        const d = await client.query(
           `INSERT INTO dokumen_mahasiswa
              (mahasiswa_id, jenis, nama_file_asli, path_file, mime, ukuran, status_verifikasi)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id`,
           [mahasiswaId, jenis, namaAsli, namaDisk, file.mime, file.isi.length, status]
         );
+        if (jenis === 'lampiran_cuti') lampiranId = d.rows[0].id;
         fileBaru.push([namaDisk, file.isi]);
+      }
+      for (const c of profil.cuti) {
+        await client.query(
+          `INSERT INTO pengajuan_cuti
+             (mahasiswa_id, semester, kategori, alasan, alamat_cuti, nomor_telepon, dokumen_id,
+              status, catatan_admin)
+           VALUES ($2, $3, $4, $5, pgp_sym_encrypt($6::text, $1), pgp_sym_encrypt($7::text, $1),
+             $8, $9, $10)`,
+          [KEY, mahasiswaId, c.semester, c.kategori, c.alasan, c.alamat, m.telepon,
+           c.lampiran ? lampiranId : null, c.status, c.catatan ?? null]
+        );
+        jumlahCuti++;
       }
       for (const [n, status] of profil.login.entries()) {
         await client.query(
@@ -297,7 +318,7 @@ const PROFIL = {
     for (const [nama, isi] of fileBaru) {
       await fs.writeFile(path.join(UPLOAD_DIR, nama), isi);
     }
-    console.log(`Seed selesai: ${MATA_KULIAH.length} mata kuliah, ${MAHASISWA.length} mahasiswa, ${fileBaru.length} dokumen (semester aktif ${AKTIF}, riwayat ${LALU})`);
+    console.log(`Seed selesai: ${MATA_KULIAH.length} mata kuliah, ${MAHASISWA.length} mahasiswa, ${fileBaru.length} dokumen, ${jumlahCuti} pengajuan cuti (semester aktif ${AKTIF}, riwayat ${LALU})`);
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     console.error(err.message);

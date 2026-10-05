@@ -3,6 +3,7 @@ const krsModel = require('../models/krsModel');
 const profilModel = require('../models/profilModel');
 const dokumenModel = require('../models/dokumenModel');
 const riwayatLogin = require('../models/riwayatLoginModel');
+const cutiModel = require('../models/cutiModel');
 const audit = require('../utils/audit');
 const AppError = require('../utils/AppError');
 const { isEmail, isHttpsUrl, requireUuid } = require('../utils/validators');
@@ -79,7 +80,7 @@ exports.ekspor = async (req, res) => {
   const profil = await mahasiswaModel.findByUserId(req.user.id);
   if (!profil) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
 
-  const [rekening, emailTambahan, akunSosial, dokumen, login, konsen, riwayatStudi] = await Promise.all([
+  const [rekening, emailTambahan, akunSosial, dokumen, login, konsen, riwayatStudi, cuti] = await Promise.all([
     profilModel.findRekening(profil.id),
     profilModel.listEmail(profil.id),
     profilModel.listAkunSosial(profil.id),
@@ -87,6 +88,7 @@ exports.ekspor = async (req, res) => {
     riwayatLogin.listByUser(req.user.id, null),
     profilModel.listKonsen(profil.id),
     profilModel.listRiwayatStudi(profil.id),
+    cutiModel.listDetailByMahasiswa(profil.id),
   ]);
 
   res.set('Cache-Control', 'no-store');
@@ -102,6 +104,7 @@ exports.ekspor = async (req, res) => {
       riwayat_login: login,
       konsen_orang_tua: konsen,
       riwayat_studi: riwayatStudi,
+      pengajuan_cuti: cuti,
     },
   });
   audit(req, 'EXPORT_DATA_PRIBADI', 'mahasiswa', profil.id);
