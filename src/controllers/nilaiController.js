@@ -154,16 +154,17 @@ const halamanKhs = (identitas, semester, items, ips) => {
 `;
 };
 
-exports.khs = async (req, res) => {
-  const { semester } = req.query;
-  if (typeof semester !== 'string' || !SEMESTER_RE.test(semester)) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter semester wajib diisi dengan format YYYY-ganjil atau YYYY-genap');
+eexports.khs = async (req, res) => {
+  const semester = typeof req.query.semester === 'string' ? req.query.semester : '';
+  if (!semester) {
+    res.status(400).type('html').send(`<p>Semester "${semester}" tidak dikenali</p>`);
+    return;
   }
   const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);
   if (!mahasiswaId) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
 
   const identitas = await model.identitasKhs(mahasiswaId);
-  const items = (await model.publishedForMahasiswa(mahasiswaId)).filter((r) => r.semester === semester);
+  const items = await model.publishedBySemester(mahasiswaId, semester);
 
   res.set('Cache-Control', 'no-store');
   res.type('html').send(halamanKhs(identitas, semester, items, hitungIps(items)));
