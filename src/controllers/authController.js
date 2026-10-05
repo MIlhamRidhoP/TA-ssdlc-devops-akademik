@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const { sign } = require('../config/jwt');
 const AppError = require('../utils/AppError');
+const riwayatLogin = require('../models/riwayatLoginModel');
 
 const SALT_ROUNDS = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,6 +55,7 @@ exports.login = async (req, res) => {
   );
   const user = rows[0];
   const valid = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+  if (user) riwayatLogin.catat(req, user.id, valid ? 'berhasil' : 'gagal');
 
   if (!user || !valid) {
     throw new AppError(401, 'UNAUTHORIZED', 'Email atau password salah');

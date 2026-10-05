@@ -1,18 +1,9 @@
 const model = require('../models/konsenModel');
 const audit = require('../utils/audit');
 const AppError = require('../utils/AppError');
-const { isValidDate, requireUuid } = require('../utils/validators');
+const { isValidDate, isHttpsUrl, requireUuid } = require('../utils/validators');
 
 const STATUSES = ['pending', 'approved', 'rejected'];
-
-const isHttpsUrl = (v) => {
-  if (typeof v !== 'string' || v.length > 2048) return false;
-  try {
-    return new URL(v).protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
 
 const getMahasiswaOr404 = async (id) => {
   requireUuid(id);

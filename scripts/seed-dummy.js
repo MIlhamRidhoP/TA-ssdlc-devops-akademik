@@ -1,6 +1,10 @@
 require('dotenv').config();
+const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 const bcrypt = require('bcrypt');
 const pool = require('../src/config/db');
+const { UPLOAD_DIR } = require('../src/config/upload');
 const { KEY } = require('../src/config/crypto');
 const { SEMESTER_AKTIF, BOBOT } = require('../src/config/akademik');
 
@@ -82,6 +86,74 @@ const MAHASISWA = [
   },
 ];
 
+// File contoh berukuran kecil yang valid sebagai pdf dan png
+const FILE_CONTOH = {
+  pdf: {
+    mime: 'application/pdf',
+    isi: Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n'
+      + '2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n'),
+  },
+  png: {
+    mime: 'image/png',
+    isi: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'),
+  },
+};
+
+const KOTA = ['Bandung', 'Kabupaten Bogor', 'Surabaya', 'Kota Semarang', 'Kabupaten Sleman'];
+
+// Data profil tambahan, dibuat dari urutan mahasiswa supaya tetap fiktif dan konsisten
+const profilTambahan = (m, i) => ({
+  tempatLahir: KOTA[i].replace('Kabupaten ', '').replace('Kota ', ''),
+  nisn: `00${m.nim.slice(-8)}`,
+  alamatAsal: `Jl. Contoh Asal No. ${i + 1}`,
+  kabKotaAsal: KOTA[i],
+  kodePosAsal: `4${i}111`,
+  namaAyah: `Ayah ${m.nama.split(' ')[0]}`,
+  namaIbu: `Ibu ${m.nama.split(' ')[0]}`,
+  hpOrangTua: `08120000000${i + 1}`,
+  alamatDomisili: `Jl. Telekomunikasi Gg. ${i + 1} No. ${10 + i}`,
+  kabKotaDomisili: 'Kabupaten Bandung',
+  kodePosDomisili: '40257',
+});
+
+const PROFIL = {
+  'andi@mahasiswa.test': {
+    rekening: { bank: 'BNI', nomor: '1234567890', pemilik: 'Andi Pratama' },
+    email: [['pribadi', 'andi.pratama@contoh.test'], ['alternatif', 'andi.p@contoh.test']],
+    sosial: [['github', 'andipratama', 'https://github.com/andipratama'], ['linkedin', 'andi-pratama', 'https://www.linkedin.com/in/andi-pratama']],
+    dokumen: [['ktp', 'ktp_andi.png', 'png', 'terverifikasi'], ['ijazah', 'ijazah_andi.pdf', 'pdf', 'menunggu']],
+    login: ['berhasil', 'gagal', 'berhasil'],
+  },
+  'budi@mahasiswa.test': {
+    rekening: { bank: 'BRI', nomor: '0987654321012', pemilik: 'Budi Santoso' },
+    email: [['pribadi', 'budi.santoso@contoh.test']],
+    sosial: [['instagram', 'budi.santoso', 'https://www.instagram.com/budi.santoso']],
+    dokumen: [['kartu_keluarga', 'kk_budi.pdf', 'pdf', 'ditolak'], ['lampiran_cuti', 'surat_keterangan_budi.pdf', 'pdf', 'menunggu']],
+    login: ['gagal', 'gagal', 'berhasil'],
+  },
+  'citra@mahasiswa.test': {
+    rekening: { bank: 'Mandiri', nomor: '1300011122233', pemilik: 'Citra Lestari' },
+    email: [['kerja', 'citra@kantor-contoh.test']],
+    sosial: [],
+    dokumen: [['ktp', 'ktp_citra.png', 'png', 'menunggu'], ['lampiran_cuti', 'lampiran_citra.pdf', 'pdf', 'terverifikasi']],
+    login: ['berhasil'],
+  },
+  'dewi@mahasiswa.test': {
+    rekening: null,
+    email: [],
+    sosial: [['x', 'dewi_ang', 'https://x.com/dewi_ang']],
+    dokumen: [['ktp', 'kartu_pelajar_dewi.pdf', 'pdf', 'menunggu']],
+    login: ['berhasil'],
+  },
+  'eka@mahasiswa.test': {
+    rekening: null,
+    email: [],
+    sosial: [],
+    dokumen: [],
+    login: ['gagal'],
+  },
+};
+
 (async () => {
   const password = process.env.SEED_USER_PASSWORD;
   if (!password || password.length < 8 || !/[A-Z]/.test(password) || !/\d/.test(password)) {
@@ -105,6 +177,7 @@ const MAHASISWA = [
     await client.query('BEGIN');
     const hash = await bcrypt.hash(password, 10);
 
+    const fileBaru = [];
     const mkId = {};
     for (const mk of MATA_KULIAH) {
       const r = await client.query(
@@ -114,7 +187,7 @@ const MAHASISWA = [
       mkId[mk.kode] = r.rows[0].id;
     }
 
-    for (const m of MAHASISWA) {
+    for (const [i, m] of MAHASISWA.entries()) {
       const u = await client.query(
         `INSERT INTO users (email, password_hash, role, is_minor)
          VALUES ($1, $2, 'mahasiswa', $3) RETURNING id`,
@@ -133,6 +206,56 @@ const MAHASISWA = [
         [KEY, u.rows[0].id, m.nama, m.nim, m.nik, m.tanggalLahir, m.nikOrangTua ?? null, m.telepon]
       );
       const mahasiswaId = mh.rows[0].id;
+
+      const pt = profilTambahan(m, i);
+      await client.query(
+        `UPDATE mahasiswa SET
+           tempat_lahir = $3, nisn = $4, alamat_asal = $5, kab_kota_asal = $6, kode_pos_asal = $7,
+           nama_ayah = $8, nama_ibu = $9, nomor_hp_orang_tua = pgp_sym_encrypt($10::text, $1),
+           alamat_domisili = $11, kab_kota_domisili = $12, kode_pos_domisili = $13
+         WHERE id = $2`,
+        [KEY, mahasiswaId, pt.tempatLahir, pt.nisn, pt.alamatAsal, pt.kabKotaAsal, pt.kodePosAsal,
+         pt.namaAyah, pt.namaIbu, pt.hpOrangTua, pt.alamatDomisili, pt.kabKotaDomisili, pt.kodePosDomisili]
+      );
+
+      const profil = PROFIL[m.email];
+      if (profil.rekening) {
+        await client.query(
+          `INSERT INTO rekening_mahasiswa (mahasiswa_id, nama_bank, nomor_rekening, nama_pemilik)
+           VALUES ($2, $3, pgp_sym_encrypt($4::text, $1), $5)`,
+          [KEY, mahasiswaId, profil.rekening.bank, profil.rekening.nomor, profil.rekening.pemilik]
+        );
+      }
+      for (const [tipe, email] of profil.email) {
+        await client.query(
+          'INSERT INTO email_mahasiswa (mahasiswa_id, tipe, email) VALUES ($1, $2, $3)',
+          [mahasiswaId, tipe, email]
+        );
+      }
+      for (const [platform, idAkun, url] of profil.sosial) {
+        await client.query(
+          'INSERT INTO akun_sosial_mahasiswa (mahasiswa_id, platform, id_akun, url) VALUES ($1, $2, $3, $4)',
+          [mahasiswaId, platform, idAkun, url]
+        );
+      }
+      for (const [jenis, namaAsli, tipe, status] of profil.dokumen) {
+        const file = FILE_CONTOH[tipe];
+        const namaDisk = `${crypto.randomUUID()}.${tipe}`;
+        await client.query(
+          `INSERT INTO dokumen_mahasiswa
+             (mahasiswa_id, jenis, nama_file_asli, path_file, mime, ukuran, status_verifikasi)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [mahasiswaId, jenis, namaAsli, namaDisk, file.mime, file.isi.length, status]
+        );
+        fileBaru.push([namaDisk, file.isi]);
+      }
+      for (const [n, status] of profil.login.entries()) {
+        await client.query(
+          `INSERT INTO riwayat_login (user_id, waktu, ip, user_agent, status)
+           VALUES ($1, now() - make_interval(days => $2), $3, $4, $5)`,
+          [u.rows[0].id, profil.login.length - n, `10.0.0.${i + 1}`, 'Mozilla/5.0 (seed)', status]
+        );
+      }
 
       if (m.konsen) {
         await client.query(
@@ -170,7 +293,11 @@ const MAHASISWA = [
     }
 
     await client.query('COMMIT');
-    console.log(`Seed selesai: ${MATA_KULIAH.length} mata kuliah, ${MAHASISWA.length} mahasiswa (semester aktif ${AKTIF}, riwayat ${LALU})`);
+    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    for (const [nama, isi] of fileBaru) {
+      await fs.writeFile(path.join(UPLOAD_DIR, nama), isi);
+    }
+    console.log(`Seed selesai: ${MATA_KULIAH.length} mata kuliah, ${MAHASISWA.length} mahasiswa, ${fileBaru.length} dokumen (semester aktif ${AKTIF}, riwayat ${LALU})`);
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     console.error(err.message);
