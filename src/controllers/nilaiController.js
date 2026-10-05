@@ -2,6 +2,7 @@ const model = require('../models/nilaiModel');
 const krsModel = require('../models/krsModel');
 const audit = require('../utils/audit');
 const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
 const { UUID_RE, requireUuid } = require('../utils/validators');
 const { SEMESTER_RE, BOBOT, semesterKey, hitungIps } = require('../config/akademik');
 
@@ -77,11 +78,12 @@ exports.publish = async (req, res) => {
 };
 
 exports.listAdmin = async (req, res) => {
-  const rows = await model.listAdmin({
+  const { rows, total } = await model.listAdmin({
     semester: optionalSemester(req.query.semester),
     mahasiswaId: optionalUuid(req.query.mahasiswa_id, 'mahasiswa_id'),
     mataKuliahId: optionalUuid(req.query.mata_kuliah_id, 'mata_kuliah_id'),
-  });
+  }, listQuery(req.query, { sortMap: model.SORT, defaultSort: 'semester' }));
+  res.set('X-Total-Count', String(total));
   res.json({ success: true, data: rows });
 };
 

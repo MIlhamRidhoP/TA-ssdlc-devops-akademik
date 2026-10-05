@@ -5,6 +5,7 @@ const profilModel = require('../models/profilModel');
 const dokumenModel = require('../models/dokumenModel');
 const audit = require('../utils/audit');
 const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
 const { UUID_RE, isValidDate, requireUuid, teks } = require('../utils/validators');
 const { BANK } = require('../config/profil');
 const { UPLOAD_DIR } = require('../config/upload');
@@ -114,7 +115,8 @@ exports.updateMe = async (req, res) => {
 };
 
 exports.list = async (req, res) => {
-  const rows = await model.list();
+  const { rows, total } = await model.list(listQuery(req.query, { sortMap: model.SORT, defaultSort: 'nim' }));
+  res.set('X-Total-Count', String(total));
   res.json({ success: true, data: rows });
 };
 

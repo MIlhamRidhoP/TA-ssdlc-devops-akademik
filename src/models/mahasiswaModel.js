@@ -46,14 +46,25 @@ exports.findByUserId = async (userId) => {
   return rows[0] || null;
 };
 
-exports.list = async () => {
+exports.SORT = { nim: 'm.nim', nama: 'm.nama', email: 'u.email', created_at: 'm.created_at' };
+
+const LIST_FROM = `
+  FROM mahasiswa m
+  JOIN users u ON u.id = m.user_id
+  WHERE ($1::text IS NULL
+    OR m.nim ILIKE $1 ESCAPE '\\' OR m.nama ILIKE $1 ESCAPE '\\' OR u.email ILIKE $1 ESCAPE '\\')`;
+
+// orderBy berasal dari listQuery, sudah dibatasi ke ekspresi di SORT
+exports.list = async ({ pola, orderBy, limit, offset }) => {
+  const total = await pool.query(`SELECT count(*)::int AS n ${LIST_FROM}`, [pola]);
   const { rows } = await pool.query(
     `SELECT m.id, m.nim, m.nama, u.email
-     FROM mahasiswa m
-     JOIN users u ON u.id = m.user_id
-     ORDER BY m.nim`
+     ${LIST_FROM}
+     ORDER BY ${orderBy}, m.id
+     LIMIT $2 OFFSET $3`,
+    [pola, limit, offset]
   );
-  return rows;
+  return { rows, total: total.rows[0].n };
 };
 
 exports.findUserRole = async (userId) => {
