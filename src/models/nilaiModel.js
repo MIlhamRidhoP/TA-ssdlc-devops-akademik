@@ -119,3 +119,20 @@ exports.publishedForMahasiswa = async (mahasiswaId) => {
   );
   return rows;
 };
+
+exports.publishedBySemester = async (mahasiswaId, semester) => {
+  const { rows } = await pool.query(
+    `SELECT ks.semester, mk.kode, mk.nama, mk.sks,
+            n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka
+     FROM nilai n
+     JOIN krs k ON k.id = n.krs_id
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     WHERE ks.mahasiswa_id = $1
+       AND n.status = 'published'
+       AND ks.semester = '${semester}'
+     ORDER BY mk.kode`,
+    [mahasiswaId]
+  );
+  return rows;
+};
