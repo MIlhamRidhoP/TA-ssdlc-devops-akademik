@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed:admin": "node scripts/seed-admin.js",
-    "seed:dummy": "node scripts/seed-dummy.js"
+    "seed:dummy": "node scripts/seed-dummy.js",
+    "scan:gemini": "node scripts/gemini-scan.js"
   },
   "repository": {
     "type": "git",
