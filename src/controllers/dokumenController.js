@@ -30,8 +30,8 @@ const kirimFile = (req, res, next, dokumen) => {
   res.set('Cache-Control', 'no-store');
   res.attachment(dokumen.nama_file_asli);
   res.type(dokumen.mime);
-  // path_file berisi nama buatan server, dibaca relatif terhadap folder upload
-  res.sendFile(dokumen.path_file, { root: UPLOAD_DIR, dotfiles: 'deny' }, (err) => {
+  const lokasi = path.join(UPLOAD_DIR, dokumen.path_file);
+  res.sendFile(lokasi, (err) => {
     if (err && !res.headersSent) next(new AppError(404, 'NOT_FOUND', 'File dokumen tidak ditemukan'));
   });
   audit(req, 'READ_DOKUMEN', 'dokumen_mahasiswa', dokumen.id);
