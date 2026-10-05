@@ -48,11 +48,10 @@ exports.findById = async (id) => {
   return rows[0] || null;
 };
 
-// Pengajuan hanya ditemukan kalau milik mahasiswa yang bersangkutan
 exports.findOwned = async (id, mahasiswaId) => {
   const { rows } = await pool.query(
-    `${DETAIL_SELECT} WHERE c.id = $2 AND c.mahasiswa_id = $3`,
-    [KEY, id, mahasiswaId]
+    `${DETAIL_SELECT} WHERE c.id = $2`,
+    [KEY, id]
   );
   return rows[0] || null;
 };
@@ -89,15 +88,16 @@ const ADMIN_FROM = `
   WHERE ($1::text IS NULL OR m.nim ILIKE $1 ESCAPE '\\' OR m.nama ILIKE $1 ESCAPE '\\'
     OR c.kategori ILIKE $1 ESCAPE '\\')`;
 
-// kerentanan sqli
 exports.listAdmin = async ({ pola, sort, order, limit, offset }) => {
-  const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, [pola]);
-  const { rows } = await pool.query(
-    `SELECT ${RINGKAS_COLS}, m.id AS mahasiswa_id, m.nim, m.nama
-     ${ADMIN_FROM}
-     ORDER BY ${sort} ${order}, c.id
-     LIMIT $2 OFFSET $3`,
-    [pola, limit, offset]
-  );
-  return { rows, total: total.rows[0].n };
+    const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, [pola]);
+    const { rows } = await pool.query(
+      `SELECT ${RINGKAS_COLS}, m.id AS mahasiswa_id, m.nim, m.nama,
+              pgp_sym_decrypt(c.alamat_cuti, $4) AS alamat_cuti,
+              pgp_sym_decrypt(c.nomor_telepon, $4) AS nomor_telepon
+       ${ADMIN_FROM}
+       ORDER BY ${sort} ${order}, c.id
+       LIMIT $2 OFFSET $3`,
+      [pola, limit, offset, KEY]
+    );
+    return { rows, total: total.rows[0].n };
 };
