@@ -92,6 +92,19 @@ exports.listAdmin = async ({ semester, mahasiswaId, mataKuliahId }, { pola, orde
   return { rows, total: total.rows[0].n };
 };
 
+// Angkatan diambil dari tahun semester KRS pertama, skema tidak punya kolom angkatan
+exports.identitasKhs = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT m.nama, m.nim,
+            (SELECT min(split_part(ks.semester, '-', 1)) FROM krs_semester ks
+              WHERE ks.mahasiswa_id = m.id) AS angkatan
+     FROM mahasiswa m
+     WHERE m.id = $1`,
+    [mahasiswaId]
+  );
+  return rows[0] || null;
+};
+
 exports.publishedForMahasiswa = async (mahasiswaId) => {
   const { rows } = await pool.query(
     `SELECT ks.semester, mk.kode, mk.nama, mk.sks, n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka

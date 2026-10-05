@@ -3,6 +3,7 @@ const krsModel = require('../models/krsModel');
 const audit = require('../utils/audit');
 const AppError = require('../utils/AppError');
 const listQuery = require('../utils/listQuery');
+const { escapeHtml } = require('../utils/html');
 const { UUID_RE, requireUuid } = require('../utils/validators');
 const { SEMESTER_RE, BOBOT, semesterKey, hitungIps } = require('../config/akademik');
 
@@ -110,4 +111,60 @@ exports.me = async (req, res) => {
     }));
 
   res.json({ success: true, data });
+};
+
+const halamanKhs = (identitas, semester, items, ips) => {
+  const baris = items.map((i) => `
+      <tr>
+        <td>${escapeHtml(i.kode)}</td>
+        <td>${escapeHtml(i.nama)}</td>
+        <td class="angka">${escapeHtml(i.sks)}</td>
+        <td class="angka">${escapeHtml(i.nilai_huruf)}</td>
+      </tr>`).join('');
+
+  return `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>KHS ${escapeHtml(identitas.nim)} ${escapeHtml(semester)}</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #444; padding: 4px 8px; text-align: left; }
+    .angka { text-align: right; }
+  </style>
+</head>
+<body>
+  <h1>Kartu Hasil Studi</h1>
+  <p>Nama: ${escapeHtml(identitas.nama)}<br>
+     NIM: ${escapeHtml(identitas.nim)}<br>
+     Angkatan: ${escapeHtml(identitas.angkatan ?? '-')}<br>
+     Semester: ${escapeHtml(semester)}</p>
+  <table>
+    <thead>
+      <tr><th>Kode</th><th>Mata Kuliah</th><th>SKS</th><th>Nilai</th></tr>
+    </thead>
+    <tbody>${baris}
+    </tbody>
+  </table>
+  <p>Total SKS: ${escapeHtml(items.reduce((n, i) => n + i.sks, 0))}<br>
+     IPS: ${escapeHtml(ips === null ? '-' : ips.toFixed(2))}</p>
+</body>
+</html>
+`;
+};
+
+exports.khs = async (req, res) => {
+  const { semester } = req.query;
+  if (typeof semester !== 'string' || !SEMESTER_RE.test(semester)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter semester wajib diisi dengan format YYYY-ganjil atau YYYY-genap');
+  }
+  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);
+  if (!mahasiswaId) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+
+  const identitas = await model.identitasKhs(mahasiswaId);
+  const items = (await model.publishedForMahasiswa(mahasiswaId)).filter((r) => r.semester === semester);
+
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(halamanKhs(identitas, semester, items, hitungIps(items)));
 };
