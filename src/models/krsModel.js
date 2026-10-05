@@ -80,7 +80,23 @@ exports.transition = async (headerId, from, to) => {
   return rows[0] || null;
 };
 
-exports.listHeaders = async (semester, mahasiswaId) => {
+exports.SORT = {
+  nim: 'm.nim', nama: 'm.nama', status: 'ks.status', total_sks: 'total_sks', submitted_at: 'ks.submitted_at',
+};
+
+const HEADER_FILTER = `
+  WHERE ks.semester = $1 AND ($2::uuid IS NULL OR ks.mahasiswa_id = $2)
+    AND ($3::text IS NULL OR m.nim ILIKE $3 ESCAPE '\\' OR m.nama ILIKE $3 ESCAPE '\\')`;
+
+// orderBy berasal dari listQuery, sudah dibatasi ke ekspresi di SORT
+exports.listHeaders = async (semester, mahasiswaId, { pola, orderBy, limit, offset }) => {
+  const total = await pool.query(
+    `SELECT count(*)::int AS n
+     FROM krs_semester ks
+     JOIN mahasiswa m ON m.id = ks.mahasiswa_id
+     ${HEADER_FILTER}`,
+    [semester, mahasiswaId, pola]
+  );
   const { rows } = await pool.query(
     `SELECT ks.id, ks.semester, ks.status, ks.submitted_at, ks.locked_at,
             m.id AS mahasiswa_id, m.nim, m.nama,
@@ -89,12 +105,13 @@ exports.listHeaders = async (semester, mahasiswaId) => {
      JOIN mahasiswa m ON m.id = ks.mahasiswa_id
      LEFT JOIN krs k ON k.krs_semester_id = ks.id
      LEFT JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
-     WHERE ks.semester = $1 AND ($2::uuid IS NULL OR ks.mahasiswa_id = $2)
+     ${HEADER_FILTER}
      GROUP BY ks.id, m.id
-     ORDER BY m.nim`,
-    [semester, mahasiswaId]
+     ORDER BY ${orderBy}, ks.id
+     LIMIT $4 OFFSET $5`,
+    [semester, mahasiswaId, pola, limit, offset]
   );
-  return rows;
+  return { rows, total: total.rows[0].n };
 };
 
 exports.publishedGrades = async (mahasiswaId) => {

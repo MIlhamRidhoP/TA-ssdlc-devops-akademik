@@ -2,6 +2,7 @@ const model = require('../models/krsModel');
 const mataKuliahModel = require('../models/mataKuliahModel');
 const audit = require('../utils/audit');
 const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
 const { UUID_RE, requireUuid } = require('../utils/validators');
 const { SEMESTER_RE, SEMESTER_AKTIF, ipsSebelum, kuotaDariIps } = require('../config/akademik');
 
@@ -134,7 +135,9 @@ exports.listAdmin = async (req, res) => {
     throw new AppError(400, 'VALIDATION_ERROR', 'Parameter mahasiswa_id tidak valid');
   }
 
-  const rows = await model.listHeaders(semester, mahasiswaId ?? null);
+  const { rows, total } = await model.listHeaders(semester, mahasiswaId ?? null,
+    listQuery(req.query, { sortMap: model.SORT, defaultSort: 'nim' }));
+  res.set('X-Total-Count', String(total));
   res.json({ success: true, data: rows });
 };
 
