@@ -3,3 +3,8 @@ node_modules/
 
 docs/superpowers/
 uploads/
+<<<<<<< Updated upstream
+=======
+.claude/settings.local.json
+gemini-output/
+>>>>>>> Stashed changes
