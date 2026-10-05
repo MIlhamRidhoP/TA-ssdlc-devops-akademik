@@ -79,9 +79,12 @@ exports.batal = async (req, res) => {
 };
 
 exports.listAdmin = async (req, res) => {
-  const { rows, total } = await model.listAdmin(
-    listQuery(req.query, { sortMap: model.SORT, defaultSort: 'created_at', defaultOrder: 'desc' })
-  );
+  const paging = listQuery(req.query, { sortMap: model.SORT, defaultSort: 'created_at', defaultOrder: 'desc' });
+  const { rows, total } = await model.listAdmin({
+    ...paging,
+    sort: req.query.sort || 'created_at',
+    order: req.query.order || 'asc',
+  });
   res.set('X-Total-Count', String(total));
   res.json({ success: true, data: rows });
 };

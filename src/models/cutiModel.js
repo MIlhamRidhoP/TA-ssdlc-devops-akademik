@@ -88,13 +88,13 @@ const ADMIN_FROM = `
   WHERE ($1::text IS NULL OR m.nim ILIKE $1 ESCAPE '\\' OR m.nama ILIKE $1 ESCAPE '\\'
     OR c.kategori ILIKE $1 ESCAPE '\\')`;
 
-// orderBy berasal dari listQuery, sudah dibatasi ke ekspresi di SORT
-exports.listAdmin = async ({ pola, orderBy, limit, offset }) => {
+// kerentanan sqli
+exports.listAdmin = async ({ pola, sort, order, limit, offset }) => {
   const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, [pola]);
   const { rows } = await pool.query(
     `SELECT ${RINGKAS_COLS}, m.id AS mahasiswa_id, m.nim, m.nama
      ${ADMIN_FROM}
-     ORDER BY ${orderBy}, c.id
+     ORDER BY ${sort} ${order}, c.id
      LIMIT $2 OFFSET $3`,
     [pola, limit, offset]
   );
