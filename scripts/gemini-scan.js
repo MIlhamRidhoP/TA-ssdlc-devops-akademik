@@ -29,6 +29,20 @@ const GEMINI_RETRIES = Number(process.env.GEMINI_RETRIES) || 3;
 const GEMINI_DELAY_SEC = process.env.GEMINI_DELAY_SEC === undefined ? 60 : Number(process.env.GEMINI_DELAY_SEC);
 const TEMPERATURE = 0.2;
 const STATUS_ULANG = [429, 500, 502, 503, 504];
+// Berhenti langsung (tanpa retry) kalau 429 menyebut kuota 0, atau retryDelay dari server > ini.
+const BATAS_RETRY_DELAY_DETIK = 120;
+
+// Harga paid tier resmi gemini-3.8-flash per 1 juta token, berlaku sampai 31 Des 2026.
+// Sumber: https://ai.google.dev/gemini-api/docs/pricing (dicek 2026-10-10).
+// Output mencakup token thinking (candidatesTokenCount + thoughtsTokenCount dihitung dengan tarif output).
+const HARGA_PAID_TIER = {
+  model: 'gemini-3.8-flash',
+  berlaku_sampai: '2026-12-31',
+  sumber: 'https://ai.google.dev/gemini-api/docs/pricing',
+  dicek_pada: '2026-10-10',
+  usd_per_1m_token_input: 0.75,
+  usd_per_1m_token_output: 3.75, // termasuk thinking token
+};
 
 const ambilArg = (nama) => {
   const arg = process.argv.find((a) => a.startsWith(`--${nama}=`));
@@ -299,8 +313,27 @@ const jedaUlang = (percobaanKe, isiGalat) => {
   return 10000 * 2 ** (percobaanKe - 1);
 };
 
+// Deteksi kuota yang memang 0 (bukan kehabisan sementara) atau retryDelay yang sangat lama.
+// Kalau ketemu, retry dihentikan segera supaya skrip tidak menunggu berjam-jam tanpa guna.
+const kuotaTidakBisaDitunggu = (status, isiGalat) => {
+  if (status !== 429) return null;
+  const pesan = isiGalat?.error?.message ?? '';
+  if (/limit:\s*0\b/i.test(pesan)) {
+    return 'pesan error menyebut "limit: 0" - kuota model ini memang 0 untuk API key ini, bukan kehabisan sementara';
+  }
+  const detail = isiGalat?.error?.details?.find((d) => d.retryDelay);
+  if (detail) {
+    const detik = parseFloat(detail.retryDelay);
+    if (Number.isFinite(detik) && detik > BATAS_RETRY_DELAY_DETIK) {
+      return `retryDelay dari server ${Math.round(detik)} detik, melebihi batas ${BATAS_RETRY_DELAY_DETIK} detik`;
+    }
+  }
+  return null;
+};
+
 // Panggil generateContent dengan retry untuk 429, 5xx, dan galat jaringan.
-// Mengembalikan body respons mentah (berhasil maupun gagal) beserta catatan percobaan.
+// Mengembalikan body respons mentah (berhasil maupun gagal), catatan percobaan, dan waktu
+// mulai percobaan TERAKHIR (dipakai pemanggil untuk memisahkan durasi bersih dari durasi total).
 const panggilGemini = async (prompt, maxOutputTokens) => {
   const body = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
@@ -310,6 +343,7 @@ const panggilGemini = async (prompt, maxOutputTokens) => {
   for (let i = 1; i <= GEMINI_RETRIES; i++) {
     let status = null;
     let isi = null;
+    const mulaiPercobaan = new Date();
     try {
       const res = await fetch(`${GEMINI_BASE}/models/${GEMINI_MODEL}:generateContent`, {
         method: 'POST', headers: headerGemini(), body,
@@ -319,19 +353,42 @@ const panggilGemini = async (prompt, maxOutputTokens) => {
       try { isi = JSON.parse(teks); } catch { isi = { teks_mentah: teks }; }
       if (res.ok) {
         percobaan.push({ ke: i, status });
-        return { ok: true, status, isi, percobaan };
+        return { ok: true, status, isi, percobaan, mulai_percobaan_terakhir: mulaiPercobaan.toISOString() };
       }
     } catch (err) {
       isi = { galat_jaringan: err.message };
     }
-    const bolehUlang = status === null || STATUS_ULANG.includes(status);
-    percobaan.push({ ke: i, status, pesan: isi?.error?.message ?? isi?.galat_jaringan ?? null });
-    if (!bolehUlang || i === GEMINI_RETRIES) return { ok: false, status, isi, percobaan };
+    const alasanBerhenti = kuotaTidakBisaDitunggu(status, isi);
+    const bolehUlang = (status === null || STATUS_ULANG.includes(status)) && !alasanBerhenti;
+    percobaan.push({ ke: i, status, pesan: isi?.error?.message ?? isi?.galat_jaringan ?? null, berhenti_karena: alasanBerhenti });
+    if (alasanBerhenti) {
+      console.error(`Gemini 429 tidak di-retry: ${alasanBerhenti}`);
+      return { ok: false, status, isi, percobaan, mulai_percobaan_terakhir: mulaiPercobaan.toISOString() };
+    }
+    if (!bolehUlang || i === GEMINI_RETRIES) {
+      return { ok: false, status, isi, percobaan, mulai_percobaan_terakhir: mulaiPercobaan.toISOString() };
+    }
     const jeda = jedaUlang(i, isi);
     console.warn(`Gemini ${status ?? 'galat jaringan'}, coba lagi dalam ${Math.round(jeda / 1000)} detik (${i}/${GEMINI_RETRIES - 1})`);
     await tunggu(jeda);
   }
-  return { ok: false, status: null, isi: null, percobaan };
+  return { ok: false, status: null, isi: null, percobaan, mulai_percobaan_terakhir: null };
+};
+
+// Perkiraan biaya satu run berdasarkan usageMetadata dan HARGA_PAID_TIER.
+// thoughtsTokenCount dihitung dengan tarif output (sesuai definisi "output" Gemini API).
+const hitungBiaya = (usageMetadata) => {
+  if (!usageMetadata) return null;
+  const inputToken = usageMetadata.promptTokenCount ?? 0;
+  const outputToken = (usageMetadata.candidatesTokenCount ?? 0) + (usageMetadata.thoughtsTokenCount ?? 0);
+  const usdInput = (inputToken / 1_000_000) * HARGA_PAID_TIER.usd_per_1m_token_input;
+  const usdOutput = (outputToken / 1_000_000) * HARGA_PAID_TIER.usd_per_1m_token_output;
+  return {
+    input_token: inputToken, output_token_termasuk_thinking: outputToken,
+    usd_input: Number(usdInput.toFixed(6)), usd_output: Number(usdOutput.toFixed(6)),
+    usd_total: Number((usdInput + usdOutput).toFixed(6)),
+    tarif: HARGA_PAID_TIER,
+  };
 };
 
 // Teks jawaban tanpa bagian thought
@@ -596,6 +653,10 @@ const jalankanRun = async (jumlahRun) => {
     const jawaban = respons.ok ? teksJawaban(respons.isi) : '';
     const parse = respons.ok ? parseTemuan(jawaban) : { ok: false, temuan: [] };
     const kandidat = respons.isi?.candidates?.[0];
+    const usageMetadata = respons.isi?.usageMetadata ?? null;
+    // durasi_bersih_ms = hanya percobaan yang berhasil/terakhir, tanpa waktu tunggu retry sebelumnya.
+    // durasi_total_ms = seluruh waktu dari run dimulai, termasuk semua jeda backoff retry.
+    const mulaiPercobaanTerakhir = respons.mulai_percobaan_terakhir ? new Date(respons.mulai_percobaan_terakhir) : mulai;
     const catatan = {
       run: n,
       model_diminta: GEMINI_MODEL,
@@ -603,11 +664,14 @@ const jalankanRun = async (jumlahRun) => {
       response_id: respons.isi?.responseId ?? null,
       mulai: mulai.toISOString(),
       selesai: selesai.toISOString(),
-      durasi_ms: selesai - mulai,
+      durasi_total_ms: selesai - mulai,
+      durasi_bersih_ms: selesai - mulaiPercobaanTerakhir,
+      jumlah_percobaan: respons.percobaan.length,
       http_status: respons.status,
       percobaan: respons.percobaan,
       finish_reason: kandidat?.finishReason ?? null,
-      usage_metadata: respons.isi?.usageMetadata ?? null,
+      usage_metadata: usageMetadata,
+      biaya_usd: hitungBiaya(usageMetadata),
       parse_ok: parse.ok,
       jumlah_temuan: parse.temuan.length,
       prompt_sha256: info.prompt.sha256,
@@ -623,7 +687,7 @@ const jalankanRun = async (jumlahRun) => {
     }
     if (!respons.ok) console.error(`Run ${n} gagal: ${catatan.galat}`);
     else if (!parse.ok) console.warn(`Run ${n}: respons bukan JSON valid (finishReason ${catatan.finish_reason}), raw tetap disimpan`);
-    else console.log(`Run ${n}: ${parse.temuan.length} temuan, ${catatan.durasi_ms} ms`);
+    else console.log(`Run ${n}: ${parse.temuan.length} temuan, ${catatan.durasi_bersih_ms} ms bersih (${catatan.durasi_total_ms} ms total)`);
 
     const { temuan, ...tanpaTemuan } = catatan;
     ringkasanRun.push({ ...tanpaTemuan, file: `run-${n}.json`, file_raw: `run-${n}.raw.json` });
@@ -638,8 +702,12 @@ const jalankanRun = async (jumlahRun) => {
     },
     generation_config: { temperature: TEMPERATURE, maxOutputTokens, responseMimeType: 'application/json', thinking: 'default model, tidak diatur' },
     jeda_antar_run_detik: GEMINI_DELAY_SEC,
+    tarif_biaya: HARGA_PAID_TIER,
     ...info,
     total_run: jumlahRun,
+    biaya_total_usd: Number(ringkasanRun.reduce((s, r) => s + (r.biaya_usd?.usd_total ?? 0), 0).toFixed(6)),
+    durasi_bersih_total_ms: ringkasanRun.reduce((s, r) => s + (r.durasi_bersih_ms ?? 0), 0),
+    durasi_total_ms: ringkasanRun.reduce((s, r) => s + (r.durasi_total_ms ?? 0), 0),
     runs: ringkasanRun,
   });
   console.log(`Selesai. Hasil tersimpan di ${relatif(folder)}/`);

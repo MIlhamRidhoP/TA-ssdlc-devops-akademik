@@ -131,6 +131,33 @@ Flash tidak pernah mengonfirmasi B1, padahal B1 ada di daftar issue Sonar dalam 
 4. **Flash lebih kritis dan lebih stabil** dari Pro: menolak hampir semua false positive Sonar dan recall yang lebih rapat antar run.
 5. **Tidak ada model yang menyentuh kerentanan Sulit selain S3.** S8 dan S12 lolos dari semua.
 
+## Durasi bersih dan perkiraan biaya 3 run Flash (dihitung ulang 2026-10-10, offline)
+
+Dihitung dari `flash/run-N.json` yang sudah tersimpan, **tanpa memanggil API lagi**. Skrip `scripts/gemini-scan.js`
+sejak commit setelah audit ini mencatat `durasi_bersih_ms` dan `biaya_usd` otomatis untuk run baru; angka di
+bawah ini dihitung manual untuk 3 run lama yang belum punya field tersebut.
+
+- **durasi_total_ms**: dari `mulai` sampai `selesai`, termasuk semua jeda backoff retry (field lama `durasi_ms`).
+- **durasi_bersih_ms**: `durasi_total_ms` dikurangi waktu backoff. Backoff dihitung dari formula di kode
+  (`10000 * 2^(percobaanKe-1)` ms untuk retry non-429) dan dikonfirmasi oleh pesan log asli saat run berjalan
+  ("coba lagi dalam 10 detik", "coba lagi dalam 20 detik").
+- **Tarif**: `gemini-3.8-flash` paid tier, USD 0.75 / 1 juta token input, USD 3.75 / 1 juta token output
+  (termasuk `thoughtsTokenCount`), berlaku sampai 2026-12-31. Sumber: https://ai.google.dev/gemini-api/docs/pricing
+  (dicek 2026-10-10). Free tier yang sebenarnya dipakai untuk run ini **tidak dikenai biaya nyata**; angka ini
+  murni perkiraan "kalau dijalankan di paid tier".
+
+| Run | Percobaan | Backoff | durasi_total | durasi_bersih | Token output+thinking | Biaya (USD, estimasi paid tier) |
+|---|---|---|---|---|---|---|
+| 1 | 1 (langsung sukses) | 0 ms | 237.207 ms | 237.207 ms | 9.673 | $0,0596 |
+| 2 | 3 (2× HTTP 503, lalu sukses) | 30.000 ms (10s + 20s) | 226.084 ms | 196.084 ms | 11.564 | $0,0667 |
+| 3 | 2 (1× HTTP 503, lalu sukses) | 10.000 ms (10s) | 122.688 ms | 112.688 ms | 16.209 | $0,0841 |
+| **Total 3 run** | – | 40.000 ms | **585.979 ms (9m 46s)** | **545.979 ms (9m 6s)** | 37.446 | **$0,2104** |
+
+Pengamatan: durasi bersih tetap didominasi oleh waktu thinking Gemini (ribuan token thinking per run), bukan oleh
+retry. Backoff hanya menyumbang 6,8% dari total waktu 3 run. Biaya per run naik seiring jumlah token thinking
+(run 3 memakai thinking terbanyak dan termahal, meski outputnya paling sedikit temuan baru dibanding run lain
+secara substansi — lihat tabel pencocokan di `LAPORAN_UJICOBA_final.md`).
+
 ## Cara reproduksi
 
 Dari root repo, dengan `.env` berisi `GEMINI_API_KEY`, `SONAR_TOKEN`, `GEMINI_MODEL=gemini-3.8-flash`, `SONAR_PROJECT=MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded`, `SONAR_BRANCH=main`:
