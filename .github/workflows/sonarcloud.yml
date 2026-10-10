@@ -28,4 +28,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.branch.name=${{ github.ref_name }}
+            -Dsonar.projectKey=MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded

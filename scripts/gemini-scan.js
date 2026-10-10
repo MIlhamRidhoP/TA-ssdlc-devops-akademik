@@ -16,10 +16,12 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'src');
 const OUTPUT_DIR = path.join(ROOT, 'gemini-output');
 const SEEDED_FILE = path.join(ROOT, 'SEEDED.md');
-const SONAR_PROJECT = 'MIlhamRidhoP_TA-ssdlc-devops-akademik';
+const SONAR_PROJECT = process.env.SONAR_PROJECT || 'MIlhamRidhoP_TA-ssdlc-devops-akademik';
 const SONAR_ORG = 'milhamridhop';
 const SONAR_BASE = 'https://sonarcloud.io';
-const SONAR_BRANCH = process.env.SONAR_BRANCH || 'eksperimen/seeded';
+const SONAR_BRANCH = process.env.SONAR_BRANCH ?? 'eksperimen/seeded';
+// Branch utama tidak perlu parameter branch di API Sonar
+const paramBranch = () => (SONAR_BRANCH && SONAR_BRANCH !== 'main' ? { branch: SONAR_BRANCH } : {});
 // Model diambil dari env supaya bisa diganti tanpa mengubah kode. Pakai nama model spesifik, bukan alias -latest.
 const GEMINI_MODEL = process.env.GEMINI_MODEL;
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -134,14 +136,14 @@ const cweDariRule = async (ruleKeys) => {
 // Ambil analisis terakhir, issue, dan hotspot untuk branch SONAR_BRANCH.
 // Kegagalan tidak menghentikan skrip, tapi dicatat di galat dan diberi peringatan.
 const ambilLaporanSonar = async () => {
-  const laporan = { branch: SONAR_BRANCH, analisis: null, issues: [], hotspots: [], cwe_rule: {}, galat: [] };
+  const laporan = { project: SONAR_PROJECT, branch: SONAR_BRANCH || 'main', analisis: null, issues: [], hotspots: [], cwe_rule: {}, galat: [] };
   if (!process.env.SONAR_TOKEN) {
     laporan.galat.push('SONAR_TOKEN tidak diset');
     console.warn('Peringatan: SONAR_TOKEN tidak diset, laporan Sonar dilewati');
     return laporan;
   }
   try {
-    const data = await ambilSonar('api/project_analyses/search', { project: SONAR_PROJECT, branch: SONAR_BRANCH, ps: '1' });
+    const data = await ambilSonar('api/project_analyses/search', { project: SONAR_PROJECT, ...paramBranch(), ps: '1' });
     const a = data.analyses?.[0];
     laporan.analisis = a ? { tanggal: a.date, revisi: a.revision ?? null } : null;
   } catch (err) {
@@ -149,14 +151,14 @@ const ambilLaporanSonar = async () => {
   }
   try {
     laporan.issues = await ambilSemuaHalaman('api/issues/search', {
-      componentKeys: SONAR_PROJECT, branch: SONAR_BRANCH, resolved: 'false',
+      componentKeys: SONAR_PROJECT, ...paramBranch(), resolved: 'false',
     }, 'issues');
   } catch (err) {
     laporan.galat.push(`issues: ${err.message}`);
   }
   try {
     laporan.hotspots = await ambilSemuaHalaman('api/hotspots/search', {
-      projectKey: SONAR_PROJECT, branch: SONAR_BRANCH,
+      projectKey: SONAR_PROJECT, ...paramBranch(),
     }, 'hotspots');
   } catch (err) {
     laporan.galat.push(`hotspots: ${err.message}`);
@@ -262,7 +264,8 @@ const siapkanPrompt = async (folder) => {
     info: {
       git,
       sonar: {
-        branch: SONAR_BRANCH,
+        project: SONAR_PROJECT,
+        branch: SONAR_BRANCH || 'main',
         analisis: laporan.analisis,
         jumlah_issue: laporan.issues.length,
         jumlah_hotspot: laporan.hotspots.length,
