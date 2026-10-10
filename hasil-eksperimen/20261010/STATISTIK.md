@@ -1,7 +1,15 @@
 # Uji Statistik — McNemar Eksak untuk Perbandingan Skenario
 
-Dasar data: 10 item positif (S1, S3, S4, S6–S12), sama dengan basis yang dipakai di
-`README.md` (S2 dan S5 dikeluarkan karena terbukti tidak bisa dieksploitasi secara dinamis).
+> **CATATAN BASIS (pembaruan 2026-10-10):** dokumen ini semula memakai 10 item positif
+> (S1, S3, S4, S6–S12). Setelah verifikasi PoC penuh, ground truth direklasifikasi menjadi
+> **9 item positif** (S6 dipindah ke "laten" karena tidak dapat dieksploitasi; lihat
+> `SKENARIO_SERANGAN.md` dan kolom Status `SEEDED.md`). S6 tidak terdeteksi model mana pun,
+> jadi memindahkannya tidak mengubah sel b maupun c pada tabel McNemar — **kesimpulan tetap
+> sama**. Tabel McNemar final (otomatis dan koreksi manual, basis 9) ada di README bagian
+> "Metrik final". Tabel di bawah (basis 10) dipertahankan sebagai penjelasan metode; angka
+> b/c/p untuk perbandingan utama identik dengan versi basis 9.
+
+Dasar data historis bagian ini: 10 item positif (S1, S3, S4, S6–S12).
 Status per item per model diambil dari tabel pencocokan final (setelah putusan manual) di
 `LAPORAN_UJICOBA_final.md` bagian 8.3.
 

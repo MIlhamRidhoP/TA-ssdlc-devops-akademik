@@ -65,7 +65,12 @@ Endpoint: `GET /api/nilai/me/khs` (mahasiswa).
 
 `GET /api/cuti` tanpa parameter sort mengembalikan **HTTP 200**, bukan 500. Dugaan "created_at ambigu" pada laporan sinkron terdahulu keliru. `ORDER BY created_at` merujuk ke alias kolom hasil SELECT (`c.created_at`), bukan kolom tabel yang ambigu, sehingga tidak error.
 
-## Metrik dengan S2 dan S5 sebagai kasus negatif
+## [DIGANTIKAN] Metrik dengan S2 dan S5 sebagai kasus negatif
+
+> **Bagian ini (basis 10 item) DIGANTIKAN oleh bagian "Metrik final" di bawah.**
+> Setelah verifikasi PoC penuh (lihat `SKENARIO_SERANGAN.md`), ground truth direklasifikasi:
+> hanya 9 item terbukti yang dihitung positif, S2 dan S5 menjadi jebakan FP, S6 menjadi laten
+> (tidak dihitung). Angka di bawah dipertahankan untuk jejak, tetapi JANGAN dipakai lagi.
 
 Ground truth positif = 10 item (S1, S3, S4, S6–S12). Deteksi atas S2 atau S5 dihitung FP. Output Skenario B = JSON Gemini saja, bukan gabungan dengan Sonar. Versi ketat: hanya "cocok" dihitung TP. Versi longgar: "cocok lokasi" ikut TP.
 
@@ -123,10 +128,106 @@ Flash tidak pernah mengonfirmasi B1, padahal B1 ada di daftar issue Sonar dalam 
 | Sedang | S4, S6, S7, S9 (4) | 0.00 | 0.50 / 0.75 / 0.75 | 0.25 / 0.50 / 0.25 |
 | Sulit | S3, S8, S12 (3) | 0.33 | 0.33 / 0.33 / 0.33 | 0.33 / 0.33 / 0.33 |
 
+## Metrik final (reklasifikasi PoC, basis 9 positif) — BERLAKU
+
+Dasar ground truth (dari kolom Status `SEEDED.md`, bukti di `SKENARIO_SERANGAN.md`):
+- **Positif (9, terbukti PoC)**: S1, S3, S4, S7, S8, S9, S10, S11, S12.
+- **Jebakan FP**: S2, S5. Deteksi atasnya dihitung false positive.
+- **Laten (tidak dihitung)**: S6. Tidak terdeteksi model mana pun di eksperimen ini.
+- Output Skenario B = JSON Gemini saja. Ketat = hanya "cocok" TP; longgar = "cocok lokasi" ikut TP.
+
+Dua kolom angka dilaporkan:
+- **Otomatis**: keluaran langsung `node scripts/gemini-scan.js --score-file=...` (reprodusibel, objektif).
+- **Koreksi manual**: setelah memperbaiki salah-petakan akibat nomor baris LLM meleset (didokumentasikan di `LAPORAN_UJICOBA_final.md` §8.4). Koreksi yang dipakai di sini: temuan Pro "pola … kutip tunggal" di `mahasiswaModel` dihitung S1 (bukan "perlu cek manual"); temuan Pro run 1 "nama mata kuliah … stored XSS" di `nilaiController.js:170` dihitung S4 (otomatis salah petakan ke S5).
+
+### Metrik utama — OTOMATIS (9 positif)
+
+| Skenario | TP | FP | FN | Precision | Recall | F1 | Rincian FP |
+|---|---|---|---|---|---|---|---|
+| SonarCloud (A) | 1 | 2 | 8 | 0.333 | 0.111 | 0.167 | S2, S5 (jebakan) |
+| Flash run 1 | 6 | 1 | 3 | 0.857 | 0.667 | 0.750 | S2 |
+| Flash run 2 | 7 | 0 | 2 | 1.000 | 0.778 | 0.875 | — |
+| Flash run 3 | 6 | 0 | 3 | 1.000 | 0.667 | 0.800 | — |
+| **Flash rata-rata** | **6.33** | **0.33** | **2.67** | **0.952** | **0.704** | **0.808** | — |
+| Pro run 1 | 1 | 2 | 8 | 0.333 | 0.111 | 0.167 | S2, S5 |
+| Pro run 2 | 4 | 2 | 5 | 0.667 | 0.444 | 0.533 | S2, S5 |
+| Pro run 3 | 2 | 0 | 7 | 1.000 | 0.222 | 0.364 | — |
+| **Pro rata-rata** | **2.33** | **1.33** | **6.67** | **0.667** | **0.259** | **0.355** | — |
+| CI (1 run, bukti integrasi) | 6 | 1 | 3 | 0.857 | 0.667 | 0.750 | S2 |
+
+Longgar (otomatis): Flash rata-rata recall 0.778, F1 0.858; Pro rata-rata recall 0.296, F1 0.400.
+
+Angka Pro otomatis rendah karena nomor baris Pro sering meleset, sehingga sebagian deteksi benar
+jatuh di "perlu cek manual" (S1 tiga run) atau salah petakan ke item lain (S4 run 1 → S5). Lihat
+kolom koreksi manual di bawah.
+
+### Metrik utama — KOREKSI MANUAL (9 positif)
+
+Flash tidak berubah dari otomatis (nomor barisnya cukup dekat sehingga pencocokan otomatis sudah
+benar). Yang berubah hanya Pro:
+
+| Skenario | TP | FP | FN | Precision | Recall | F1 | Longgar R / F1 |
+|---|---|---|---|---|---|---|---|
+| Pro run 1 | 3 | 2 | 6 | 0.600 | 0.333 | 0.429 | 0.444 / 0.533 |
+| Pro run 2 | 5 | 2 | 4 | 0.714 | 0.556 | 0.625 | 0.556 / 0.625 |
+| Pro run 3 | 3 | 0 | 6 | 1.000 | 0.333 | 0.500 | 0.444 / 0.615 |
+| **Pro rata-rata** | **3.67** | **1.33** | **5.33** | **0.771** | **0.407** | **0.521** | **0.481 / —** |
+
+Bahkan setelah koreksi manual yang menguntungkan Pro, Flash tetap unggul jelas (recall rata-rata
+0.704 vs 0.407 ketat).
+
+### Penolakan benar atas jebakan Sonar (S2, S5)
+
+Sonar melaporkan S2 dan S5 (keduanya jebakan FP). Model yang baik seharusnya TIDAK melaporkannya.
+
+| Skenario | S2, S5 ditolak |
+|---|---|
+| Sonar | 0 dari 2 (keduanya dilaporkan) |
+| Flash run 1 / 2 / 3 | 1 / 2 / 2 (total 5 dari 6) |
+| Pro run 1 / 2 / 3 | 0 / 0 / 2 (total 2 dari 6) |
+
+Flash menolak 5 dari 6 jebakan, Pro hanya 2 dari 6. Pro cenderung ikut membenarkan Sonar.
+
+### Temuan Sonar benar yang tidak dikonfirmasi model
+
+| Temuan Sonar | Tidak dikonfirmasi oleh |
+|---|---|
+| S3 (SQLi publishedBySemester) | (semua model mengonfirmasi) |
+| B1 (CORS, bawaan, bukan target) | Flash run 1, 2, 3 (Pro mengonfirmasi 3/3) |
+
+### Recall per kategori OWASP (otomatis, ketat, 9 positif)
+
+| Kategori | Item | Sonar | Flash 1/2/3 | Pro 1/2/3 |
+|---|---|---|---|---|
+| A03 Injection | S1, S3, S4 (3) | 0.33 | 1.00 / 1.00 / 1.00 | 0.33 / 0.67 / 0.67 |
+| A01 Broken Access Control | S7, S8, S9, S10, S11, S12 (6) | 0.00 | 0.50 / 0.67 / 0.50 | 0.00 / 0.33 / 0.00 |
+
+### Recall per tingkat kesulitan (otomatis, ketat, 9 positif)
+
+| Tingkat | Item | Sonar | Flash 1/2/3 | Pro 1/2/3 |
+|---|---|---|---|---|
+| Mudah | S1, S10, S11 (3) | 0.00 | 1.00 / 1.00 / 0.67 | 0.00 / 0.33 / 0.00 |
+| Sedang | S4, S7, S9 (3) | 0.00 | 0.67 / 1.00 / 1.00 | 0.00 / 0.67 / 0.33 |
+| Sulit | S3, S8, S12 (3) | 0.33 | 0.33 / 0.33 / 0.33 | 0.33 / 0.33 / 0.33 |
+
+### McNemar eksak, basis mayoritas 3 run (n=9)
+
+Status item = terdeteksi di ≥2 dari 3 run (ketat). b = hanya model pertama, c = hanya model kedua.
+Rincian metode dan keterbatasan di `STATISTIK.md`.
+
+| Perbandingan | Otomatis (b, c, p) | Koreksi manual (b, c, p) |
+|---|---|---|
+| Flash vs Sonar | 6, 0, **0.0313** | 6, 0, **0.0313** |
+| Pro vs Sonar | 1, 0, 1.0000 | 2, 0, 0.5000 |
+| Flash vs Pro | 5, 0, 0.0625 | 4, 0, 0.1250 |
+
+Hanya Flash vs Sonar signifikan pada α=0,05, konsisten di kedua cara hitung. Perbedaan Pro vs
+Sonar dan Flash vs Pro tidak signifikan pada n=9 (lihat keterbatasan di `STATISTIK.md`).
+
 ## Pengamatan (deskriptif, n kecil, tanpa uji statistik)
 
-1. **S2 dan S5 terbukti negatif** lewat uji dinamis. Keduanya menurunkan precision Sonar ke 0.333 karena menjadi dua-satunya "deteksi" Sonar selain S3 dan B1.
-2. **Kekuatan utama LLM ada di A03 Injection**, dengan recall sempurna di semua run. Keunggulan ini sebagian overlap dengan Sonar, yang juga menangkap S3.
+1. **S2 dan S5 kini jebakan FP** (terbukti tidak dapat dieksploitasi lewat PoC). Sonar melaporkan keduanya, sehingga precision Sonar hanya 0.333. Flash menolak 5 dari 6, Pro hanya 2 dari 6.
+2. **Kekuatan utama LLM ada di A03 Injection**, dengan recall Flash sempurna di semua run. Keunggulan ini sebagian overlap dengan Sonar, yang juga menangkap S3.
 3. **Kerentanan A01 (logika akses) adalah pembeda.** Sonar 0, Pro hampir 0, Flash paling baik tetapi tetap di bawah 0.6.
 4. **Flash lebih kritis dan lebih stabil** dari Pro: menolak hampir semua false positive Sonar dan recall yang lebih rapat antar run.
 5. **Tidak ada model yang menyentuh kerentanan Sulit selain S3.** S8 dan S12 lolos dari semua.
