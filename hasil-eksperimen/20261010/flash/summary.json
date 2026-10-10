@@ -1,0 +1,179 @@
+{
+  "dibuat": "2026-10-10T08:37:12.843Z",
+  "model": "gemini-3.8-flash",
+  "info_model": {
+    "version": "3.0",
+    "display_name": "Gemini 3.8 Flash",
+    "output_token_limit": 65536,
+    "thinking": true
+  },
+  "generation_config": {
+    "temperature": 0.2,
+    "maxOutputTokens": 65536,
+    "responseMimeType": "application/json",
+    "thinking": "default model, tidak diatur"
+  },
+  "jeda_antar_run_detik": 60,
+  "git": {
+    "head": "5cbf05c928cd375fa51f773a03ca4779dde42e70",
+    "branch": "eksperimen/seeded",
+    "src_berubah": false
+  },
+  "sonar": {
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "branch": "main",
+    "analisis": {
+      "tanggal": "2026-10-10T08:23:47+0000",
+      "revisi": "5cbf05c928cd375fa51f773a03ca4779dde42e70"
+    },
+    "jumlah_issue": 26,
+    "jumlah_hotspot": 0,
+    "jumlah_temuan_keamanan": 5,
+    "galat": []
+  },
+  "prompt": {
+    "file": "prompt-lengkap.txt",
+    "sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+    "karakter": 92656,
+    "perkiraan_token": 23164
+  },
+  "total_run": 3,
+  "runs": [
+    {
+      "run": 1,
+      "model_diminta": "gemini-3.8-flash",
+      "model_version": "gemini-3.8-flash",
+      "response_id": "dvbJatPrNbfNjuMPs9eFwAY",
+      "mulai": "2026-10-10T08:25:26.841Z",
+      "selesai": "2026-10-10T08:29:24.048Z",
+      "durasi_ms": 237207,
+      "http_status": 200,
+      "percobaan": [
+        {
+          "ke": 1,
+          "status": 200
+        }
+      ],
+      "finish_reason": "STOP",
+      "usage_metadata": {
+        "promptTokenCount": 31102,
+        "candidatesTokenCount": 883,
+        "totalTokenCount": 40775,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 31102
+          }
+        ],
+        "thoughtsTokenCount": 8790,
+        "serviceTier": "standard"
+      },
+      "parse_ok": true,
+      "jumlah_temuan": 8,
+      "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+      "sonar_issue_dikirim": 26,
+      "sonar_hotspot_dikirim": 0,
+      "galat": null,
+      "file": "run-1.json",
+      "file_raw": "run-1.raw.json"
+    },
+    {
+      "run": 2,
+      "model_diminta": "gemini-3.8-flash",
+      "model_version": "gemini-3.8-flash",
+      "response_id": "w_fJasuyNL7njuMP1dWk4Qw",
+      "mulai": "2026-10-10T08:30:24.064Z",
+      "selesai": "2026-10-10T08:34:10.148Z",
+      "durasi_ms": 226084,
+      "http_status": 200,
+      "percobaan": [
+        {
+          "ke": 1,
+          "status": 503,
+          "pesan": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        },
+        {
+          "ke": 2,
+          "status": 503,
+          "pesan": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        },
+        {
+          "ke": 3,
+          "status": 200
+        }
+      ],
+      "finish_reason": "STOP",
+      "usage_metadata": {
+        "promptTokenCount": 31102,
+        "candidatesTokenCount": 1121,
+        "totalTokenCount": 42666,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 31102
+          }
+        ],
+        "thoughtsTokenCount": 10443,
+        "serviceTier": "standard"
+      },
+      "parse_ok": true,
+      "jumlah_temuan": 8,
+      "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+      "sonar_issue_dikirim": 26,
+      "sonar_hotspot_dikirim": 0,
+      "galat": null,
+      "file": "run-2.json",
+      "file_raw": "run-2.raw.json"
+    },
+    {
+      "run": 3,
+      "model_diminta": "gemini-3.8-flash",
+      "model_version": "gemini-3.8-flash",
+      "response_id": "2PjJaoCEIqTHpgeYnbXJBw",
+      "mulai": "2026-10-10T08:35:10.153Z",
+      "selesai": "2026-10-10T08:37:12.841Z",
+      "durasi_ms": 122688,
+      "http_status": 200,
+      "percobaan": [
+        {
+          "ke": 1,
+          "status": 503,
+          "pesan": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        },
+        {
+          "ke": 2,
+          "status": 200
+        }
+      ],
+      "finish_reason": "STOP",
+      "usage_metadata": {
+        "promptTokenCount": 31102,
+        "candidatesTokenCount": 920,
+        "totalTokenCount": 47311,
+        "cachedContentTokenCount": 29055,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 31102
+          }
+        ],
+        "cacheTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 29055
+          }
+        ],
+        "thoughtsTokenCount": 15289,
+        "serviceTier": "standard"
+      },
+      "parse_ok": true,
+      "jumlah_temuan": 8,
+      "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+      "sonar_issue_dikirim": 26,
+      "sonar_hotspot_dikirim": 0,
+      "galat": null,
+      "file": "run-3.json",
+      "file_raw": "run-3.raw.json"
+    }
+  ]
+}

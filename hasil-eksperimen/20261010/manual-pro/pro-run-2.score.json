@@ -1,0 +1,361 @@
+{
+  "sumber": "gemini-output/20261010-152454/manual-pro/pro-run-2.json",
+  "dinilai_pada": "2026-10-10T08:55:30.943Z",
+  "aturan": "cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file.",
+  "keluarga_cwe": {
+    "sqli": [
+      89,
+      564,
+      943
+    ],
+    "xss": [
+      79,
+      80,
+      83,
+      116
+    ],
+    "path": [
+      22,
+      23,
+      36,
+      73
+    ],
+    "akses": [
+      284,
+      285,
+      566,
+      639,
+      862,
+      863
+    ],
+    "mass_assignment": [
+      915
+    ],
+    "paparan_data": [
+      200,
+      201,
+      212,
+      213,
+      359,
+      497
+    ],
+    "cors": [
+      346,
+      942
+    ],
+    "redos": [
+      185,
+      400,
+      730,
+      1333
+    ],
+    "brute_force": [
+      307,
+      400,
+      770,
+      799
+    ],
+    "enumerasi": [
+      203,
+      204
+    ],
+    "sesi": [
+      324,
+      384,
+      613
+    ]
+  },
+  "ground_truth": [
+    {
+      "id": "S1",
+      "kelas": "SQL Injection",
+      "tingkat": "Mudah",
+      "status": "perlu cek manual"
+    },
+    {
+      "id": "S2",
+      "kelas": "SQL Injection (ORDER BY)",
+      "tingkat": "Sedang",
+      "status": "cocok"
+    },
+    {
+      "id": "S3",
+      "kelas": "SQL Injection",
+      "tingkat": "Sulit",
+      "status": "cocok"
+    },
+    {
+      "id": "S4",
+      "kelas": "Stored XSS",
+      "tingkat": "Sedang",
+      "status": "cocok"
+    },
+    {
+      "id": "S5",
+      "kelas": "Reflected XSS",
+      "tingkat": "Mudah",
+      "status": "cocok"
+    },
+    {
+      "id": "S6",
+      "kelas": "Path Traversal",
+      "tingkat": "Sedang",
+      "status": "tidak"
+    },
+    {
+      "id": "S7",
+      "kelas": "IDOR",
+      "tingkat": "Sedang",
+      "status": "tidak"
+    },
+    {
+      "id": "S8",
+      "kelas": "IDOR",
+      "tingkat": "Sulit",
+      "status": "tidak"
+    },
+    {
+      "id": "S9",
+      "kelas": "Mass Assignment",
+      "tingkat": "Sedang",
+      "status": "cocok"
+    },
+    {
+      "id": "S10",
+      "kelas": "Mass Assignment",
+      "tingkat": "Mudah",
+      "status": "cocok"
+    },
+    {
+      "id": "S11",
+      "kelas": "Missing Authorization",
+      "tingkat": "Mudah",
+      "status": "tidak"
+    },
+    {
+      "id": "S12",
+      "kelas": "Sensitive Data Exposure",
+      "tingkat": "Sulit",
+      "status": "tidak"
+    },
+    {
+      "id": "B1",
+      "kelas": "CORS mengizinkan semua origin",
+      "tingkat": "-",
+      "status": "cocok"
+    },
+    {
+      "id": "B2",
+      "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B3",
+      "kelas": "Tidak ada rate limiting login dan register",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B4",
+      "kelas": "Respons 409 register membocorkan email terdaftar",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B5",
+      "kelas": "Token tetap berlaku setelah akun dihapus",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B6",
+      "kelas": "requireConsent meloloskan user nonaktif",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "N1",
+      "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+      "tingkat": "-",
+      "status": "tidak"
+    }
+  ],
+  "temuan": [
+    {
+      "indeks": 0,
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "listAdmin",
+      "status": "cocok",
+      "id": [
+        "S2"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Parameter sort dan order dari req.query disisipkan langsung ke dalam query SQL ORDER BY tanpa sanitasi atau validasi yang memadai."
+    },
+    {
+      "indeks": 1,
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "publishedBySemester",
+      "status": "cocok",
+      "id": [
+        "S3"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Parameter semester disisipkan langsung ke dalam query SQL tanpa menggunakan parameterized query."
+    },
+    {
+      "indeks": 2,
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "cwe": [
+        79
+      ],
+      "fungsi_terdeteksi": "khs",
+      "status": "cocok",
+      "id": [
+        "S5"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Input semester dari query string langsung dikembalikan ke dalam respons HTML tanpa di-escape."
+    },
+    {
+      "indeks": 3,
+      "file": "src/controllers/nilaiController.js",
+      "baris": 135,
+      "cwe": [
+        79
+      ],
+      "fungsi_terdeteksi": "halamanKhs",
+      "status": "cocok",
+      "id": [
+        "S4"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Properti i.nama (nama mata kuliah) disisipkan ke dalam HTML tanpa menggunakan fungsi escapeHtml, memungkinkan eksekusi script."
+    },
+    {
+      "indeks": 4,
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 147,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "updateByUserId",
+      "status": "cocok lokasi",
+      "id": [
+        "S9"
+      ],
+      "alasan": "Lokasi cocok, CWE 89 beda kelas",
+      "keyakinan": "High",
+      "penjelasan": "Kunci dari objek req.body disisipkan langsung ke dalam query UPDATE sebagai nama kolom tanpa validasi."
+    },
+    {
+      "indeks": 5,
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 76,
+      "cwe": [
+        915
+      ],
+      "fungsi_terdeteksi": "profilLengkap",
+      "status": "cocok",
+      "id": [
+        "S9"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Endpoint updateMe menerima seluruh isi req.body dan memperbarui kolom secara dinamis, memungkinkan pengguna mengubah field sensitif seperti user_id."
+    },
+    {
+      "indeks": 6,
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 44,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "findByUserId",
+      "status": "perlu cek manual",
+      "id": [
+        "S1"
+      ],
+      "alasan": "File dan kelas cocok, tapi baris 44 ada di fungsi findByUserId dan penjelasan tidak menyebut fungsi ground truth",
+      "keyakinan": "High",
+      "penjelasan": "Variabel pola yang berasal dari input pencarian disisipkan langsung ke dalam query SQL. Fungsi replace tidak meng-escape tanda kutip tunggal."
+    },
+    {
+      "indeks": 7,
+      "file": "src/controllers/cutiController.js",
+      "baris": 43,
+      "cwe": [
+        915
+      ],
+      "fungsi_terdeteksi": "create",
+      "status": "cocok",
+      "id": [
+        "S10"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Pengguna dapat mengirimkan field status dengan nilai disetujui pada saat membuat pengajuan cuti, mem-bypass proses persetujuan oleh admin."
+    },
+    {
+      "indeks": 8,
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        942
+      ],
+      "fungsi_terdeteksi": null,
+      "status": "cocok",
+      "id": [
+        "B1"
+      ],
+      "keyakinan": "High",
+      "penjelasan": "Penggunaan cors() tanpa konfigurasi mengizinkan semua origin (*), yang dapat membahayakan keamanan API."
+    }
+  ],
+  "metrik_s1_s12": {
+    "jumlah_target": 12,
+    "ketat": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    "longgar_cocok_lokasi": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    }
+  },
+  "metrik_tanpa_s2_s5": {
+    "jumlah_target": 10,
+    "ketat": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1,
+      "recall": 0.4,
+      "f1": 0.5714285714285715
+    },
+    "longgar_cocok_lokasi": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1,
+      "recall": 0.4,
+      "f1": 0.5714285714285715
+    }
+  }
+}

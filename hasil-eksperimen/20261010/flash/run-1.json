@@ -1,0 +1,110 @@
+{
+  "run": 1,
+  "model_diminta": "gemini-3.8-flash",
+  "model_version": "gemini-3.8-flash",
+  "response_id": "dvbJatPrNbfNjuMPs9eFwAY",
+  "mulai": "2026-10-10T08:25:26.841Z",
+  "selesai": "2026-10-10T08:29:24.048Z",
+  "durasi_ms": 237207,
+  "http_status": 200,
+  "percobaan": [
+    {
+      "ke": 1,
+      "status": 200
+    }
+  ],
+  "finish_reason": "STOP",
+  "usage_metadata": {
+    "promptTokenCount": 31102,
+    "candidatesTokenCount": 883,
+    "totalTokenCount": 40775,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 31102
+      }
+    ],
+    "thoughtsTokenCount": 8790,
+    "serviceTier": "standard"
+  },
+  "parse_ok": true,
+  "jumlah_temuan": 8,
+  "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+  "sonar_issue_dikirim": 26,
+  "sonar_hotspot_dikirim": 0,
+  "galat": null,
+  "temuan": [
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection",
+      "keyakinan": "high",
+      "penjelasan": "Parameter sort dan order pada query listAdmin diambil langsung dari req.query di cutiController.js tanpa validasi dan digabungkan langsung ke klausa ORDER BY menggunakan template literal."
+    },
+    {
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection",
+      "keyakinan": "high",
+      "penjelasan": "Parameter semester pada fungsi publishedBySemester tidak disanitisasi atau diparameterisasi, melainkan langsung diinterpolasi ke dalam query SQL (ks.semester = '${semester}'). Di controller, nilai semester dari req.query tidak divalidasi dengan regex."
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 44,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection",
+      "keyakinan": "high",
+      "penjelasan": "Fungsi listFrom menginterpolasi variabel pola langsung ke dalam string query SQL ('${pola}'). Nilai pola di listQuery.js tidak melakukan escaping terhadap tanda petik tunggal, memungkinkan SQL Injection melalui query parameter q."
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 119,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection",
+      "keyakinan": "high",
+      "penjelasan": "Fungsi updateByUserId mengambil semua properti dari req.body dan menggabungkan nama-nama kolom langsung ke query UPDATE ('${k} = ...') tanpa validasi whitelist kolom, memungkinkan SQL Injection dan modifikasi kolom terlarang (Mass Assignment)."
+    },
+    {
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 19,
+      "kategori_owasp": "A01:2021-Broken Access Control",
+      "cwe": "CWE-862",
+      "jenis": "Missing Authorization",
+      "keyakinan": "high",
+      "penjelasan": "Endpoint PUT /api/cuti/:id/status tidak memiliki middleware authorize('admin'), memungkinkan pengguna dengan role mahasiswa untuk mengubah status persetujuan cuti."
+    },
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 55,
+      "kategori_owasp": "A01:2021-Broken Access Control",
+      "cwe": "CWE-639",
+      "jenis": "Insecure Direct Object Reference (IDOR)",
+      "keyakinan": "high",
+      "penjelasan": "Fungsi findOwned menerima argumen mahasiswaId namun tidak menyertakannya pada klausa WHERE query SQL (hanya memeriksa c.id = $2). Akibatnya, mahasiswa dapat membaca rincian pengajuan cuti milik mahasiswa lain melalui GET /api/cuti/me/:id."
+    },
+    {
+      "file": "src/controllers/cutiController.js",
+      "baris": 44,
+      "kategori_owasp": "A04:2021-Insecure Design",
+      "cwe": "CWE-915",
+      "jenis": "Mass Assignment",
+      "keyakinan": "high",
+      "penjelasan": "Controller mengizinkan field status dari req.body saat pembuatan cuti baru (req.body?.status), sehingga pemohon cuti dapat langsung menetapkan status 'disetujui' tanpa verifikasi admin."
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 133,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-79",
+      "jenis": "Cross-Site Scripting (Stored XSS)",
+      "keyakinan": "medium",
+      "penjelasan": "Pada fungsi pembentukan HTML halamanKhs, properti i.nama (nama mata kuliah) diinterpolasi langsung ke dalam elemen <td> tanpa melalui fungsi escapeHtml, berpotensi memicu Stored XSS jika nama mata kuliah memuat kode HTML/JavaScript."
+    }
+  ]
+}

@@ -1,0 +1,344 @@
+{
+  "sumber": "run-2.json",
+  "aturan": "cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file.",
+  "keluarga_cwe": {
+    "sqli": [
+      89,
+      564,
+      943
+    ],
+    "xss": [
+      79,
+      80,
+      83,
+      116
+    ],
+    "path": [
+      22,
+      23,
+      36,
+      73
+    ],
+    "akses": [
+      284,
+      285,
+      566,
+      639,
+      862,
+      863
+    ],
+    "mass_assignment": [
+      915
+    ],
+    "paparan_data": [
+      200,
+      201,
+      212,
+      213,
+      359,
+      497
+    ],
+    "cors": [
+      346,
+      942
+    ],
+    "redos": [
+      185,
+      400,
+      730,
+      1333
+    ],
+    "brute_force": [
+      307,
+      400,
+      770,
+      799
+    ],
+    "enumerasi": [
+      203,
+      204
+    ],
+    "sesi": [
+      324,
+      384,
+      613
+    ]
+  },
+  "ground_truth": [
+    {
+      "id": "S1",
+      "kelas": "SQL Injection",
+      "tingkat": "Mudah",
+      "status": "cocok"
+    },
+    {
+      "id": "S2",
+      "kelas": "SQL Injection (ORDER BY)",
+      "tingkat": "Sedang",
+      "status": "tidak"
+    },
+    {
+      "id": "S3",
+      "kelas": "SQL Injection",
+      "tingkat": "Sulit",
+      "status": "cocok"
+    },
+    {
+      "id": "S4",
+      "kelas": "Stored XSS",
+      "tingkat": "Sedang",
+      "status": "cocok"
+    },
+    {
+      "id": "S5",
+      "kelas": "Reflected XSS",
+      "tingkat": "Mudah",
+      "status": "tidak"
+    },
+    {
+      "id": "S6",
+      "kelas": "Path Traversal",
+      "tingkat": "Sedang",
+      "status": "tidak"
+    },
+    {
+      "id": "S7",
+      "kelas": "IDOR",
+      "tingkat": "Sedang",
+      "status": "cocok"
+    },
+    {
+      "id": "S8",
+      "kelas": "IDOR",
+      "tingkat": "Sulit",
+      "status": "tidak"
+    },
+    {
+      "id": "S9",
+      "kelas": "Mass Assignment",
+      "tingkat": "Sedang",
+      "status": "cocok"
+    },
+    {
+      "id": "S10",
+      "kelas": "Mass Assignment",
+      "tingkat": "Mudah",
+      "status": "cocok"
+    },
+    {
+      "id": "S11",
+      "kelas": "Missing Authorization",
+      "tingkat": "Mudah",
+      "status": "cocok"
+    },
+    {
+      "id": "S12",
+      "kelas": "Sensitive Data Exposure",
+      "tingkat": "Sulit",
+      "status": "tidak"
+    },
+    {
+      "id": "B1",
+      "kelas": "CORS mengizinkan semua origin",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B2",
+      "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B3",
+      "kelas": "Tidak ada rate limiting login dan register",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B4",
+      "kelas": "Respons 409 register membocorkan email terdaftar",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B5",
+      "kelas": "Token tetap berlaku setelah akun dihapus",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "B6",
+      "kelas": "requireConsent meloloskan user nonaktif",
+      "tingkat": "-",
+      "status": "tidak"
+    },
+    {
+      "id": "N1",
+      "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+      "tingkat": "-",
+      "status": "tidak"
+    }
+  ],
+  "temuan": [
+    {
+      "indeks": 0,
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "publishedBySemester",
+      "status": "cocok",
+      "id": [
+        "S3"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Parameter semester pada fungsi publishedBySemester digabungkan langsung ke dalam template string SQL tanpa sanitasi atau parameter query ($), dan input req.query.semester pada nilaiController.khs tidak divalidasi dengan regex."
+    },
+    {
+      "indeks": 1,
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 44,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "findByUserId",
+      "status": "cocok",
+      "id": [
+        "S1"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Variabel pola diinterpolasi langsung ke dalam query SQL mentah pada fungsi listFrom tanpa parameterized query, sedangkan listQuery hanya melakukan escape karakter backslash, persen, dan underscore tanpa meng-escape tanda petik tunggal."
+    },
+    {
+      "indeks": 2,
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 114,
+      "cwe": [
+        89
+      ],
+      "fungsi_terdeteksi": "update",
+      "status": "perlu cek manual",
+      "id": [
+        "S1"
+      ],
+      "alasan": "File dan kelas cocok, tapi baris 114 ada di fungsi update dan penjelasan tidak menyebut fungsi ground truth",
+      "keyakinan": "high",
+      "penjelasan": "Nama kolom pada klausa SET diekstrak dari kunci req.body tanpa validasi atau whitelist lalu langsung digabungkan ke string SQL, membuka celah injeksi SQL melalui nama properti JSON."
+    },
+    {
+      "indeks": 3,
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 59,
+      "cwe": [
+        915
+      ],
+      "fungsi_terdeteksi": "ageFrom",
+      "status": "cocok",
+      "id": [
+        "S9"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Method updateMe menyalin seluruh req.body ke data tanpa pembatasan daftar field (whitelist), memungkinkan mahasiswa memodifikasi kolom sensitif seperti user_id, nim, atau is_minor secara langsung."
+    },
+    {
+      "indeks": 4,
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "cwe": [
+        862
+      ],
+      "fungsi_terdeteksi": null,
+      "status": "cocok",
+      "id": [
+        "S11"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Route PUT /api/cuti/:id/status tidak memiliki middleware authorize('admin'), sehingga pengguna mana pun yang terotentikasi (termasuk role mahasiswa) dapat menyetujui atau menolak pengajuan cuti."
+    },
+    {
+      "indeks": 5,
+      "file": "src/models/cutiModel.js",
+      "baris": 44,
+      "cwe": [
+        639
+      ],
+      "fungsi_terdeteksi": "listDetailByMahasiswa",
+      "status": "cocok",
+      "id": [
+        "S7"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Fungsi findOwned menerima parameter mahasiswaId namun tidak menyertakannya dalam kondisi WHERE query SQL, sehingga mahasiswa dapat mengakses data cuti milik mahasiswa lain melalui endpoint /api/cuti/me/:id."
+    },
+    {
+      "indeks": 6,
+      "file": "src/controllers/cutiController.js",
+      "baris": 39,
+      "cwe": [
+        915
+      ],
+      "fungsi_terdeteksi": "create",
+      "status": "cocok",
+      "id": [
+        "S10"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Fungsi create mengambil nilai status langsung dari req.body jika tersedia, memungkinkan pemohon cuti untuk memanipulasi status pengajuan langsung menjadi 'disetujui' saat pembuatan."
+    },
+    {
+      "indeks": 7,
+      "file": "src/controllers/nilaiController.js",
+      "baris": 139,
+      "cwe": [
+        79
+      ],
+      "fungsi_terdeteksi": "halamanKhs",
+      "status": "cocok",
+      "id": [
+        "S4"
+      ],
+      "keyakinan": "high",
+      "penjelasan": "Pada pembuatan tabel HTML fungsi halamanKhs, nilai i.nama (nama mata kuliah) disisipkan langsung ke dalam respons HTML tanpa melalui fungsi escapeHtml."
+    }
+  ],
+  "metrik_s1_s12": {
+    "jumlah_target": 12,
+    "ketat": {
+      "tp": 7,
+      "fp": 0,
+      "fn": 5,
+      "precision": 1,
+      "recall": 0.5833333333333334,
+      "f1": 0.7368421052631579
+    },
+    "longgar_cocok_lokasi": {
+      "tp": 7,
+      "fp": 0,
+      "fn": 5,
+      "precision": 1,
+      "recall": 0.5833333333333334,
+      "f1": 0.7368421052631579
+    }
+  },
+  "metrik_tanpa_s2_s5": {
+    "jumlah_target": 10,
+    "ketat": {
+      "tp": 7,
+      "fp": 0,
+      "fn": 3,
+      "precision": 1,
+      "recall": 0.7,
+      "f1": 0.8235294117647058
+    },
+    "longgar_cocok_lokasi": {
+      "tp": 7,
+      "fp": 0,
+      "fn": 3,
+      "precision": 1,
+      "recall": 0.7,
+      "f1": 0.8235294117647058
+    }
+  }
+}

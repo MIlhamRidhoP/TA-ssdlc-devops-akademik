@@ -1,0 +1,120 @@
+{
+  "run": 2,
+  "model_diminta": "gemini-3.8-flash",
+  "model_version": "gemini-3.8-flash",
+  "response_id": "w_fJasuyNL7njuMP1dWk4Qw",
+  "mulai": "2026-10-10T08:30:24.064Z",
+  "selesai": "2026-10-10T08:34:10.148Z",
+  "durasi_ms": 226084,
+  "http_status": 200,
+  "percobaan": [
+    {
+      "ke": 1,
+      "status": 503,
+      "pesan": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    {
+      "ke": 2,
+      "status": 503,
+      "pesan": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    {
+      "ke": 3,
+      "status": 200
+    }
+  ],
+  "finish_reason": "STOP",
+  "usage_metadata": {
+    "promptTokenCount": 31102,
+    "candidatesTokenCount": 1121,
+    "totalTokenCount": 42666,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 31102
+      }
+    ],
+    "thoughtsTokenCount": 10443,
+    "serviceTier": "standard"
+  },
+  "parse_ok": true,
+  "jumlah_temuan": 8,
+  "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+  "sonar_issue_dikirim": 26,
+  "sonar_hotspot_dikirim": 0,
+  "galat": null,
+  "temuan": [
+    {
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection",
+      "keyakinan": "high",
+      "penjelasan": "Parameter semester pada fungsi publishedBySemester digabungkan langsung ke dalam template string SQL tanpa sanitasi atau parameter query ($), dan input req.query.semester pada nilaiController.khs tidak divalidasi dengan regex."
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 44,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection",
+      "keyakinan": "high",
+      "penjelasan": "Variabel pola diinterpolasi langsung ke dalam query SQL mentah pada fungsi listFrom tanpa parameterized query, sedangkan listQuery hanya melakukan escape karakter backslash, persen, dan underscore tanpa meng-escape tanda petik tunggal."
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 114,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-89",
+      "jenis": "SQL Injection via Dynamic Column Names",
+      "keyakinan": "high",
+      "penjelasan": "Nama kolom pada klausa SET diekstrak dari kunci req.body tanpa validasi atau whitelist lalu langsung digabungkan ke string SQL, membuka celah injeksi SQL melalui nama properti JSON."
+    },
+    {
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 59,
+      "kategori_owasp": "A01:2021-Broken Access Control",
+      "cwe": "CWE-915",
+      "jenis": "Mass Assignment",
+      "keyakinan": "high",
+      "penjelasan": "Method updateMe menyalin seluruh req.body ke data tanpa pembatasan daftar field (whitelist), memungkinkan mahasiswa memodifikasi kolom sensitif seperti user_id, nim, atau is_minor secara langsung."
+    },
+    {
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "kategori_owasp": "A01:2021-Broken Access Control",
+      "cwe": "CWE-862",
+      "jenis": "Missing Function Level Access Control",
+      "keyakinan": "high",
+      "penjelasan": "Route PUT /api/cuti/:id/status tidak memiliki middleware authorize('admin'), sehingga pengguna mana pun yang terotentikasi (termasuk role mahasiswa) dapat menyetujui atau menolak pengajuan cuti."
+    },
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 44,
+      "kategori_owasp": "A01:2021-Broken Access Control",
+      "cwe": "CWE-639",
+      "jenis": "Insecure Direct Object Reference (IDOR)",
+      "keyakinan": "high",
+      "penjelasan": "Fungsi findOwned menerima parameter mahasiswaId namun tidak menyertakannya dalam kondisi WHERE query SQL, sehingga mahasiswa dapat mengakses data cuti milik mahasiswa lain melalui endpoint /api/cuti/me/:id."
+    },
+    {
+      "file": "src/controllers/cutiController.js",
+      "baris": 39,
+      "kategori_owasp": "A01:2021-Broken Access Control",
+      "cwe": "CWE-915",
+      "jenis": "Mass Assignment / Privilege Escalation",
+      "keyakinan": "high",
+      "penjelasan": "Fungsi create mengambil nilai status langsung dari req.body jika tersedia, memungkinkan pemohon cuti untuk memanipulasi status pengajuan langsung menjadi 'disetujui' saat pembuatan."
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 139,
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": "CWE-79",
+      "jenis": "Stored Cross-Site Scripting (XSS)",
+      "keyakinan": "high",
+      "penjelasan": "Pada pembuatan tabel HTML fungsi halamanKhs, nilai i.nama (nama mata kuliah) disisipkan langsung ke dalam respons HTML tanpa melalui fungsi escapeHtml."
+    }
+  ]
+}

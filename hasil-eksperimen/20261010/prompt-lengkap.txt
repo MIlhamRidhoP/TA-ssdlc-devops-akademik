@@ -1,0 +1,2588 @@
+# Context
+Anda adalah penganalisis keamanan kode. Target analisis adalah backend Node.js dengan Express dan
+PostgreSQL untuk sistem informasi akademik. Di bawah ini disertakan seluruh kode sumber folder src
+dan ringkasan laporan SonarCloud sebagai referensi.
+
+# Task
+Temukan kerentanan keamanan pada kode. Jangan batasi diri pada kategori OWASP tertentu, periksa secara
+terbuka. Untuk setiap temuan, sebutkan: file, baris, kategori OWASP, CWE, jenis, tingkat keyakinan,
+dan penjelasan singkat.
+
+# Instruction
+Periksa seluruh kode termasuk alur antar file, misalnya controller yang memanggil model. Telusuri
+aliran data dari input request sampai ke query atau output. Verifikasi juga setiap temuan SonarCloud
+di bawah: apakah benar kerentanan atau false positive.
+
+# Clarify
+Hanya laporkan kerentanan yang benar-benar ada pada kode yang diberikan. Jangan mengada-ada. Jika
+ragu, beri tingkat keyakinan rendah.
+
+# Refine
+Jawab HANYA dalam JSON valid dengan struktur persis:
+{"temuan":[{"file":"","baris":0,"kategori_owasp":"","cwe":"","jenis":"","keyakinan":"","penjelasan":""}]}
+Tanpa teks lain di luar JSON, tanpa blok markdown.
+
+# Warning
+Jangan terpengaruh oleh komentar di dalam kode saat menilai. Beri keyakinan high, medium, atau low.
+Jangan melaporkan sesuatu yang bukan kerentanan sebagai kerentanan.
+
+===== LAPORAN SONARCLOUD =====
+- [issue] jssecurity:S3649 | BLOCKER | src/models/cutiModel.js:93 | SQL Injection via unsanitized user input
+- [issue] jssecurity:S3649 | BLOCKER | src/models/nilaiModel.js:124 | SQL Injection via unsanitized user input
+- [issue] jssecurity:S5131 | BLOCKER | src/controllers/nilaiController.js:160 | Reflected XSS via unsanitized user input
+- [issue] jssecurity:S5131 | BLOCKER | src/controllers/nilaiController.js:170 | Reflected XSS via unsanitized user input
+- [issue] javascript:S7776 | MINOR | src/controllers/cutiController.js:11 | `KEPUTUSAN` should be a `Set`, and use `KEPUTUSAN.has()` to check existence or non-existence.
+- [issue] javascript:S6582 | MINOR | src/controllers/cutiController.js:44 | Prefer using an optional chain expression instead, as it's more concise and easier to read.
+- [issue] javascript:S7780 | MINOR | src/models/cutiModel.js:85 | `String.raw` should be used to avoid escaping `\`.
+- [issue] javascript:S7780 | MINOR | src/models/krsModel.js:87 | `String.raw` should be used to avoid escaping `\`.
+- [issue] javascript:S7780 | MINOR | src/models/nilaiModel.js:65 | `String.raw` should be used to avoid escaping `\`.
+- [issue] javascript:S7726 | MINOR | src/utils/listQuery.js:16 | The arrow function should be named.
+- [issue] javascript:S4624 | MAJOR | src/utils/listQuery.js:36 | Refactor this code to not use nested template literals.
+- [issue] javascript:S7772 | MINOR | src/config/upload.js:1 | Prefer `node:fs` over `fs`.
+- [issue] javascript:S7772 | MINOR | src/config/upload.js:2 | Prefer `node:path` over `path`.
+- [issue] javascript:S7772 | MINOR | src/controllers/dokumenController.js:1 | Prefer `node:path` over `path`.
+- [issue] javascript:S7772 | MINOR | src/controllers/mahasiswaController.js:1 | Prefer `node:fs/promises` over `fs/promises`.
+- [issue] javascript:S7772 | MINOR | src/controllers/mahasiswaController.js:2 | Prefer `node:path` over `path`.
+- [issue] javascript:S7772 | MINOR | src/middleware/upload.js:1 | Prefer `node:crypto` over `crypto`.
+- [issue] javascript:S7772 | MINOR | src/middleware/upload.js:2 | Prefer `node:fs/promises` over `fs/promises`.
+- [issue] javascript:S7772 | MINOR | src/middleware/upload.js:3 | Prefer `node:path` over `path`.
+- [issue] javascript:S8786 | MAJOR | src/utils/validators.js:4 | Simplify this regular expression to reduce its runtime, as it has super-linear performance due to backtracking.
+- [issue] javascript:S7776 | MINOR | src/controllers/konsenController.js:6 | `STATUSES` should be a `Set`, and use `STATUSES.has()` to check existence or non-existence.
+- [issue] javascript:S7726 | MINOR | src/middleware/requireConsent.js:6 | The async arrow function should be named.
+- [issue] javascript:S7726 | MINOR | src/utils/audit.js:4 | The arrow function should be named.
+- [issue] javascript:S8786 | MAJOR | src/controllers/authController.js:8 | Simplify this regular expression to reduce its runtime, as it has super-linear performance due to backtracking.
+- [issue] javascript:S7726 | MINOR | src/middleware/errorHandler.js:3 | The arrow function should be named.
+- [issue] javascript:S5122 | MAJOR | src/app.js:10 | Make sure that enabling CORS is safe here.
+
+===== KODE SUMBER =====
+===== FILE: src/app.js =====
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const AppError = require('./utils/AppError');
+const errorHandler = require('./middleware/errorHandler');
+
+const app = express();
+
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/mahasiswa/:id/konsen', require('./routes/konsenRoutes'));
+app.use('/api/mahasiswa', require('./routes/mahasiswaRoutes'));
+app.use('/api/mata-kuliah', require('./routes/mataKuliahRoutes'));
+app.use('/api/krs', require('./routes/krsRoutes'));
+app.use('/api/nilai', require('./routes/nilaiRoutes'));
+app.use('/api/cuti', require('./routes/cutiRoutes'));
+app.use((req, res, next) => next(new AppError(404, 'NOT_FOUND', 'Endpoint tidak ditemukan')));
+app.use(errorHandler);
+
+module.exports = app;
+
+
+===== FILE: src/config/akademik.js =====
+require('dotenv').config();
+
+const SEMESTER_RE = /^\d{4}-(ganjil|genap)$/;
+
+const SEMESTER_AKTIF = process.env.SEMESTER_AKTIF;
+if (!SEMESTER_RE.test(SEMESTER_AKTIF || '')) {
+  throw new Error('SEMESTER_AKTIF wajib diisi dengan format YYYY-ganjil atau YYYY-genap');
+}
+
+// Urutan: 2025-genap < 2026-ganjil < 2026-genap
+const semesterKey = (s) => {
+  const [tahun, periode] = s.split('-');
+  return Number(tahun) * 2 + (periode === 'genap' ? 1 : 0);
+};
+
+const BOBOT = { A: 4, AB: 3.5, B: 3, BC: 2.5, C: 2, D: 1, E: 0 };
+
+const kuotaDariIps = (ips) => {
+  if (ips === null) return 19;
+  if (ips >= 3) return 24;
+  if (ips >= 2.5) return 21;
+  if (ips >= 2) return 18;
+  return 15;
+};
+
+// IPS dari semester terakhir sebelum `semester` yang punya nilai published
+const ipsSebelum = (grades, semester) => {
+  const batas = semesterKey(semester);
+  const perSemester = new Map();
+
+  for (const g of grades) {
+    if (semesterKey(g.semester) >= batas) continue;
+    const s = perSemester.get(g.semester) || { bobot: 0, sks: 0 };
+    s.bobot += BOBOT[g.nilai_huruf] * g.sks;
+    s.sks += g.sks;
+    perSemester.set(g.semester, s);
+  }
+
+  if (perSemester.size === 0) return null;
+
+  const terakhir = [...perSemester.keys()].sort((a, b) => semesterKey(b) - semesterKey(a))[0];
+  const { bobot, sks } = perSemester.get(terakhir);
+  return { semester: terakhir, ips: Math.round((bobot / sks) * 100) / 100 };
+};
+
+// IPS dari sekumpulan baris { nilai_huruf, sks }, dibulatkan 2 desimal
+const hitungIps = (rows) => {
+  const sks = rows.reduce((n, r) => n + r.sks, 0);
+  if (sks === 0) return null;
+  const bobot = rows.reduce((n, r) => n + BOBOT[r.nilai_huruf] * r.sks, 0);
+  return Math.round((bobot / sks) * 100) / 100;
+};
+
+module.exports = { SEMESTER_RE, SEMESTER_AKTIF, semesterKey, BOBOT, kuotaDariIps, ipsSebelum, hitungIps };
+
+
+===== FILE: src/config/crypto.js =====
+require('dotenv').config();
+
+const KEY = process.env.PGCRYPTO_KEY;
+if (!KEY || KEY.length < 32) {
+  throw new Error('PGCRYPTO_KEY wajib diisi, minimal 32 karakter');
+}
+
+module.exports = { KEY };
+
+
+===== FILE: src/config/cuti.js =====
+// Kategori juga dibatasi CHECK constraint di migrasi 006
+const KATEGORI_CUTI = ['kesehatan', 'ekonomi', 'keluarga', 'pekerjaan', 'lainnya'];
+
+module.exports = { KATEGORI_CUTI };
+
+
+===== FILE: src/config/db.js =====
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+module.exports = pool;
+
+
+===== FILE: src/config/jwt.js =====
+require('dotenv').config();
+const jwt = require('jsonwebtoken');
+
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET || SECRET.length < 32) {
+  throw new Error('JWT_SECRET wajib diisi, minimal 32 karakter');
+}
+
+const sign = (payload) =>
+  jwt.sign(payload, SECRET, { algorithm: 'HS256', expiresIn: '24h' });
+
+const verify = (token) =>
+  jwt.verify(token, SECRET, { algorithms: ['HS256'] });
+
+module.exports = { sign, verify };
+
+
+===== FILE: src/config/profil.js =====
+// Daftar tetap untuk field pilihan. Nilai email, platform, dan jenis dokumen
+// juga dibatasi CHECK constraint di migrasi 004 dan 005.
+const BANK = ['BCA', 'BNI', 'BRI', 'Mandiri', 'BSI', 'BTN', 'CIMB Niaga', 'Permata'];
+const TIPE_EMAIL = ['pribadi', 'kerja', 'alternatif'];
+const PLATFORM_SOSIAL = ['linkedin', 'github', 'instagram', 'x', 'facebook'];
+const JENIS_DOKUMEN = ['ktp', 'ijazah', 'kartu_keluarga', 'lampiran_cuti'];
+const STATUS_VERIFIKASI = ['menunggu', 'terverifikasi', 'ditolak'];
+
+const MAKS_EMAIL = 5;
+
+module.exports = { BANK, TIPE_EMAIL, PLATFORM_SOSIAL, JENIS_DOKUMEN, STATUS_VERIFIKASI, MAKS_EMAIL };
+
+
+===== FILE: src/config/upload.js =====
+const fs = require('fs');
+const path = require('path');
+
+// Di container menjadi /app/uploads, dipasang sebagai volume di docker-compose.yml
+const UPLOAD_DIR = path.resolve(__dirname, '../../uploads');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const MAKS_UKURAN = 2 * 1024 * 1024;
+
+// MIME yang diterima, ekstensi asal yang cocok, ekstensi file di disk,
+// dan byte awal yang harus ada di isi file
+const TIPE_FILE = {
+  'application/pdf': {
+    ekstensi: ['.pdf'], simpanSebagai: '.pdf', signature: Buffer.from('%PDF-'),
+  },
+  'image/jpeg': {
+    ekstensi: ['.jpg', '.jpeg'], simpanSebagai: '.jpg', signature: Buffer.from([0xff, 0xd8, 0xff]),
+  },
+  'image/png': {
+    ekstensi: ['.png'], simpanSebagai: '.png',
+    signature: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  },
+};
+
+module.exports = { UPLOAD_DIR, MAKS_UKURAN, TIPE_FILE };
+
+
+===== FILE: src/controllers/authController.js =====
+const bcrypt = require('bcrypt');
+const pool = require('../config/db');
+const { sign } = require('../config/jwt');
+const AppError = require('../utils/AppError');
+const riwayatLogin = require('../models/riwayatLoginModel');
+
+const SALT_ROUNDS = 10;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// dipakai saat email tidak ditemukan, supaya waktu respons tetap sama
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-timing', SALT_ROUNDS);
+
+const readCredentials = (body) => ({
+  email: typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '',
+  password: typeof body?.password === 'string' ? body.password : '',
+});
+
+exports.register = async (req, res) => {
+  const { email, password } = readCredentials(req.body);
+
+  if (!EMAIL_RE.test(email) || email.length > 255) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Format email tidak valid');
+  }
+  // bcrypt hanya membaca 72 byte pertama
+  if (
+    password.length < 8 ||
+    Buffer.byteLength(password) > 72 ||
+    !/[A-Z]/.test(password) ||
+    !/\d/.test(password)
+  ) {
+    throw new AppError(400, 'VALIDATION_ERROR',
+      'Password 8 sampai 72 karakter, minimal 1 huruf besar dan 1 angka');
+  }
+
+  const hash = await bcrypt.hash(password, SALT_ROUNDS);
+  // role sengaja tidak diambil dari body, selalu default 'mahasiswa'
+  const { rows } = await pool.query(
+    `INSERT INTO users (email, password_hash)
+     VALUES ($1, $2)
+     RETURNING id, email, role, created_at`,
+    [email, hash]
+  );
+
+  res.status(201).json({ success: true, data: rows[0] });
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = readCredentials(req.body);
+  if (!email || !password) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Email dan password wajib diisi');
+  }
+
+  const { rows } = await pool.query(
+    'SELECT id, password_hash, role FROM users WHERE email = $1',
+    [email]
+  );
+  const user = rows[0];
+  const valid = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+  if (user) riwayatLogin.catat(req, user.id, valid ? 'berhasil' : 'gagal');
+
+  if (!user || !valid) {
+    throw new AppError(401, 'UNAUTHORIZED', 'Email atau password salah');
+  }
+
+  const token = sign({ sub: user.id, role: user.role });
+  res.json({ success: true, data: { token, expires_in: 86400, role: user.role } });
+};
+
+
+===== FILE: src/controllers/cutiController.js =====
+const model = require('../models/cutiModel');
+const krsModel = require('../models/krsModel');
+const dokumenModel = require('../models/dokumenModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
+const { UUID_RE, requireUuid, teks } = require('../utils/validators');
+const { SEMESTER_RE, SEMESTER_AKTIF, semesterKey } = require('../config/akademik');
+const { KATEGORI_CUTI } = require('../config/cuti');
+
+const KEPUTUSAN = ['disetujui', 'ditolak'];
+
+const RULES = {
+  semester: (v) => typeof v === 'string' && SEMESTER_RE.test(v) && semesterKey(v) >= semesterKey(SEMESTER_AKTIF),
+  kategori: (v) => KATEGORI_CUTI.includes(v),
+  alasan: (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= 1000,
+  alamat_cuti: teks(500),
+  nomor_telepon: (v) => typeof v === 'string' && /^\+?\d{9,15}$/.test(v),
+};
+
+const getMahasiswaId = async (req) => {
+  const id = await krsModel.mahasiswaIdByUserId(req.user.id);
+  if (!id) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+  return id;
+};
+
+exports.create = async (req, res) => {
+  // Hanya field berikut yang diambil dari body; status selalu dimulai dari diajukan
+  const data = {};
+  for (const [f, valid] of Object.entries(RULES)) {
+    const v = req.body?.[f];
+    if (v === undefined || v === null) throw new AppError(400, 'VALIDATION_ERROR', `Field ${f} wajib diisi`);
+    if (!valid(v)) throw new AppError(400, 'VALIDATION_ERROR', `Field ${f} tidak valid`);
+    data[f] = v.trim();
+  }
+
+  const mahasiswaId = await getMahasiswaId(req);
+  const dokumenId = req.body?.dokumen_id;
+  if (dokumenId !== undefined && dokumenId !== null) {
+    if (typeof dokumenId !== 'string' || !UUID_RE.test(dokumenId)) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Field dokumen_id tidak valid');
+    }
+    const dokumen = await dokumenModel.findOwned(dokumenId, mahasiswaId);
+    if (!dokumen || dokumen.jenis !== 'lampiran_cuti') {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Field dokumen_id harus dokumen lampiran_cuti milik sendiri');
+    }
+    data.dokumen_id = dokumenId;
+  }
+
+  if (req.body?.status) data.status = req.body.status;
+  const id = await model.create({ ...data, mahasiswa_id: mahasiswaId });
+  
+  const row = await model.findById(id);
+  res.status(201).json({ success: true, data: row });
+  audit(req, 'CREATE_CUTI', 'pengajuan_cuti', id);
+};
+
+exports.listMe = async (req, res) => {
+  const rows = await model.listByMahasiswa(await getMahasiswaId(req));
+  res.json({ success: true, data: rows });
+};
+
+exports.getMe = async (req, res) => {
+  requireUuid(req.params.id);
+  const row = await model.findOwned(req.params.id, await getMahasiswaId(req));
+  if (!row) throw new AppError(404, 'NOT_FOUND', 'Pengajuan cuti tidak ditemukan');
+  res.json({ success: true, data: row });
+  audit(req, 'READ_CUTI', 'pengajuan_cuti', row.id);
+};
+
+exports.batal = async (req, res) => {
+  requireUuid(req.params.id);
+  const mahasiswaId = await getMahasiswaId(req);
+  const found = await model.findOwned(req.params.id, mahasiswaId);
+  if (!found) throw new AppError(404, 'NOT_FOUND', 'Pengajuan cuti tidak ditemukan');
+
+  const id = await model.batal(found.id, mahasiswaId);
+  if (!id) throw new AppError(409, 'CONFLICT', 'Hanya pengajuan berstatus diajukan yang bisa dibatalkan');
+  res.json({ success: true, data: await model.findById(id) });
+  audit(req, 'BATAL_CUTI', 'pengajuan_cuti', id);
+};
+
+exports.listAdmin = async (req, res) => {
+  const paging = listQuery(req.query, { sortMap: model.SORT, defaultSort: 'created_at', defaultOrder: 'desc' });
+  const { rows, total } = await model.listAdmin({
+    ...paging,
+    sort: req.query.sort || 'created_at',
+    order: req.query.order || 'asc',
+  });
+  res.set('X-Total-Count', String(total));
+  res.json({ success: true, data: rows });
+};
+
+exports.getById = async (req, res) => {
+  requireUuid(req.params.id);
+  const row = await model.findById(req.params.id);
+  if (!row) throw new AppError(404, 'NOT_FOUND', 'Pengajuan cuti tidak ditemukan');
+  res.json({ success: true, data: row });
+  audit(req, 'READ_CUTI', 'pengajuan_cuti', row.id);
+};
+
+exports.updateStatus = async (req, res) => {
+  requireUuid(req.params.id);
+  const { status, catatan_admin: catatan } = req.body || {};
+  if (!KEPUTUSAN.includes(status)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field status harus disetujui atau ditolak');
+  }
+  if (catatan !== undefined && catatan !== null && !RULES.alasan(catatan)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field catatan_admin tidak valid');
+  }
+
+  const found = await model.findById(req.params.id);
+  if (!found) throw new AppError(404, 'NOT_FOUND', 'Pengajuan cuti tidak ditemukan');
+
+  const id = await model.putuskan(found.id, status, catatan?.trim() || null);
+  if (!id) throw new AppError(409, 'CONFLICT', 'Hanya pengajuan berstatus diajukan yang bisa diputuskan');
+  res.json({ success: true, data: await model.findById(id) });
+  audit(req, 'UPDATE_STATUS_CUTI', 'pengajuan_cuti', id);
+};
+
+
+===== FILE: src/controllers/dokumenController.js =====
+const path = require('path');
+const model = require('../models/dokumenModel');
+const krsModel = require('../models/krsModel');
+const konsenModel = require('../models/konsenModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const { requireUuid } = require('../utils/validators');
+const { hapusFile } = require('../middleware/upload');
+const { JENIS_DOKUMEN, STATUS_VERIFIKASI } = require('../config/profil');
+const { UPLOAD_DIR } = require('../config/upload');
+
+const getMahasiswaId = async (req) => {
+  const id = await krsModel.mahasiswaIdByUserId(req.user.id);
+  if (!id) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+  return id;
+};
+
+const getMahasiswaOr404 = async (id) => {
+  requireUuid(id);
+  const mhs = await konsenModel.findMahasiswa(id);
+  if (!mhs) throw new AppError(404, 'NOT_FOUND', 'Mahasiswa tidak ditemukan');
+  return mhs.id;
+};
+
+// Nama asli hanya untuk ditampilkan: tanpa folder, tanpa karakter kontrol, maks 255
+const namaTampilan = (originalname) =>
+  path.basename(originalname.replaceAll('\\', '/')).replace(/\p{Cc}/gu, '').slice(-255) || 'dokumen';
+
+const kirimFile = (req, res, next, dokumen) => {
+  res.set('Cache-Control', 'no-store');
+  res.attachment(dokumen.nama_file_asli);
+  res.type(dokumen.mime);
+  const lokasi = path.join(UPLOAD_DIR, dokumen.path_file);
+  res.sendFile(lokasi, (err) => {
+    if (err && !res.headersSent) next(new AppError(404, 'NOT_FOUND', 'File dokumen tidak ditemukan'));
+  });
+  audit(req, 'READ_DOKUMEN', 'dokumen_mahasiswa', dokumen.id);
+};
+
+exports.upload = async (req, res) => {
+  try {
+    const { jenis } = req.body || {};
+    if (!JENIS_DOKUMEN.includes(jenis)) {
+      throw new AppError(400, 'VALIDATION_ERROR', `Field jenis harus salah satu dari ${JENIS_DOKUMEN.join(', ')}`);
+    }
+
+    const mahasiswaId = await getMahasiswaId(req);
+    if (jenis !== 'lampiran_cuti' && (await model.existsJenis(mahasiswaId, jenis))) {
+      throw new AppError(409, 'CONFLICT', `Dokumen ${jenis} sudah diunggah`);
+    }
+
+    const row = await model.create({
+      mahasiswa_id: mahasiswaId,
+      jenis,
+      nama_file_asli: namaTampilan(req.file.originalname),
+      path_file: req.file.filename,
+      mime: req.file.mimetype,
+      ukuran: req.file.size,
+    });
+    res.status(201).json({ success: true, data: row });
+    audit(req, 'UPLOAD_DOKUMEN', 'dokumen_mahasiswa', row.id);
+  } catch (err) {
+    // File yang sudah tersimpan dibuang kalau datanya gagal dicatat
+    await hapusFile(req.file);
+    throw err;
+  }
+};
+
+exports.listMe = async (req, res) => {
+  const rows = await model.listByMahasiswa(await getMahasiswaId(req));
+  res.json({ success: true, data: rows });
+};
+
+exports.downloadMe = async (req, res, next) => {
+  requireUuid(req.params.id);
+  const dokumen = await model.findOwned(req.params.id, await getMahasiswaId(req));
+  if (!dokumen) throw new AppError(404, 'NOT_FOUND', 'Dokumen tidak ditemukan');
+  kirimFile(req, res, next, dokumen);
+};
+
+exports.listAdmin = async (req, res) => {
+  const rows = await model.listByMahasiswa(await getMahasiswaOr404(req.params.id));
+  res.json({ success: true, data: rows });
+};
+
+exports.downloadAdmin = async (req, res, next) => {
+  const mahasiswaId = await getMahasiswaOr404(req.params.id);
+  requireUuid(req.params.dokumenId);
+  const dokumen = await model.findOwned(req.params.dokumenId, mahasiswaId);
+  if (!dokumen) throw new AppError(404, 'NOT_FOUND', 'Dokumen tidak ditemukan');
+  kirimFile(req, res, next, dokumen);
+};
+
+exports.verifikasi = async (req, res) => {
+  const mahasiswaId = await getMahasiswaOr404(req.params.id);
+  requireUuid(req.params.dokumenId);
+  const { status_verifikasi: status } = req.body || {};
+  if (!STATUS_VERIFIKASI.includes(status)) {
+    throw new AppError(400, 'VALIDATION_ERROR',
+      `Field status_verifikasi harus salah satu dari ${STATUS_VERIFIKASI.join(', ')}`);
+  }
+
+  const row = await model.updateStatus(req.params.dokumenId, mahasiswaId, status);
+  if (!row) throw new AppError(404, 'NOT_FOUND', 'Dokumen tidak ditemukan');
+  res.json({ success: true, data: row });
+  audit(req, 'VERIFIKASI_DOKUMEN', 'dokumen_mahasiswa', row.id);
+};
+
+
+===== FILE: src/controllers/konsenController.js =====
+const model = require('../models/konsenModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const { isValidDate, isHttpsUrl, requireUuid } = require('../utils/validators');
+
+const STATUSES = ['pending', 'approved', 'rejected'];
+
+const getMahasiswaOr404 = async (id) => {
+  requireUuid(id);
+  const mhs = await model.findMahasiswa(id);
+  if (!mhs) throw new AppError(404, 'NOT_FOUND', 'Mahasiswa tidak ditemukan');
+  return mhs;
+};
+
+exports.list = async (req, res) => {
+  const mhs = await getMahasiswaOr404(req.params.id);
+  const rows = await model.listByMahasiswa(mhs.id);
+  res.json({ success: true, data: rows });
+  audit(req, 'READ_KONSEN', 'mahasiswa', mhs.id);
+};
+
+exports.create = async (req, res) => {
+  const mhs = await getMahasiswaOr404(req.params.id);
+  const { nama_wali, bukti_persetujuan_url, tanggal_persetujuan } = req.body || {};
+
+  if (typeof nama_wali !== 'string' || !nama_wali.trim() || nama_wali.length > 255) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field nama_wali tidak valid');
+  }
+  if (bukti_persetujuan_url != null && !isHttpsUrl(bukti_persetujuan_url)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field bukti_persetujuan_url harus berupa URL https');
+  }
+  if (!isValidDate(tanggal_persetujuan)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field tanggal_persetujuan tidak valid');
+  }
+  if (!mhs.is_minor) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Konsen hanya dicatat untuk mahasiswa di bawah 18 tahun');
+  }
+
+  // status selalu dimulai dari pending, tidak diambil dari body
+  const row = await model.create({
+    mahasiswa_id: mhs.id,
+    nama_wali: nama_wali.trim(),
+    bukti_persetujuan_url,
+    tanggal_persetujuan,
+  });
+  res.status(201).json({ success: true, data: row });
+  audit(req, 'CREATE_KONSEN', 'konsen_orang_tua', row.id);
+};
+
+exports.updateStatus = async (req, res) => {
+  const mhs = await getMahasiswaOr404(req.params.id);
+  requireUuid(req.params.konsenId);
+
+  const { status } = req.body || {};
+  if (!STATUSES.includes(status)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field status harus pending, approved, atau rejected');
+  }
+
+  const row = await model.updateStatus(req.params.konsenId, mhs.id, status);
+  if (!row) throw new AppError(404, 'NOT_FOUND', 'Data konsen tidak ditemukan');
+  res.json({ success: true, data: row });
+  audit(req, 'UPDATE_KONSEN', 'konsen_orang_tua', row.id);
+};
+
+
+===== FILE: src/controllers/krsController.js =====
+const model = require('../models/krsModel');
+const mataKuliahModel = require('../models/mataKuliahModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
+const { UUID_RE, requireUuid } = require('../utils/validators');
+const { SEMESTER_RE, SEMESTER_AKTIF, ipsSebelum, kuotaDariIps } = require('../config/akademik');
+
+const getMahasiswaId = async (req) => {
+  const id = await model.mahasiswaIdByUserId(req.user.id);
+  if (!id) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+  return id;
+};
+
+const hitungKuota = async (mahasiswaId, semester) => {
+  const prev = ipsSebelum(await model.publishedGrades(mahasiswaId), semester);
+  return {
+    ips_sebelumnya: prev ? prev.ips : null,
+    semester_acuan: prev ? prev.semester : null,
+    kuota: kuotaDariIps(prev ? prev.ips : null),
+  };
+};
+
+const totalSks = (items) => items.reduce((n, i) => n + i.sks, 0);
+
+const readSemester = (value) => {
+  const semester = value ?? SEMESTER_AKTIF;
+  if (typeof semester !== 'string' || !SEMESTER_RE.test(semester)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter semester tidak valid');
+  }
+  return semester;
+};
+
+exports.getMe = async (req, res) => {
+  const semester = readSemester(req.query.semester);
+  const mahasiswaId = await getMahasiswaId(req);
+  const header = await model.findHeader(mahasiswaId, semester);
+  const items = header ? await model.listItems(header.id) : [];
+  const kuota = await hitungKuota(mahasiswaId, semester);
+
+  res.json({
+    success: true,
+    data: {
+      semester,
+      id: header ? header.id : null,
+      status: header ? header.status : 'belum_ada',
+      items,
+      total_sks: totalSks(items),
+      ...kuota,
+    },
+  });
+};
+
+exports.addItem = async (req, res) => {
+  const mataKuliahId = req.body?.mata_kuliah_id;
+  if (typeof mataKuliahId !== 'string' || !UUID_RE.test(mataKuliahId)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field mata_kuliah_id tidak valid');
+  }
+
+  const mahasiswaId = await getMahasiswaId(req);
+  if (!(await mataKuliahModel.findById(mataKuliahId))) {
+    throw new AppError(404, 'NOT_FOUND', 'Mata kuliah tidak ditemukan');
+  }
+
+  const header = await model.getOrCreateHeader(mahasiswaId, SEMESTER_AKTIF);
+  if (header.status !== 'draft') {
+    throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');
+  }
+
+  const id = await model.addItem(header.id, mataKuliahId);
+  res.status(201).json({
+    success: true,
+    data: { id, krs_semester_id: header.id, mata_kuliah_id: mataKuliahId },
+  });
+};
+
+exports.removeItem = async (req, res) => {
+  requireUuid(req.params.itemId);
+  const mahasiswaId = await getMahasiswaId(req);
+
+  const item = await model.findItemOwned(req.params.itemId, mahasiswaId);
+  if (!item) throw new AppError(404, 'NOT_FOUND', 'Item KRS tidak ditemukan');
+  if (item.status !== 'draft') {
+    throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');
+  }
+
+  await model.removeItem(item.id);
+  res.json({ success: true, data: { id: item.id, deleted: true } });
+};
+
+exports.submit = async (req, res) => {
+  const mahasiswaId = await getMahasiswaId(req);
+  const header = await model.findHeader(mahasiswaId, SEMESTER_AKTIF);
+  const items = header ? await model.listItems(header.id) : [];
+
+  if (items.length === 0) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'KRS masih kosong, pilih minimal satu mata kuliah');
+  }
+  if (header.status !== 'draft') {
+    throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');
+  }
+
+  const total = totalSks(items);
+  const { kuota } = await hitungKuota(mahasiswaId, SEMESTER_AKTIF);
+  if (total > kuota) {
+    throw new AppError(400, 'SKS_QUOTA_EXCEEDED', 'SKS yang diajukan melebihi kuota maksimal',
+      { kuota, diajukan: total });
+  }
+
+  const updated = await model.transition(header.id, 'draft', 'submitted');
+  if (!updated) throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');
+
+  res.json({ success: true, data: updated });
+  audit(req, 'SUBMIT_KRS', 'krs_semester', header.id);
+};
+
+exports.unsubmit = async (req, res) => {
+  const mahasiswaId = await getMahasiswaId(req);
+  const header = await model.findHeader(mahasiswaId, SEMESTER_AKTIF);
+  if (!header) throw new AppError(404, 'NOT_FOUND', 'KRS belum ada');
+
+  const updated = await model.transition(header.id, 'submitted', 'draft');
+  if (!updated) {
+    throw new AppError(409, 'CONFLICT', 'Hanya KRS berstatus submitted yang bisa dikembalikan ke draft');
+  }
+
+  res.json({ success: true, data: updated });
+  audit(req, 'UNSUBMIT_KRS', 'krs_semester', header.id);
+};
+
+exports.listAdmin = async (req, res) => {
+  const semester = readSemester(req.query.semester);
+  const { mahasiswa_id: mahasiswaId } = req.query;
+  if (mahasiswaId !== undefined && (typeof mahasiswaId !== 'string' || !UUID_RE.test(mahasiswaId))) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter mahasiswa_id tidak valid');
+  }
+
+  const { rows, total } = await model.listHeaders(semester, mahasiswaId ?? null,
+    listQuery(req.query, { sortMap: model.SORT, defaultSort: 'nim' }));
+  res.set('X-Total-Count', String(total));
+  res.json({ success: true, data: rows });
+};
+
+exports.lock = async (req, res) => {
+  requireUuid(req.params.id);
+  const header = await model.findHeaderById(req.params.id);
+  if (!header) throw new AppError(404, 'NOT_FOUND', 'KRS tidak ditemukan');
+
+  const updated = await model.transition(header.id, 'submitted', 'locked');
+  if (!updated) {
+    const message = header.status === 'locked'
+      ? 'KRS sudah dikunci'
+      : 'Hanya KRS berstatus submitted yang bisa dikunci';
+    throw new AppError(409, 'CONFLICT', message);
+  }
+
+  res.json({ success: true, data: updated });
+  audit(req, 'LOCK_KRS', 'krs_semester', header.id);
+};
+
+
+===== FILE: src/controllers/mahasiswaController.js =====
+const fs = require('fs/promises');
+const path = require('path');
+const model = require('../models/mahasiswaModel');
+const profilModel = require('../models/profilModel');
+const dokumenModel = require('../models/dokumenModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
+const { UUID_RE, isValidDate, requireUuid, teks } = require('../utils/validators');
+const { BANK } = require('../config/profil');
+const { UPLOAD_DIR } = require('../config/upload');
+
+const TELEPON_RE = /^\+?\d{9,15}$/;
+const KODE_POS_RE = /^\d{5}$/;
+
+const RULES = {
+  nama: (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= 255,
+  nim: (v) => typeof v === 'string' && /^\d{12}$/.test(v),
+  nik: (v) => typeof v === 'string' && /^\d{16}$/.test(v),
+  nik_orang_tua: (v) => typeof v === 'string' && /^\d{16}$/.test(v),
+  nomor_telepon: (v) => typeof v === 'string' && TELEPON_RE.test(v),
+  tanggal_lahir: isValidDate,
+  tempat_lahir: teks(100),
+  nisn: (v) => typeof v === 'string' && /^\d{10}$/.test(v),
+  alamat_asal: teks(500),
+  kab_kota_asal: teks(100),
+  kode_pos_asal: (v) => typeof v === 'string' && KODE_POS_RE.test(v),
+  nama_ayah: teks(255),
+  nama_ibu: teks(255),
+  nomor_hp_orang_tua: (v) => typeof v === 'string' && TELEPON_RE.test(v),
+  alamat_domisili: teks(500),
+  kab_kota_domisili: teks(100),
+  kode_pos_domisili: (v) => typeof v === 'string' && KODE_POS_RE.test(v),
+  nama_bank: (v) => BANK.includes(v),
+  nomor_rekening: (v) => typeof v === 'string' && /^\d{6,20}$/.test(v),
+  nama_pemilik: teks(255),
+};
+
+// Hanya field di daftar yang diambil dari body, sisanya diabaikan
+const pick = (body, fields, required = false) => {
+  const out = {};
+  for (const f of fields) {
+    const v = body?.[f];
+    if (v === undefined || v === null) {
+      if (required) throw new AppError(400, 'VALIDATION_ERROR', `Field ${f} wajib diisi`);
+      continue;
+    }
+    if (!RULES[f](v)) throw new AppError(400, 'VALIDATION_ERROR', `Field ${f} tidak valid`);
+    out[f] = v.trim();
+  }
+  return out;
+};
+
+const ageFrom = (dateStr) => {
+  const b = new Date(`${dateStr}T00:00:00Z`);
+  const n = new Date();
+  let age = n.getUTCFullYear() - b.getUTCFullYear();
+  const m = n.getUTCMonth() - b.getUTCMonth();
+  if (m < 0 || (m === 0 && n.getUTCDate() < b.getUTCDate())) age--;
+  return age;
+};
+
+// Field tambahan yang hanya boleh diisi admin
+const ADMIN_FIELDS = [
+  'tempat_lahir', 'nisn', 'alamat_asal', 'kab_kota_asal', 'kode_pos_asal',
+  'nama_ayah', 'nama_ibu', 'nomor_hp_orang_tua',
+];
+const ALL_FIELDS = ['nama', 'nim', 'nik', 'tanggal_lahir', 'nik_orang_tua', 'nomor_telepon', ...ADMIN_FIELDS];
+const DOMISILI_FIELDS = ['alamat_domisili', 'kab_kota_domisili', 'kode_pos_domisili'];
+const REKENING_FIELDS = ['nama_bank', 'nomor_rekening', 'nama_pemilik'];
+
+const samarkan = (nomor) => `****${nomor.slice(-4)}`;
+
+const profilLengkap = async (profile) => {
+  const [rekening, emailTambahan, akunSosial] = await Promise.all([
+    profilModel.findRekening(profile.id),
+    profilModel.listEmail(profile.id),
+    profilModel.listAkunSosial(profile.id),
+  ]);
+  return {
+    ...profile,
+    rekening: rekening && { ...rekening, nomor_rekening: samarkan(rekening.nomor_rekening) },
+    email_tambahan: emailTambahan,
+    akun_sosial: akunSosial,
+  };
+};
+
+exports.getMe = async (req, res) => {
+  const profile = await model.findByUserId(req.user.id);
+  if (!profile) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+  res.json({ success: true, data: await profilLengkap(profile) });
+  audit(req, 'READ_MAHASISWA', 'mahasiswa', profile.id);
+};
+
+exports.updateMe = async (req, res) => {
+  const data = { ...req.body };
+  delete data.rekening;
+
+  const rekeningBody = req.body?.rekening;
+  let rekening = null;
+  if (rekeningBody !== undefined && rekeningBody !== null) {
+    rekening = { ...rekeningBody };
+  }
+
+  const id = await model.updateByUserId(req.user.id, data, rekening);
+  if (!id) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+  const profile = await model.findById(id);
+  res.json({ success: true, data: await profilLengkap(profile) });
+  audit(req, 'UPDATE_MAHASISWA', 'mahasiswa', id);
+};
+
+exports.list = async (req, res) => {
+  const { rows, total } = await model.list(listQuery(req.query, { sortMap: model.SORT, defaultSort: 'nim' }));
+  res.set('X-Total-Count', String(total));
+  res.json({ success: true, data: rows });
+};
+
+exports.getById = async (req, res) => {
+  requireUuid(req.params.id);
+  const profile = await model.findById(req.params.id);
+  if (!profile) throw new AppError(404, 'NOT_FOUND', 'Mahasiswa tidak ditemukan');
+  res.json({ success: true, data: profile });
+  audit(req, 'READ_MAHASISWA', 'mahasiswa', profile.id);
+};
+
+exports.create = async (req, res) => {
+  const userId = req.body?.user_id;
+  if (typeof userId !== 'string' || !UUID_RE.test(userId)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field user_id tidak valid');
+  }
+
+  const data = {
+    ...pick(req.body, ['nama', 'nim', 'nik', 'tanggal_lahir', 'nomor_telepon'], true),
+    ...pick(req.body, ['nik_orang_tua', ...ADMIN_FIELDS]),
+  };
+  data.user_id = userId;
+  data.is_minor = ageFrom(data.tanggal_lahir) < 18;
+
+  if (data.is_minor && !data.nik_orang_tua) {
+    throw new AppError(400, 'VALIDATION_ERROR',
+      'Field nik_orang_tua wajib diisi untuk mahasiswa di bawah 18 tahun');
+  }
+
+  const role = await model.findUserRole(userId);
+  if (!role) throw new AppError(404, 'NOT_FOUND', 'User tidak ditemukan');
+  if (role !== 'mahasiswa') {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Profil hanya bisa dibuat untuk user dengan role mahasiswa');
+  }
+
+  const id = await model.create(data);
+  const profile = await model.findById(id);
+  res.status(201).json({ success: true, data: profile });
+  audit(req, 'CREATE_MAHASISWA', 'mahasiswa', id);
+};
+
+exports.update = async (req, res) => {
+  requireUuid(req.params.id);
+  const data = pick(req.body, ALL_FIELDS);
+  if (Object.keys(data).length === 0) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Tidak ada field yang diubah');
+  }
+  if (data.tanggal_lahir) data.is_minor = ageFrom(data.tanggal_lahir) < 18;
+
+  const found = await model.update(req.params.id, data);
+  if (!found) throw new AppError(404, 'NOT_FOUND', 'Mahasiswa tidak ditemukan');
+
+  const profile = await model.findById(req.params.id);
+  res.json({ success: true, data: profile });
+  audit(req, 'UPDATE_MAHASISWA', 'mahasiswa', req.params.id);
+};
+
+exports.remove = async (req, res) => {
+  requireUuid(req.params.id);
+  const files = await dokumenModel.pathsByMahasiswa(req.params.id);
+  const deleted = await model.remove(req.params.id);
+  if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Mahasiswa tidak ditemukan');
+  res.json({ success: true, data: { id: req.params.id, deleted: true } });
+  audit(req, 'DELETE_MAHASISWA', 'mahasiswa', req.params.id);
+
+  // File dokumen ikut dihapus dari disk, baris database sudah terhapus lewat CASCADE
+  for (const f of files) {
+    fs.unlink(path.join(UPLOAD_DIR, f)).catch((err) => console.error('Hapus file gagal:', err.message));
+  }
+};
+
+
+===== FILE: src/controllers/mataKuliahController.js =====
+const model = require('../models/mataKuliahModel');
+const AppError = require('../utils/AppError');
+const { requireUuid } = require('../utils/validators');
+
+const RULES = {
+  kode: (v) => typeof v === 'string' && /^[A-Z0-9]{3,20}$/.test(v),
+  nama: (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= 255,
+  sks: (v) => Number.isInteger(v) && v >= 1 && v <= 6,
+};
+
+const pick = (body, required) => {
+  const out = {};
+  for (const f of Object.keys(RULES)) {
+    const v = body?.[f];
+    if (v === undefined || v === null) {
+      if (required) throw new AppError(400, 'VALIDATION_ERROR', `Field ${f} wajib diisi`);
+      continue;
+    }
+    if (!RULES[f](v)) throw new AppError(400, 'VALIDATION_ERROR', `Field ${f} tidak valid`);
+    out[f] = typeof v === 'string' ? v.trim() : v;
+  }
+  return out;
+};
+
+exports.list = async (req, res) => {
+  const { q } = req.query;
+  if (q !== undefined && (typeof q !== 'string' || q.length > 100)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter q tidak valid');
+  }
+  const rows = await model.list(q?.trim() || null);
+  res.json({ success: true, data: rows });
+};
+
+exports.create = async (req, res) => {
+  const row = await model.create(pick(req.body, true));
+  res.status(201).json({ success: true, data: row });
+};
+
+exports.update = async (req, res) => {
+  requireUuid(req.params.id);
+  const data = pick(req.body, false);
+  if (Object.keys(data).length === 0) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Tidak ada field yang diubah');
+  }
+  const row = await model.update(req.params.id, data);
+  if (!row) throw new AppError(404, 'NOT_FOUND', 'Mata kuliah tidak ditemukan');
+  res.json({ success: true, data: row });
+};
+
+exports.remove = async (req, res) => {
+  requireUuid(req.params.id);
+  const deleted = await model.remove(req.params.id);
+  if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Mata kuliah tidak ditemukan');
+  res.json({ success: true, data: { id: req.params.id, deleted: true } });
+};
+
+
+===== FILE: src/controllers/nilaiController.js =====
+const model = require('../models/nilaiModel');
+const krsModel = require('../models/krsModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const listQuery = require('../utils/listQuery');
+const { escapeHtml } = require('../utils/html');
+const { UUID_RE, requireUuid } = require('../utils/validators');
+const { SEMESTER_RE, BOBOT, semesterKey, hitungIps } = require('../config/akademik');
+
+const HURUF = Object.keys(BOBOT);
+
+const optionalSemester = (v) => {
+  if (v === undefined) return null;
+  if (typeof v !== 'string' || !SEMESTER_RE.test(v)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter semester tidak valid');
+  }
+  return v;
+};
+
+const optionalUuid = (v, nama) => {
+  if (v === undefined) return null;
+  if (typeof v !== 'string' || !UUID_RE.test(v)) {
+    throw new AppError(400, 'VALIDATION_ERROR', `Parameter ${nama} tidak valid`);
+  }
+  return v;
+};
+
+exports.setNilai = async (req, res) => {
+  requireUuid(req.params.krs_id);
+  const { nilai_huruf: huruf } = req.body || {};
+  if (!HURUF.includes(huruf)) {
+    throw new AppError(400, 'VALIDATION_ERROR',
+      'Field nilai_huruf harus salah satu dari A, AB, B, BC, C, D, E');
+  }
+
+  const item = await model.findKrsItem(req.params.krs_id);
+  if (!item) throw new AppError(404, 'NOT_FOUND', 'Item KRS tidak ditemukan');
+  if (item.krs_status !== 'locked') {
+    throw new AppError(409, 'CONFLICT', 'Nilai hanya bisa diinput untuk KRS yang sudah dikunci');
+  }
+
+  const row = await model.upsertDraft(item.id, huruf, BOBOT[huruf]);
+  if (!row) throw new AppError(409, 'CONFLICT', 'Nilai sudah dipublikasikan dan tidak bisa diubah');
+
+  res.json({ success: true, data: row });
+  audit(req, 'UPDATE_NILAI', 'nilai', row.id);
+};
+
+exports.publish = async (req, res) => {
+  const { krs_semester_id: headerId, mata_kuliah_id: mataKuliahId, semester } = req.body || {};
+
+  let published;
+  let entitas;
+  let entitasId;
+
+  if (headerId !== undefined) {
+    if (mataKuliahId !== undefined || semester !== undefined) {
+      throw new AppError(400, 'VALIDATION_ERROR',
+        'Pilih salah satu: krs_semester_id, atau mata_kuliah_id bersama semester');
+    }
+    requireUuid(headerId);
+    published = await model.publishByHeader(headerId);
+    entitas = 'krs_semester';
+    entitasId = headerId;
+  } else {
+    if (typeof mataKuliahId !== 'string' || !UUID_RE.test(mataKuliahId)) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Field mata_kuliah_id tidak valid');
+    }
+    if (typeof semester !== 'string' || !SEMESTER_RE.test(semester)) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Field semester tidak valid');
+    }
+    published = await model.publishByMataKuliah(mataKuliahId, semester);
+    entitas = 'mata_kuliah';
+    entitasId = mataKuliahId;
+  }
+
+  res.json({ success: true, data: { published } });
+  audit(req, 'PUBLISH_NILAI', entitas, entitasId);
+};
+
+exports.listAdmin = async (req, res) => {
+  const { rows, total } = await model.listAdmin({
+    semester: optionalSemester(req.query.semester),
+    mahasiswaId: optionalUuid(req.query.mahasiswa_id, 'mahasiswa_id'),
+    mataKuliahId: optionalUuid(req.query.mata_kuliah_id, 'mata_kuliah_id'),
+  }, listQuery(req.query, { sortMap: model.SORT, defaultSort: 'semester' }));
+  res.set('X-Total-Count', String(total));
+  res.json({ success: true, data: rows });
+};
+
+exports.me = async (req, res) => {
+  const filter = optionalSemester(req.query.semester);
+  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);
+  if (!mahasiswaId) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+
+  const rows = await model.publishedForMahasiswa(mahasiswaId);
+  const perSemester = new Map();
+  for (const r of rows) {
+    if (filter && r.semester !== filter) continue;
+    if (!perSemester.has(r.semester)) perSemester.set(r.semester, []);
+    perSemester.get(r.semester).push(r);
+  }
+
+  const data = [...perSemester.entries()]
+    .sort(([a], [b]) => semesterKey(a) - semesterKey(b))
+    .map(([semester, items]) => ({
+      semester,
+      ips: hitungIps(items),
+      total_sks: items.reduce((n, i) => n + i.sks, 0),
+      items: items.map(({ semester: _s, ...rest }) => rest),
+    }));
+
+  res.json({ success: true, data });
+};
+
+const halamanKhs = (identitas, semester, items, ips) => {
+  const baris = items.map((i) => `
+      <tr>
+        <td>${escapeHtml(i.kode)}</td>
+        <td>${i.nama}</td>
+        <td class="angka">${escapeHtml(i.sks)}</td>
+        <td class="angka">${escapeHtml(i.nilai_huruf)}</td>
+      </tr>`).join('');
+
+  return `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>KHS ${escapeHtml(identitas.nim)} ${escapeHtml(semester)}</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #444; padding: 4px 8px; text-align: left; }
+    .angka { text-align: right; }
+  </style>
+</head>
+<body>
+  <h1>Kartu Hasil Studi</h1>
+  <p>Nama: ${escapeHtml(identitas.nama)}<br>
+     NIM: ${escapeHtml(identitas.nim)}<br>
+     Angkatan: ${escapeHtml(identitas.angkatan ?? '-')}<br>
+     Semester: ${escapeHtml(semester)}</p>
+  <table>
+    <thead>
+      <tr><th>Kode</th><th>Mata Kuliah</th><th>SKS</th><th>Nilai</th></tr>
+    </thead>
+    <tbody>${baris}
+    </tbody>
+  </table>
+  <p>Total SKS: ${escapeHtml(items.reduce((n, i) => n + i.sks, 0))}<br>
+     IPS: ${escapeHtml(ips === null ? '-' : ips.toFixed(2))}</p>
+</body>
+</html>
+`;
+};
+
+exports.khs = async (req, res) => {
+  const semester = typeof req.query.semester === 'string' ? req.query.semester : '';
+  if (!semester) {
+    res.status(400).type('html').send(`<p>Semester "${semester}" tidak dikenali</p>`);
+    return;
+  }
+  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);
+  if (!mahasiswaId) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+
+  const identitas = await model.identitasKhs(mahasiswaId);
+  const items = await model.publishedBySemester(mahasiswaId, semester);
+
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(halamanKhs(identitas, semester, items, hitungIps(items)));
+};
+
+
+===== FILE: src/controllers/profilController.js =====
+const mahasiswaModel = require('../models/mahasiswaModel');
+const krsModel = require('../models/krsModel');
+const profilModel = require('../models/profilModel');
+const dokumenModel = require('../models/dokumenModel');
+const riwayatLogin = require('../models/riwayatLoginModel');
+const cutiModel = require('../models/cutiModel');
+const audit = require('../utils/audit');
+const AppError = require('../utils/AppError');
+const { isEmail, isHttpsUrl, requireUuid } = require('../utils/validators');
+const { TIPE_EMAIL, PLATFORM_SOSIAL, MAKS_EMAIL } = require('../config/profil');
+
+const getMahasiswaId = async (req) => {
+  const id = await krsModel.mahasiswaIdByUserId(req.user.id);
+  if (!id) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+  return id;
+};
+
+exports.addEmail = async (req, res) => {
+  const { tipe } = req.body || {};
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  if (!TIPE_EMAIL.includes(tipe)) {
+    throw new AppError(400, 'VALIDATION_ERROR', `Field tipe harus salah satu dari ${TIPE_EMAIL.join(', ')}`);
+  }
+  if (!isEmail(email)) throw new AppError(400, 'VALIDATION_ERROR', 'Field email tidak valid');
+
+  const mahasiswaId = await getMahasiswaId(req);
+  const row = await profilModel.createEmail(mahasiswaId, tipe, email, MAKS_EMAIL);
+  if (!row) throw new AppError(409, 'CONFLICT', `Maksimal ${MAKS_EMAIL} email tambahan`);
+  res.status(201).json({ success: true, data: row });
+  audit(req, 'CREATE_EMAIL', 'email_mahasiswa', row.id);
+};
+
+exports.removeEmail = async (req, res) => {
+  requireUuid(req.params.id);
+  const mahasiswaId = await getMahasiswaId(req);
+  if (!(await profilModel.removeEmail(req.params.id, mahasiswaId))) {
+    throw new AppError(404, 'NOT_FOUND', 'Email tidak ditemukan');
+  }
+  res.json({ success: true, data: { id: req.params.id, deleted: true } });
+  audit(req, 'DELETE_EMAIL', 'email_mahasiswa', req.params.id);
+};
+
+exports.addAkunSosial = async (req, res) => {
+  const { platform, id_akun: idAkun, url } = req.body || {};
+  if (!PLATFORM_SOSIAL.includes(platform)) {
+    throw new AppError(400, 'VALIDATION_ERROR', `Field platform harus salah satu dari ${PLATFORM_SOSIAL.join(', ')}`);
+  }
+  if (typeof idAkun !== 'string' || !/^@?[\w.-]{1,100}$/.test(idAkun)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field id_akun tidak valid');
+  }
+  if (!isHttpsUrl(url)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Field url harus berupa URL https');
+  }
+
+  const mahasiswaId = await getMahasiswaId(req);
+  const row = await profilModel.createAkunSosial(mahasiswaId, {
+    platform, id_akun: idAkun, url: new URL(url).href,
+  });
+  res.status(201).json({ success: true, data: row });
+  audit(req, 'CREATE_AKUN_SOSIAL', 'akun_sosial_mahasiswa', row.id);
+};
+
+exports.removeAkunSosial = async (req, res) => {
+  requireUuid(req.params.id);
+  const mahasiswaId = await getMahasiswaId(req);
+  if (!(await profilModel.removeAkunSosial(req.params.id, mahasiswaId))) {
+    throw new AppError(404, 'NOT_FOUND', 'Akun sosial tidak ditemukan');
+  }
+  res.json({ success: true, data: { id: req.params.id, deleted: true } });
+  audit(req, 'DELETE_AKUN_SOSIAL', 'akun_sosial_mahasiswa', req.params.id);
+};
+
+exports.riwayatLogin = async (req, res) => {
+  const rows = await riwayatLogin.listByUser(req.user.id, 50);
+  res.json({ success: true, data: rows });
+};
+
+// Semua data pribadi milik sendiri, nomor rekening tidak disamarkan
+exports.ekspor = async (req, res) => {
+  const profil = await mahasiswaModel.findByUserId(req.user.id);
+  if (!profil) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');
+
+  const [rekening, emailTambahan, akunSosial, dokumen, login, konsen, riwayatStudi, cuti] = await Promise.all([
+    profilModel.findRekening(profil.id),
+    profilModel.listEmail(profil.id),
+    profilModel.listAkunSosial(profil.id),
+    dokumenModel.listByMahasiswa(profil.id),
+    riwayatLogin.listByUser(req.user.id, null),
+    profilModel.listKonsen(profil.id),
+    profilModel.listRiwayatStudi(profil.id),
+    cutiModel.listDetailByMahasiswa(profil.id),
+  ]);
+
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    success: true,
+    data: {
+      diekspor_pada: new Date().toISOString(),
+      profil,
+      rekening,
+      email_tambahan: emailTambahan,
+      akun_sosial: akunSosial,
+      dokumen,
+      riwayat_login: login,
+      konsen_orang_tua: konsen,
+      riwayat_studi: riwayatStudi,
+      pengajuan_cuti: cuti,
+    },
+  });
+  audit(req, 'EXPORT_DATA_PRIBADI', 'mahasiswa', profil.id);
+};
+
+
+===== FILE: src/middleware/auth.js =====
+const { verify } = require('../config/jwt');
+const AppError = require('../utils/AppError');
+
+const authenticate = (req, res, next) => {
+  const [scheme, token] = (req.headers.authorization || '').split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return next(new AppError(401, 'UNAUTHORIZED', 'Token tidak ditemukan'));
+  }
+  try {
+    const payload = verify(token);
+    req.user = { id: payload.sub, role: payload.role };
+    next();
+  } catch {
+    next(new AppError(401, 'UNAUTHORIZED', 'Token tidak valid atau kedaluwarsa'));
+  }
+};
+
+const authorize = (...roles) => (req, res, next) =>
+  roles.includes(req.user?.role)
+    ? next()
+    : next(new AppError(403, 'FORBIDDEN', 'Akses ditolak'));
+
+module.exports = { authenticate, authorize };
+
+
+===== FILE: src/middleware/errorHandler.js =====
+const AppError = require('../utils/AppError');
+
+module.exports = (err, req, res, next) => {
+  if (err instanceof AppError) {
+    return res.status(err.status).json({
+      success: false,
+      error: { code: err.code, message: err.message, ...(err.details && { details: err.details }) },
+    });
+  }
+
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Body JSON tidak valid' },
+    });
+  }
+
+  // unique_violation dari PostgreSQL
+  if (err.code === '23505') {
+    return res.status(409).json({
+      success: false,
+      error: { code: 'CONFLICT', message: 'Data sudah terdaftar' },
+    });
+  }
+
+  // foreign_key_violation dari PostgreSQL
+  if (err.code === '23503') {
+    return res.status(409).json({
+      success: false,
+      error: { code: 'CONFLICT', message: 'Data masih dipakai atau terkait data lain' },
+    });
+  }
+
+  console.error(err);
+  res.status(500).json({
+    success: false,
+    error: { code: 'INTERNAL_ERROR', message: 'Terjadi kesalahan pada server' },
+  });
+};
+
+
+===== FILE: src/middleware/requireConsent.js =====
+const { consentStateByUserId } = require('../models/konsenModel');
+const AppError = require('../utils/AppError');
+
+// Dipasang SETELAH authenticate. Admin selalu lolos.
+// Mahasiswa di bawah 18 tahun ditolak kalau konsen terbarunya belum approved.
+module.exports = async (req, res, next) => {
+  if (req.user?.role !== 'mahasiswa') return next();
+
+  const state = await consentStateByUserId(req.user.id);
+  if (state?.is_minor && state.status !== 'approved') {
+    throw new AppError(403, 'CONSENT_REQUIRED',
+      'Akses ditolak: persetujuan orang tua/wali belum disetujui');
+  }
+  next();
+};
+
+
+===== FILE: src/middleware/upload.js =====
+const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
+const multer = require('multer');
+const AppError = require('../utils/AppError');
+const { UPLOAD_DIR, MAKS_UKURAN, TIPE_FILE } = require('../config/upload');
+
+const tipeCocok = (file) => {
+  const tipe = TIPE_FILE[file.mimetype];
+  return Boolean(tipe) && tipe.ekstensi.includes(path.extname(file.originalname).toLowerCase());
+};
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    // Nama file di disk dibuat server, nama asli hanya disimpan di database
+    filename: (req, file, cb) => cb(null, crypto.randomUUID() + TIPE_FILE[file.mimetype].simpanSebagai),
+  }),
+  limits: { fileSize: MAKS_UKURAN, files: 1, fields: 5, parts: 6 },
+  fileFilter: (req, file, cb) => {
+    if (!tipeCocok(file)) {
+      return cb(new AppError(400, 'VALIDATION_ERROR', 'File harus berupa pdf, jpg, atau png'));
+    }
+    cb(null, true);
+  },
+});
+
+const PESAN_MULTER = {
+  LIMIT_FILE_SIZE: 'Ukuran file maksimal 2 MB',
+  LIMIT_FILE_COUNT: 'Hanya satu file per unggahan',
+  LIMIT_UNEXPECTED_FILE: 'File harus dikirim di field file',
+};
+
+const hapusFile = (file) => (file ? fs.unlink(file.path).catch(() => {}) : Promise.resolve());
+
+// Isi file harus diawali byte yang sesuai dengan MIME-nya
+const isiSesuaiTipe = async (file) => {
+  const { signature } = TIPE_FILE[file.mimetype];
+  const handle = await fs.open(file.path, 'r');
+  try {
+    const awal = Buffer.alloc(signature.length);
+    await handle.read(awal, 0, signature.length, 0);
+    return awal.equals(signature);
+  } finally {
+    await handle.close();
+  }
+};
+
+const uploadDokumen = (req, res, next) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err instanceof multer.MulterError) {
+      return next(new AppError(400, 'VALIDATION_ERROR', PESAN_MULTER[err.code] || 'Unggahan tidak valid'));
+    }
+    if (err) return next(err);
+    if (!req.file) return next(new AppError(400, 'VALIDATION_ERROR', 'File wajib diunggah di field file'));
+
+    try {
+      if (!(await isiSesuaiTipe(req.file))) {
+        await hapusFile(req.file);
+        return next(new AppError(400, 'VALIDATION_ERROR', 'Isi file tidak sesuai dengan tipenya'));
+      }
+      next();
+    } catch (e) {
+      await hapusFile(req.file);
+      next(e);
+    }
+  });
+};
+
+module.exports = { uploadDokumen, hapusFile };
+
+
+===== FILE: src/models/cutiModel.js =====
+const pool = require('../config/db');
+const { KEY } = require('../config/crypto');
+
+const RINGKAS_COLS = 'c.id, c.semester, c.kategori, c.status, c.created_at, c.updated_at';
+
+// $1 selalu berisi kunci enkripsi
+const DETAIL_SELECT = `
+  SELECT c.id, c.mahasiswa_id, m.nim, m.nama, c.semester, c.kategori, c.alasan,
+         pgp_sym_decrypt(c.alamat_cuti, $1) AS alamat_cuti,
+         pgp_sym_decrypt(c.nomor_telepon, $1) AS nomor_telepon,
+         c.dokumen_id, c.status, c.catatan_admin, c.created_at, c.updated_at
+  FROM pengajuan_cuti c
+  JOIN mahasiswa m ON m.id = c.mahasiswa_id`;
+
+  exports.create = async (d) => {
+    const { rows } = await pool.query(
+      `INSERT INTO pengajuan_cuti
+         (mahasiswa_id, semester, kategori, alasan, alamat_cuti, nomor_telepon, dokumen_id, status)
+       VALUES ($2, $3, $4, $5, pgp_sym_encrypt($6::text, $1), pgp_sym_encrypt($7::text, $1), $8,
+         COALESCE($9, 'diajukan'))
+       RETURNING id`,
+      [KEY, d.mahasiswa_id, d.semester, d.kategori, d.alasan, d.alamat_cuti, d.nomor_telepon,
+       d.dokumen_id ?? null, d.status ?? null]
+    );
+    return rows[0].id;
+  };
+
+exports.listByMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ${RINGKAS_COLS} FROM pengajuan_cuti c
+     WHERE c.mahasiswa_id = $1
+     ORDER BY c.created_at DESC`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+exports.listDetailByMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `${DETAIL_SELECT} WHERE c.mahasiswa_id = $2 ORDER BY c.created_at`,
+    [KEY, mahasiswaId]
+  );
+  return rows;
+};
+
+exports.findById = async (id) => {
+  const { rows } = await pool.query(`${DETAIL_SELECT} WHERE c.id = $2`, [KEY, id]);
+  return rows[0] || null;
+};
+
+exports.findOwned = async (id, mahasiswaId) => {
+  const { rows } = await pool.query(
+    `${DETAIL_SELECT} WHERE c.id = $2`,
+    [KEY, id]
+  );
+  return rows[0] || null;
+};
+
+// Update hanya berhasil kalau status saat ini masih diajukan
+exports.batal = async (id, mahasiswaId) => {
+  const { rows } = await pool.query(
+    `UPDATE pengajuan_cuti SET status = 'dibatalkan', updated_at = now()
+     WHERE id = $1 AND mahasiswa_id = $2 AND status = 'diajukan'
+     RETURNING id`,
+    [id, mahasiswaId]
+  );
+  return rows[0]?.id || null;
+};
+
+exports.putuskan = async (id, status, catatan) => {
+  const { rows } = await pool.query(
+    `UPDATE pengajuan_cuti SET status = $2, catatan_admin = $3, updated_at = now()
+     WHERE id = $1 AND status = 'diajukan'
+     RETURNING id`,
+    [id, status, catatan]
+  );
+  return rows[0]?.id || null;
+};
+
+exports.SORT = {
+  created_at: 'c.created_at', semester: 'c.semester', status: 'c.status',
+  kategori: 'c.kategori', nim: 'm.nim', nama: 'm.nama',
+};
+
+const ADMIN_FROM = `
+  FROM pengajuan_cuti c
+  JOIN mahasiswa m ON m.id = c.mahasiswa_id
+  WHERE ($1::text IS NULL OR m.nim ILIKE $1 ESCAPE '\\' OR m.nama ILIKE $1 ESCAPE '\\'
+    OR c.kategori ILIKE $1 ESCAPE '\\')`;
+
+exports.listAdmin = async ({ pola, sort, order, limit, offset }) => {
+    const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, [pola]);
+    const { rows } = await pool.query(
+      `SELECT ${RINGKAS_COLS}, m.id AS mahasiswa_id, m.nim, m.nama,
+              pgp_sym_decrypt(c.alamat_cuti, $4) AS alamat_cuti,
+              pgp_sym_decrypt(c.nomor_telepon, $4) AS nomor_telepon
+       ${ADMIN_FROM}
+       ORDER BY ${sort} ${order}, c.id
+       LIMIT $2 OFFSET $3`,
+      [pola, limit, offset, KEY]
+    );
+    return { rows, total: total.rows[0].n };
+};
+
+
+===== FILE: src/models/dokumenModel.js =====
+const pool = require('../config/db');
+
+// path_file sengaja tidak ikut, hanya dipakai di server
+const COLS = 'id, mahasiswa_id, jenis, nama_file_asli, mime, ukuran, status_verifikasi, created_at, updated_at';
+
+exports.create = async (d) => {
+  const { rows } = await pool.query(
+    `INSERT INTO dokumen_mahasiswa (mahasiswa_id, jenis, nama_file_asli, path_file, mime, ukuran)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING ${COLS}`,
+    [d.mahasiswa_id, d.jenis, d.nama_file_asli, d.path_file, d.mime, d.ukuran]
+  );
+  return rows[0];
+};
+
+exports.existsJenis = async (mahasiswaId, jenis) => {
+  const { rows } = await pool.query(
+    'SELECT 1 FROM dokumen_mahasiswa WHERE mahasiswa_id = $1 AND jenis = $2',
+    [mahasiswaId, jenis]
+  );
+  return rows.length > 0;
+};
+
+exports.listByMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ${COLS} FROM dokumen_mahasiswa
+     WHERE mahasiswa_id = $1
+     ORDER BY created_at DESC`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+// Dokumen hanya ditemukan kalau milik mahasiswa yang bersangkutan
+exports.findOwned = async (id, mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ${COLS}, path_file FROM dokumen_mahasiswa
+     WHERE id = $1 AND mahasiswa_id = $2`,
+    [id, mahasiswaId]
+  );
+  return rows[0] || null;
+};
+
+exports.updateStatus = async (id, mahasiswaId, status) => {
+  const { rows } = await pool.query(
+    `UPDATE dokumen_mahasiswa SET status_verifikasi = $3, updated_at = now()
+     WHERE id = $1 AND mahasiswa_id = $2
+     RETURNING ${COLS}`,
+    [id, mahasiswaId, status]
+  );
+  return rows[0] || null;
+};
+
+exports.pathsByMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    'SELECT path_file FROM dokumen_mahasiswa WHERE mahasiswa_id = $1',
+    [mahasiswaId]
+  );
+  return rows.map((r) => r.path_file);
+};
+
+
+===== FILE: src/models/konsenModel.js =====
+const pool = require('../config/db');
+
+const COLUMNS = 'id, mahasiswa_id, nama_wali, bukti_persetujuan_url, tanggal_persetujuan, status, created_at';
+
+exports.findMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT m.id, u.is_minor
+     FROM mahasiswa m
+     JOIN users u ON u.id = m.user_id
+     WHERE m.id = $1`,
+    [mahasiswaId]
+  );
+  return rows[0] || null;
+};
+
+exports.listByMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ${COLUMNS} FROM konsen_orang_tua
+     WHERE mahasiswa_id = $1
+     ORDER BY created_at DESC`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+exports.create = async (d) => {
+  const { rows } = await pool.query(
+    `INSERT INTO konsen_orang_tua
+       (mahasiswa_id, nama_wali, bukti_persetujuan_url, tanggal_persetujuan)
+     VALUES ($1, $2, $3, $4)
+     RETURNING ${COLUMNS}`,
+    [d.mahasiswa_id, d.nama_wali, d.bukti_persetujuan_url ?? null, d.tanggal_persetujuan]
+  );
+  return rows[0];
+};
+
+// mahasiswa_id ikut dicek supaya konsen milik mahasiswa lain tidak bisa diubah lewat URL
+exports.updateStatus = async (konsenId, mahasiswaId, status) => {
+  const { rows } = await pool.query(
+    `UPDATE konsen_orang_tua SET status = $3
+     WHERE id = $1 AND mahasiswa_id = $2
+     RETURNING ${COLUMNS}`,
+    [konsenId, mahasiswaId, status]
+  );
+  return rows[0] || null;
+};
+
+// Status konsen terbaru milik user; dipakai middleware requireConsent
+exports.consentStateByUserId = async (userId) => {
+  const { rows } = await pool.query(
+    `SELECT u.is_minor,
+            (SELECT k.status
+               FROM konsen_orang_tua k
+               JOIN mahasiswa m ON m.id = k.mahasiswa_id
+              WHERE m.user_id = u.id
+              ORDER BY k.created_at DESC
+              LIMIT 1) AS status
+     FROM users u
+     WHERE u.id = $1`,
+    [userId]
+  );
+  return rows[0] || null;
+};
+
+
+===== FILE: src/models/krsModel.js =====
+const pool = require('../config/db');
+
+const HEADER_COLS = 'id, mahasiswa_id, semester, status, submitted_at, locked_at, created_at, updated_at';
+
+exports.mahasiswaIdByUserId = async (userId) => {
+  const { rows } = await pool.query('SELECT id FROM mahasiswa WHERE user_id = $1', [userId]);
+  return rows[0]?.id || null;
+};
+
+exports.findHeader = async (mahasiswaId, semester) => {
+  const { rows } = await pool.query(
+    `SELECT ${HEADER_COLS} FROM krs_semester WHERE mahasiswa_id = $1 AND semester = $2`,
+    [mahasiswaId, semester]
+  );
+  return rows[0] || null;
+};
+
+exports.findHeaderById = async (id) => {
+  const { rows } = await pool.query(`SELECT ${HEADER_COLS} FROM krs_semester WHERE id = $1`, [id]);
+  return rows[0] || null;
+};
+
+exports.getOrCreateHeader = async (mahasiswaId, semester) => {
+  await pool.query(
+    `INSERT INTO krs_semester (mahasiswa_id, semester) VALUES ($1, $2)
+     ON CONFLICT (mahasiswa_id, semester) DO NOTHING`,
+    [mahasiswaId, semester]
+  );
+  return exports.findHeader(mahasiswaId, semester);
+};
+
+exports.listItems = async (headerId) => {
+  const { rows } = await pool.query(
+    `SELECT k.id, mk.id AS mata_kuliah_id, mk.kode, mk.nama, mk.sks
+     FROM krs k
+     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     WHERE k.krs_semester_id = $1
+     ORDER BY mk.kode`,
+    [headerId]
+  );
+  return rows;
+};
+
+exports.addItem = async (headerId, mataKuliahId) => {
+  const { rows } = await pool.query(
+    'INSERT INTO krs (krs_semester_id, mata_kuliah_id) VALUES ($1, $2) RETURNING id',
+    [headerId, mataKuliahId]
+  );
+  return rows[0].id;
+};
+
+// Item hanya ditemukan kalau milik mahasiswa yang bersangkutan
+exports.findItemOwned = async (itemId, mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT k.id, ks.status
+     FROM krs k
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     WHERE k.id = $1 AND ks.mahasiswa_id = $2`,
+    [itemId, mahasiswaId]
+  );
+  return rows[0] || null;
+};
+
+exports.removeItem = async (itemId) => {
+  await pool.query('DELETE FROM krs WHERE id = $1', [itemId]);
+};
+
+// Update hanya berhasil kalau status saat ini sama dengan `from`
+exports.transition = async (headerId, from, to) => {
+  const { rows } = await pool.query(
+    `UPDATE krs_semester SET
+       status = $3::text,
+       updated_at = now(),
+       submitted_at = CASE WHEN $3::text = 'submitted' THEN now() ELSE submitted_at END,
+       locked_at = CASE WHEN $3::text = 'locked' THEN now() ELSE locked_at END
+     WHERE id = $1 AND status = $2
+     RETURNING ${HEADER_COLS}`,
+    [headerId, from, to]
+  );
+  return rows[0] || null;
+};
+
+exports.SORT = {
+  nim: 'm.nim', nama: 'm.nama', status: 'ks.status', total_sks: 'total_sks', submitted_at: 'ks.submitted_at',
+};
+
+const HEADER_FILTER = `
+  WHERE ks.semester = $1 AND ($2::uuid IS NULL OR ks.mahasiswa_id = $2)
+    AND ($3::text IS NULL OR m.nim ILIKE $3 ESCAPE '\\' OR m.nama ILIKE $3 ESCAPE '\\')`;
+
+// orderBy berasal dari listQuery, sudah dibatasi ke ekspresi di SORT
+exports.listHeaders = async (semester, mahasiswaId, { pola, orderBy, limit, offset }) => {
+  const total = await pool.query(
+    `SELECT count(*)::int AS n
+     FROM krs_semester ks
+     JOIN mahasiswa m ON m.id = ks.mahasiswa_id
+     ${HEADER_FILTER}`,
+    [semester, mahasiswaId, pola]
+  );
+  const { rows } = await pool.query(
+    `SELECT ks.id, ks.semester, ks.status, ks.submitted_at, ks.locked_at,
+            m.id AS mahasiswa_id, m.nim, m.nama,
+            COALESCE(SUM(mk.sks), 0)::int AS total_sks
+     FROM krs_semester ks
+     JOIN mahasiswa m ON m.id = ks.mahasiswa_id
+     LEFT JOIN krs k ON k.krs_semester_id = ks.id
+     LEFT JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     ${HEADER_FILTER}
+     GROUP BY ks.id, m.id
+     ORDER BY ${orderBy}, ks.id
+     LIMIT $4 OFFSET $5`,
+    [semester, mahasiswaId, pola, limit, offset]
+  );
+  return { rows, total: total.rows[0].n };
+};
+
+exports.publishedGrades = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ks.semester, n.nilai_huruf, mk.sks
+     FROM nilai n
+     JOIN krs k ON k.id = n.krs_id
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     WHERE ks.mahasiswa_id = $1
+       AND n.status = 'published'
+       AND n.nilai_huruf IS NOT NULL`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+
+===== FILE: src/models/mahasiswaModel.js =====
+const pool = require('../config/db');
+const { KEY } = require('../config/crypto');
+
+// $1 selalu berisi kunci enkripsi
+const DETAIL_SELECT = `
+  SELECT m.id, m.user_id, u.email, m.nama, m.nim,
+         pgp_sym_decrypt(m.nik, $1) AS nik,
+         pgp_sym_decrypt(m.tanggal_lahir, $1) AS tanggal_lahir,
+         pgp_sym_decrypt(m.nik_orang_tua, $1) AS nik_orang_tua,
+         pgp_sym_decrypt(m.nomor_telepon, $1) AS nomor_telepon,
+         u.is_minor,
+         (SELECT k.status FROM konsen_orang_tua k
+           WHERE k.mahasiswa_id = m.id
+           ORDER BY k.created_at DESC LIMIT 1) AS status_konsen,
+         m.tempat_lahir, m.nisn,
+         m.alamat_asal, m.kab_kota_asal, m.kode_pos_asal,
+         m.nama_ayah, m.nama_ibu,
+         pgp_sym_decrypt(m.nomor_hp_orang_tua, $1) AS nomor_hp_orang_tua,
+         m.alamat_domisili, m.kab_kota_domisili, m.kode_pos_domisili,
+         m.created_at, m.updated_at
+  FROM mahasiswa m
+  JOIN users u ON u.id = m.user_id`;
+
+const withTransaction = async (fn) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+exports.findById = async (id) => {
+  const { rows } = await pool.query(`${DETAIL_SELECT} WHERE m.id = $2`, [KEY, id]);
+  return rows[0] || null;
+};
+
+exports.findByUserId = async (userId) => {
+  const { rows } = await pool.query(`${DETAIL_SELECT} WHERE m.user_id = $2`, [KEY, userId]);
+  return rows[0] || null;
+};
+
+exports.SORT = { nim: 'm.nim', nama: 'm.nama', email: 'u.email', created_at: 'm.created_at' };
+
+const listFrom = (pola) => `
+  FROM mahasiswa m
+  JOIN users u ON u.id = m.user_id
+  WHERE ('${pola}' IS NULL
+    OR m.nim ILIKE '${pola}' OR m.nama ILIKE '${pola}' OR u.email ILIKE '${pola}')`;
+
+exports.list = async ({ pola, orderBy, limit, offset }) => {
+  const from = listFrom(pola);
+  const total = await pool.query(`SELECT count(*)::int AS n ${from}`);
+  const { rows } = await pool.query(
+    `SELECT m.id, m.nim, m.nama, u.email
+     ${from}
+     ORDER BY ${orderBy}, m.id
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  );
+  return { rows, total: total.rows[0].n };
+};
+exports.findUserRole = async (userId) => {
+  const { rows } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+  return rows[0]?.role || null;
+};
+
+exports.create = (d) =>
+  withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `INSERT INTO mahasiswa
+         (user_id, nama, nim, nik, tanggal_lahir, nik_orang_tua, nomor_telepon,
+          tempat_lahir, nisn, alamat_asal, kab_kota_asal, kode_pos_asal,
+          nama_ayah, nama_ibu, nomor_hp_orang_tua)
+       VALUES ($2, $3, $4,
+         pgp_sym_encrypt($5::text, $1),
+         pgp_sym_encrypt($6::text, $1),
+         pgp_sym_encrypt($7::text, $1),
+         pgp_sym_encrypt($8::text, $1),
+         $9, $10, $11, $12, $13, $14, $15,
+         pgp_sym_encrypt($16::text, $1))
+       RETURNING id`,
+      [KEY, d.user_id, d.nama, d.nim, d.nik, d.tanggal_lahir,
+       d.nik_orang_tua ?? null, d.nomor_telepon,
+       d.tempat_lahir ?? null, d.nisn ?? null, d.alamat_asal ?? null,
+       d.kab_kota_asal ?? null, d.kode_pos_asal ?? null,
+       d.nama_ayah ?? null, d.nama_ibu ?? null, d.nomor_hp_orang_tua ?? null]
+    );
+    await client.query(
+      'UPDATE users SET is_minor = $2, updated_at = now() WHERE id = $1',
+      [d.user_id, d.is_minor]
+    );
+    return rows[0].id;
+  });
+
+// Field yang tidak dikirim (null) tidak diubah
+exports.update = (id, d) =>
+  withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `UPDATE mahasiswa SET
+         nama = COALESCE($3, nama),
+         nim = COALESCE($4, nim),
+         nik = COALESCE(pgp_sym_encrypt($5::text, $1), nik),
+         tanggal_lahir = COALESCE(pgp_sym_encrypt($6::text, $1), tanggal_lahir),
+         nik_orang_tua = COALESCE(pgp_sym_encrypt($7::text, $1), nik_orang_tua),
+         nomor_telepon = COALESCE(pgp_sym_encrypt($8::text, $1), nomor_telepon),
+         tempat_lahir = COALESCE($9, tempat_lahir),
+         nisn = COALESCE($10, nisn),
+         alamat_asal = COALESCE($11, alamat_asal),
+         kab_kota_asal = COALESCE($12, kab_kota_asal),
+         kode_pos_asal = COALESCE($13, kode_pos_asal),
+         nama_ayah = COALESCE($14, nama_ayah),
+         nama_ibu = COALESCE($15, nama_ibu),
+         nomor_hp_orang_tua = COALESCE(pgp_sym_encrypt($16::text, $1), nomor_hp_orang_tua),
+         updated_at = now()
+       WHERE id = $2
+       RETURNING user_id`,
+      [KEY, id, d.nama ?? null, d.nim ?? null, d.nik ?? null,
+       d.tanggal_lahir ?? null, d.nik_orang_tua ?? null, d.nomor_telepon ?? null,
+       d.tempat_lahir ?? null, d.nisn ?? null, d.alamat_asal ?? null,
+       d.kab_kota_asal ?? null, d.kode_pos_asal ?? null,
+       d.nama_ayah ?? null, d.nama_ibu ?? null, d.nomor_hp_orang_tua ?? null]
+    );
+    if (!rows[0]) return false;
+    if (d.is_minor !== undefined) {
+      await client.query(
+        'UPDATE users SET is_minor = $2, updated_at = now() WHERE id = $1',
+        [rows[0].user_id, d.is_minor]
+      );
+    }
+    return true;
+  });
+
+exports.updateByUserId = (userId, d, rekening) =>
+  withTransaction(async (client) => {
+    const kolom = Object.keys(d);
+    const set = kolom.map((k, i) => `${k} = $${i + 2}`).join(', ');
+    const { rows } = await client.query(
+      `UPDATE mahasiswa SET ${set}, updated_at = now()
+       WHERE user_id = $1
+       RETURNING id`,
+      [userId, ...kolom.map((k) => d[k])]
+    );
+    const id = rows[0]?.id;
+    if (!id) return null;
+
+    if (rekening) {
+      await client.query(
+        `INSERT INTO rekening_mahasiswa (mahasiswa_id, nama_bank, nomor_rekening, nama_pemilik)
+         VALUES ($2, $3, pgp_sym_encrypt($4::text, $1), $5)
+         ON CONFLICT (mahasiswa_id) DO UPDATE SET
+           nama_bank = EXCLUDED.nama_bank,
+           nomor_rekening = EXCLUDED.nomor_rekening,
+           nama_pemilik = EXCLUDED.nama_pemilik,
+           updated_at = now()`,
+        [KEY, id, rekening.nama_bank, rekening.nomor_rekening, rekening.nama_pemilik]
+      );
+    }
+    return id;
+  });
+
+// Hapus akun user; profil mahasiswa dan data konsen ikut terhapus lewat CASCADE
+exports.remove = async (id) => {
+  const { rows } = await pool.query(
+    `DELETE FROM users
+     WHERE id = (SELECT user_id FROM mahasiswa WHERE id = $1)
+     RETURNING id`,
+    [id]
+  );
+  return rows.length > 0;
+};
+
+
+===== FILE: src/models/mataKuliahModel.js =====
+const pool = require('../config/db');
+
+const COLS = 'id, kode, nama, sks';
+
+exports.list = async (q) => {
+  if (q) {
+    const { rows } = await pool.query(
+      `SELECT ${COLS} FROM mata_kuliah
+       WHERE kode ILIKE '%' || $1 || '%' OR nama ILIKE '%' || $1 || '%'
+       ORDER BY kode`,
+      [q]
+    );
+    return rows;
+  }
+  const { rows } = await pool.query(`SELECT ${COLS} FROM mata_kuliah ORDER BY kode`);
+  return rows;
+};
+
+exports.findById = async (id) => {
+  const { rows } = await pool.query(`SELECT ${COLS} FROM mata_kuliah WHERE id = $1`, [id]);
+  return rows[0] || null;
+};
+
+exports.create = async (d) => {
+  const { rows } = await pool.query(
+    `INSERT INTO mata_kuliah (kode, nama, sks) VALUES ($1, $2, $3) RETURNING ${COLS}`,
+    [d.kode, d.nama, d.sks]
+  );
+  return rows[0];
+};
+
+exports.update = async (id, d) => {
+  const { rows } = await pool.query(
+    `UPDATE mata_kuliah SET
+       kode = COALESCE($2, kode),
+       nama = COALESCE($3, nama),
+       sks = COALESCE($4, sks)
+     WHERE id = $1
+     RETURNING ${COLS}`,
+    [id, d.kode ?? null, d.nama ?? null, d.sks ?? null]
+  );
+  return rows[0] || null;
+};
+
+exports.remove = async (id) => {
+  const { rowCount } = await pool.query('DELETE FROM mata_kuliah WHERE id = $1', [id]);
+  return rowCount > 0;
+};
+
+
+===== FILE: src/models/nilaiModel.js =====
+const pool = require('../config/db');
+
+const NILAI_COLS = 'id, krs_id, nilai_huruf, nilai_angka::float8 AS nilai_angka, status, updated_at';
+
+exports.findKrsItem = async (krsId) => {
+  const { rows } = await pool.query(
+    `SELECT k.id, ks.status AS krs_status, ks.semester, ks.mahasiswa_id
+     FROM krs k
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     WHERE k.id = $1`,
+    [krsId]
+  );
+  return rows[0] || null;
+};
+
+// Insert atau update nilai; update hanya berhasil kalau status masih draft
+exports.upsertDraft = async (krsId, huruf, angka) => {
+  const { rows } = await pool.query(
+    `INSERT INTO nilai (krs_id, nilai_huruf, nilai_angka)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (krs_id) DO UPDATE SET
+       nilai_huruf = EXCLUDED.nilai_huruf,
+       nilai_angka = EXCLUDED.nilai_angka,
+       updated_at = now()
+     WHERE nilai.status = 'draft'
+     RETURNING ${NILAI_COLS}`,
+    [krsId, huruf, angka]
+  );
+  return rows[0] || null;
+};
+
+exports.publishByHeader = async (krsSemesterId) => {
+  const { rows } = await pool.query(
+    `UPDATE nilai n SET status = 'published', updated_at = now()
+     FROM krs k
+     WHERE k.id = n.krs_id
+       AND k.krs_semester_id = $1
+       AND n.status = 'draft'
+     RETURNING n.id`,
+    [krsSemesterId]
+  );
+  return rows.length;
+};
+
+exports.publishByMataKuliah = async (mataKuliahId, semester) => {
+  const { rows } = await pool.query(
+    `UPDATE nilai n SET status = 'published', updated_at = now()
+     FROM krs k
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     WHERE k.id = n.krs_id
+       AND k.mata_kuliah_id = $1
+       AND ks.semester = $2::text
+       AND n.status = 'draft'
+     RETURNING n.id`,
+    [mataKuliahId, semester]
+  );
+  return rows.length;
+};
+
+exports.SORT = {
+  semester: 'ks.semester', nim: 'm.nim', nama: 'm.nama', kode: 'mk.kode',
+  nilai_huruf: 'n.nilai_huruf', status: 'n.status',
+};
+
+const ADMIN_FROM = `
+  FROM krs k
+  JOIN krs_semester ks ON ks.id = k.krs_semester_id
+  JOIN mahasiswa m ON m.id = ks.mahasiswa_id
+  JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+  LEFT JOIN nilai n ON n.krs_id = k.id
+  WHERE ($1::text IS NULL OR ks.semester = $1::text)
+    AND ($2::uuid IS NULL OR m.id = $2::uuid)
+    AND ($3::uuid IS NULL OR mk.id = $3::uuid)
+    AND ($4::text IS NULL OR m.nim ILIKE $4 ESCAPE '\\' OR m.nama ILIKE $4 ESCAPE '\\'
+      OR mk.kode ILIKE $4 ESCAPE '\\' OR mk.nama ILIKE $4 ESCAPE '\\')`;
+
+// Berangkat dari baris KRS supaya mata kuliah yang belum dinilai juga terlihat.
+// orderBy berasal dari listQuery, sudah dibatasi ke ekspresi di SORT.
+exports.listAdmin = async ({ semester, mahasiswaId, mataKuliahId }, { pola, orderBy, limit, offset }) => {
+  const filter = [semester, mahasiswaId, mataKuliahId, pola];
+  const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, filter);
+  const { rows } = await pool.query(
+    `SELECT k.id AS krs_id, ks.id AS krs_semester_id, ks.semester, ks.status AS krs_status,
+            m.id AS mahasiswa_id, m.nim, m.nama,
+            mk.id AS mata_kuliah_id, mk.kode, mk.nama AS nama_mata_kuliah, mk.sks,
+            n.id AS nilai_id, n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka, n.status AS nilai_status
+     ${ADMIN_FROM}
+     ORDER BY ${orderBy}, ks.semester, m.nim, mk.kode, k.id
+     LIMIT $5 OFFSET $6`,
+    [...filter, limit, offset]
+  );
+  return { rows, total: total.rows[0].n };
+};
+
+// Angkatan diambil dari tahun semester KRS pertama, skema tidak punya kolom angkatan
+exports.identitasKhs = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT m.nama, m.nim,
+            (SELECT min(split_part(ks.semester, '-', 1)) FROM krs_semester ks
+              WHERE ks.mahasiswa_id = m.id) AS angkatan
+     FROM mahasiswa m
+     WHERE m.id = $1`,
+    [mahasiswaId]
+  );
+  return rows[0] || null;
+};
+
+exports.publishedForMahasiswa = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ks.semester, mk.kode, mk.nama, mk.sks, n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka
+     FROM nilai n
+     JOIN krs k ON k.id = n.krs_id
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     WHERE ks.mahasiswa_id = $1
+       AND n.status = 'published'
+     ORDER BY mk.kode`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+exports.publishedBySemester = async (mahasiswaId, semester) => {
+  const { rows } = await pool.query(
+    `SELECT ks.semester, mk.kode, mk.nama, mk.sks,
+            n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka
+     FROM nilai n
+     JOIN krs k ON k.id = n.krs_id
+     JOIN krs_semester ks ON ks.id = k.krs_semester_id
+     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     WHERE ks.mahasiswa_id = $1
+       AND n.status = 'published'
+       AND ks.semester = '${semester}'
+     ORDER BY mk.kode`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+
+===== FILE: src/models/profilModel.js =====
+const pool = require('../config/db');
+const { KEY } = require('../config/crypto');
+
+exports.findRekening = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT nama_bank, pgp_sym_decrypt(nomor_rekening, $1) AS nomor_rekening, nama_pemilik, updated_at
+     FROM rekening_mahasiswa
+     WHERE mahasiswa_id = $2`,
+    [KEY, mahasiswaId]
+  );
+  return rows[0] || null;
+};
+
+exports.listEmail = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT id, tipe, email, created_at FROM email_mahasiswa
+     WHERE mahasiswa_id = $1
+     ORDER BY created_at`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+// Insert hanya terjadi kalau jumlah email milik mahasiswa masih di bawah batas
+exports.createEmail = async (mahasiswaId, tipe, email, maks) => {
+  const { rows } = await pool.query(
+    `INSERT INTO email_mahasiswa (mahasiswa_id, tipe, email)
+     SELECT $1, $2, $3
+     WHERE (SELECT count(*) FROM email_mahasiswa WHERE mahasiswa_id = $1) < $4
+     RETURNING id, tipe, email, created_at`,
+    [mahasiswaId, tipe, email, maks]
+  );
+  return rows[0] || null;
+};
+
+exports.removeEmail = async (id, mahasiswaId) => {
+  const { rowCount } = await pool.query(
+    'DELETE FROM email_mahasiswa WHERE id = $1',
+    [id]
+  );
+  return rowCount > 0;
+};
+
+exports.listAkunSosial = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT id, platform, id_akun, url, created_at FROM akun_sosial_mahasiswa
+     WHERE mahasiswa_id = $1
+     ORDER BY platform`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+exports.createAkunSosial = async (mahasiswaId, d) => {
+  const { rows } = await pool.query(
+    `INSERT INTO akun_sosial_mahasiswa (mahasiswa_id, platform, id_akun, url)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, platform, id_akun, url, created_at`,
+    [mahasiswaId, d.platform, d.id_akun, d.url]
+  );
+  return rows[0];
+};
+
+exports.removeAkunSosial = async (id, mahasiswaId) => {
+  const { rowCount } = await pool.query(
+    'DELETE FROM akun_sosial_mahasiswa WHERE id = $1 AND mahasiswa_id = $2',
+    [id, mahasiswaId]
+  );
+  return rowCount > 0;
+};
+
+exports.listKonsen = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT nama_wali, bukti_persetujuan_url, tanggal_persetujuan, status, created_at
+     FROM konsen_orang_tua
+     WHERE mahasiswa_id = $1
+     ORDER BY created_at`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+// Riwayat studi untuk ekspor: semua mata kuliah di KRS, nilai hanya yang published
+exports.listRiwayatStudi = async (mahasiswaId) => {
+  const { rows } = await pool.query(
+    `SELECT ks.semester, ks.status AS status_krs, mk.kode, mk.nama, mk.sks,
+            CASE WHEN n.status = 'published' THEN n.nilai_huruf END AS nilai_huruf
+     FROM krs_semester ks
+     JOIN krs k ON k.krs_semester_id = ks.id
+     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id
+     LEFT JOIN nilai n ON n.krs_id = k.id
+     WHERE ks.mahasiswa_id = $1
+     ORDER BY ks.semester, mk.kode`,
+    [mahasiswaId]
+  );
+  return rows;
+};
+
+
+===== FILE: src/models/riwayatLoginModel.js =====
+const pool = require('../config/db');
+
+// Sengaja tidak di-await supaya waktu respons login tidak berubah
+exports.catat = (req, userId, status) => {
+  const userAgent = req.get('user-agent');
+  pool
+    .query(
+      'INSERT INTO riwayat_login (user_id, ip, user_agent, status) VALUES ($1, $2, $3, $4)',
+      [userId, req.ip, userAgent ? userAgent.slice(0, 255) : null, status]
+    )
+    .catch((err) => console.error('Riwayat login gagal dicatat:', err.message));
+};
+
+exports.listByUser = async (userId, limit) => {
+  const { rows } = await pool.query(
+    `SELECT waktu, ip, user_agent, status FROM riwayat_login
+     WHERE user_id = $1
+     ORDER BY waktu DESC
+     LIMIT $2`,
+    [userId, limit]
+  );
+  return rows;
+};
+
+
+===== FILE: src/routes/authRoutes.js =====
+const router = require('express').Router();
+const auth = require('../controllers/authController');
+
+router.post('/register', auth.register);
+router.post('/login', auth.login);
+
+module.exports = router;
+
+
+===== FILE: src/routes/cutiRoutes.js =====
+const router = require('express').Router();
+const { authenticate, authorize } = require('../middleware/auth');
+const requireConsent = require('../middleware/requireConsent');
+const c = require('../controllers/cutiController');
+
+const mahasiswa = [authorize('mahasiswa'), requireConsent];
+
+router.use(authenticate);
+
+router.post('/me', ...mahasiswa, c.create);
+router.get('/me', ...mahasiswa, c.listMe);
+router.get('/me/:id', ...mahasiswa, c.getMe);
+router.post('/me/:id/batal', ...mahasiswa, c.batal);
+
+router.get('/', authorize('admin'), c.listAdmin);
+router.get('/:id', authorize('admin'), c.getById);
+router.put('/:id/status', c.updateStatus);
+
+module.exports = router;
+
+
+===== FILE: src/routes/konsenRoutes.js =====
+const router = require('express').Router({ mergeParams: true });
+const { authenticate, authorize } = require('../middleware/auth');
+const c = require('../controllers/konsenController');
+
+router.use(authenticate, authorize('admin'));
+
+router.get('/', c.list);
+router.post('/', c.create);
+router.put('/:konsenId', c.updateStatus);
+
+module.exports = router;
+
+
+===== FILE: src/routes/krsRoutes.js =====
+const router = require('express').Router();
+const { authenticate, authorize } = require('../middleware/auth');
+const requireConsent = require('../middleware/requireConsent');
+const c = require('../controllers/krsController');
+
+const mahasiswa = [authorize('mahasiswa'), requireConsent];
+
+router.use(authenticate);
+
+router.get('/me', ...mahasiswa, c.getMe);
+router.post('/me/items', ...mahasiswa, c.addItem);
+router.delete('/me/items/:itemId', ...mahasiswa, c.removeItem);
+router.post('/me/submit', ...mahasiswa, c.submit);
+router.post('/me/unsubmit', ...mahasiswa, c.unsubmit);
+
+router.get('/', authorize('admin'), c.listAdmin);
+router.put('/:id/lock', authorize('admin'), c.lock);
+
+module.exports = router;
+
+
+===== FILE: src/routes/mahasiswaRoutes.js =====
+const router = require('express').Router();
+const { authenticate, authorize } = require('../middleware/auth');
+const { uploadDokumen } = require('../middleware/upload');
+const c = require('../controllers/mahasiswaController');
+const profil = require('../controllers/profilController');
+const dokumen = require('../controllers/dokumenController');
+
+router.use(authenticate);
+
+// /me harus didaftarkan sebelum /:id
+router.get('/me', authorize('mahasiswa'), c.getMe);
+router.put('/me', authorize('mahasiswa'), c.updateMe);
+router.post('/me/email', authorize('mahasiswa'), profil.addEmail);
+router.delete('/me/email/:id', authorize('mahasiswa'), profil.removeEmail);
+router.post('/me/akun-sosial', authorize('mahasiswa'), profil.addAkunSosial);
+router.delete('/me/akun-sosial/:id', authorize('mahasiswa'), profil.removeAkunSosial);
+router.post('/me/dokumen', authorize('mahasiswa'), uploadDokumen, dokumen.upload);
+router.get('/me/dokumen', authorize('mahasiswa'), dokumen.listMe);
+router.get('/me/dokumen/:id', authorize('mahasiswa'), dokumen.downloadMe);
+router.get('/me/riwayat-login', authorize('mahasiswa'), profil.riwayatLogin);
+router.get('/me/ekspor', authorize('mahasiswa'), profil.ekspor);
+
+router.get('/', authorize('admin'), c.list);
+router.post('/', authorize('admin'), c.create);
+router.get('/:id', authorize('admin'), c.getById);
+router.put('/:id', authorize('admin'), c.update);
+router.delete('/:id', authorize('admin'), c.remove);
+router.get('/:id/dokumen', authorize('admin'), dokumen.listAdmin);
+router.get('/:id/dokumen/:dokumenId', authorize('admin'), dokumen.downloadAdmin);
+router.put('/:id/dokumen/:dokumenId/verifikasi', authorize('admin'), dokumen.verifikasi);
+
+module.exports = router;
+
+
+===== FILE: src/routes/mataKuliahRoutes.js =====
+const router = require('express').Router();
+const { authenticate, authorize } = require('../middleware/auth');
+const c = require('../controllers/mataKuliahController');
+
+router.use(authenticate);
+
+router.get('/', c.list);
+router.post('/', authorize('admin'), c.create);
+router.put('/:id', authorize('admin'), c.update);
+router.delete('/:id', authorize('admin'), c.remove);
+
+module.exports = router;
+
+
+===== FILE: src/routes/nilaiRoutes.js =====
+const router = require('express').Router();
+const { authenticate, authorize } = require('../middleware/auth');
+const requireConsent = require('../middleware/requireConsent');
+const c = require('../controllers/nilaiController');
+
+router.use(authenticate);
+
+router.get('/me', authorize('mahasiswa'), requireConsent, c.me);
+router.get('/me/khs', authorize('mahasiswa'), requireConsent, c.khs);
+
+router.get('/', authorize('admin'), c.listAdmin);
+router.post('/publish', authorize('admin'), c.publish);
+router.put('/:krs_id', authorize('admin'), c.setNilai);
+
+module.exports = router;
+
+
+===== FILE: src/server.js =====
+const app = require('./app');
+require('dotenv').config();
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server jalan di port ${PORT}`);
+});
+
+
+===== FILE: src/utils/AppError.js =====
+class AppError extends Error {
+  constructor(status, code, message, details) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+module.exports = AppError;
+
+
+===== FILE: src/utils/audit.js =====
+const pool = require('../config/db');
+
+// Sengaja tidak di-await: dipanggil setelah response dikirim
+module.exports = (req, aksi, entitas, entitasId = null) => {
+  pool
+    .query(
+      `INSERT INTO audit_trail (user_id, aksi, entitas, entitas_id, ip_address)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.user?.id ?? null, aksi, entitas, entitasId, req.ip]
+    )
+    .catch((err) => console.error('Audit gagal:', err.message));
+};
+
+
+===== FILE: src/utils/html.js =====
+const KARAKTER = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+// Semua nilai dinamis di halaman HTML wajib lewat fungsi ini
+const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => KARAKTER[c]);
+
+module.exports = { escapeHtml };
+
+
+===== FILE: src/utils/listQuery.js =====
+const AppError = require('./AppError');
+
+const LIMIT_DEFAULT = 20;
+const LIMIT_MAKS = 100;
+
+const angka = (v, nama, bawaan, maks) => {
+  if (v === undefined) return bawaan;
+  if (typeof v !== 'string' || !/^\d{1,6}$/.test(v) || Number(v) < 1 || Number(v) > maks) {
+    throw new AppError(400, 'VALIDATION_ERROR', `Parameter ${nama} harus bilangan bulat 1 sampai ${maks}`);
+  }
+  return Number(v);
+};
+
+// Parameter q, sort, order, page, limit untuk endpoint list admin.
+// sortMap memetakan nama kolom di URL ke ekspresi SQL; kolom sort hanya dari daftar ini.
+module.exports = (query, { sortMap, defaultSort, defaultOrder = 'asc' }) => {
+  const { q, sort = defaultSort, order = defaultOrder } = query;
+
+  if (q !== undefined && (typeof q !== 'string' || q.length > 100)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter q tidak valid');
+  }
+  if (typeof sort !== 'string' || !Object.hasOwn(sortMap, sort)) {
+    throw new AppError(400, 'VALIDATION_ERROR',
+      `Parameter sort harus salah satu dari ${Object.keys(sortMap).join(', ')}`);
+  }
+  if (order !== 'asc' && order !== 'desc') {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Parameter order harus asc atau desc');
+  }
+
+  const page = angka(query.page, 'page', 1, 100000);
+  const limit = angka(query.limit, 'limit', LIMIT_DEFAULT, LIMIT_MAKS);
+  const kata = q?.trim();
+
+  return {
+    // % dan _ dari input diperlakukan sebagai karakter biasa
+    pola: kata ? `%${kata.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null,
+    orderBy: `${sortMap[sort]} ${order === 'desc' ? 'DESC' : 'ASC'}`,
+    limit,
+    offset: (page - 1) * limit,
+  };
+};
+
+
+===== FILE: src/utils/validators.js =====
+const AppError = require('./AppError');
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const isValidDate = (v) => {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(v) && d < new Date();
+};
+
+const requireUuid = (id) => {
+  if (typeof id !== 'string' || !UUID_RE.test(id)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'ID tidak valid');
+  }
+};
+
+// Panjang dicek dulu sebelum regex dijalankan
+const isEmail = (v) => typeof v === 'string' && v.length <= 254 && EMAIL_RE.test(v);
+
+const isHttpsUrl = (v) => {
+  if (typeof v !== 'string' || v.length > 2048) return false;
+  try {
+    return new URL(v).protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+// Teks bebas satu baris, tidak kosong setelah di-trim, tanpa karakter kontrol
+const teks = (max) => (v) =>
+  typeof v === 'string' && v.length <= max && v.trim().length > 0 && !/\p{Cc}/u.test(v);
+
+module.exports = { UUID_RE, isValidDate, requireUuid, isEmail, isHttpsUrl, teks };
+
