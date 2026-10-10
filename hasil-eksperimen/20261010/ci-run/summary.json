@@ -1,0 +1,115 @@
+{
+  "dibuat": "2026-10-10T11:02:02.359Z",
+  "model": "gemini-3.8-flash",
+  "info_model": {
+    "version": "3.0",
+    "display_name": "Gemini 3.8 Flash",
+    "output_token_limit": 65536,
+    "thinking": true
+  },
+  "generation_config": {
+    "temperature": 0.2,
+    "maxOutputTokens": 65536,
+    "responseMimeType": "application/json",
+    "thinking": "default model, tidak diatur"
+  },
+  "jeda_antar_run_detik": 60,
+  "tarif_biaya": {
+    "model": "gemini-3.8-flash",
+    "berlaku_sampai": "2026-12-31",
+    "sumber": "https://ai.google.dev/gemini-api/docs/pricing",
+    "dicek_pada": "2026-10-10",
+    "usd_per_1m_token_input": 0.75,
+    "usd_per_1m_token_output": 3.75
+  },
+  "git": {
+    "head": "467775e44fae16317a8c7c0098245153625978b8",
+    "branch": "eksperimen/seeded",
+    "src_berubah": false
+  },
+  "sonar": {
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "branch": "main",
+    "analisis": {
+      "tanggal": "2026-10-10T10:58:15+0000",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8"
+    },
+    "jumlah_issue": 26,
+    "jumlah_hotspot": 0,
+    "jumlah_temuan_keamanan": 5,
+    "galat": []
+  },
+  "prompt": {
+    "file": "prompt-lengkap.txt",
+    "sha256": "355989292f5e81ac494a8d51f28ce9afa44dfadf3eda60f0fc3d1c7d61ad38b8",
+    "karakter": 92611,
+    "perkiraan_token": 23153
+  },
+  "total_run": 1,
+  "biaya_total_usd": 0.061949,
+  "durasi_bersih_total_ms": 131023,
+  "durasi_total_ms": 168723,
+  "runs": [
+    {
+      "run": 1,
+      "model_diminta": "gemini-3.8-flash",
+      "model_version": "gemini-3.8-flash",
+      "response_id": "pxrKaoPpHpXQz7IP1-_08AI",
+      "mulai": "2026-10-10T10:59:13.631Z",
+      "selesai": "2026-10-10T11:02:02.354Z",
+      "durasi_total_ms": 168723,
+      "durasi_bersih_ms": 131023,
+      "jumlah_percobaan": 2,
+      "http_status": 200,
+      "percobaan": [
+        {
+          "ke": 1,
+          "status": 503,
+          "pesan": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+          "berhenti_karena": null
+        },
+        {
+          "ke": 2,
+          "status": 200
+        }
+      ],
+      "finish_reason": "STOP",
+      "usage_metadata": {
+        "promptTokenCount": 31048,
+        "candidatesTokenCount": 889,
+        "totalTokenCount": 41358,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 31048
+          }
+        ],
+        "thoughtsTokenCount": 9421,
+        "serviceTier": "standard"
+      },
+      "biaya_usd": {
+        "input_token": 31048,
+        "output_token_termasuk_thinking": 10310,
+        "usd_input": 0.023286,
+        "usd_output": 0.038663,
+        "usd_total": 0.061949,
+        "tarif": {
+          "model": "gemini-3.8-flash",
+          "berlaku_sampai": "2026-12-31",
+          "sumber": "https://ai.google.dev/gemini-api/docs/pricing",
+          "dicek_pada": "2026-10-10",
+          "usd_per_1m_token_input": 0.75,
+          "usd_per_1m_token_output": 3.75
+        }
+      },
+      "parse_ok": true,
+      "jumlah_temuan": 9,
+      "prompt_sha256": "355989292f5e81ac494a8d51f28ce9afa44dfadf3eda60f0fc3d1c7d61ad38b8",
+      "sonar_issue_dikirim": 26,
+      "sonar_hotspot_dikirim": 0,
+      "galat": null,
+      "file": "run-1.json",
+      "file_raw": "run-1.raw.json"
+    }
+  ]
+}

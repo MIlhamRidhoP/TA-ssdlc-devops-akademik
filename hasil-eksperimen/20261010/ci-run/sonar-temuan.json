@@ -1,0 +1,49 @@
+{
+  "temuan": [
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "kategori_owasp": "",
+      "cwe": "CWE-20, CWE-89",
+      "jenis": "issue jssecurity:S3649",
+      "keyakinan": "BLOCKER",
+      "penjelasan": "SQL Injection via unsanitized user input"
+    },
+    {
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "kategori_owasp": "",
+      "cwe": "CWE-20, CWE-89",
+      "jenis": "issue jssecurity:S3649",
+      "keyakinan": "BLOCKER",
+      "penjelasan": "SQL Injection via unsanitized user input"
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "kategori_owasp": "",
+      "cwe": "CWE-79",
+      "jenis": "issue jssecurity:S5131",
+      "keyakinan": "BLOCKER",
+      "penjelasan": "Reflected XSS via unsanitized user input"
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 170,
+      "kategori_owasp": "",
+      "cwe": "CWE-79",
+      "jenis": "issue jssecurity:S5131",
+      "keyakinan": "BLOCKER",
+      "penjelasan": "Reflected XSS via unsanitized user input"
+    },
+    {
+      "file": "src/app.js",
+      "baris": 10,
+      "kategori_owasp": "",
+      "cwe": "CWE-346, CWE-942",
+      "jenis": "issue javascript:S5122",
+      "keyakinan": "MAJOR",
+      "penjelasan": "Make sure that enabling CORS is safe here."
+    }
+  ]
+}

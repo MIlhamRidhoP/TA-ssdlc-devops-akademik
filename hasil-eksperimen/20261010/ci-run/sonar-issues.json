@@ -1,0 +1,1489 @@
+[
+  {
+    "key": "AaEk6aUN6Za53JnjmapD",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 93,
+    "hash": "a971c9ab6310cef3bba7d84c14a7b61a",
+    "textRange": {
+      "startLine": 93,
+      "endLine": 93,
+      "startOffset": 32,
+      "endOffset": 37
+    },
+    "flows": [
+      {
+        "locations": [
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+            "textRange": {
+              "startLine": 93,
+              "endLine": 93,
+              "startOffset": 32,
+              "endOffset": 37
+            },
+            "msg": "Sink: this invocation is not safe; a malicious value can be used as argument"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+            "textRange": {
+              "startLine": 94,
+              "endLine": 99,
+              "startOffset": 6,
+              "endOffset": 26
+            },
+            "msg": "This concatenation can propagate malicious content to the newly created string"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+            "textRange": {
+              "startLine": 98,
+              "endLine": 98,
+              "startOffset": 18,
+              "endOffset": 22
+            },
+            "msg": "A malicious value was previously assigned to field ‘sort’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+            "textRange": {
+              "startLine": 91,
+              "endLine": 91,
+              "startOffset": 35,
+              "endOffset": 39
+            },
+            "msg": "A malicious value can be assigned to field ‘sort’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+            "textRange": {
+              "startLine": 91,
+              "endLine": 91,
+              "startOffset": 35,
+              "endOffset": 39
+            },
+            "msg": "A malicious value was previously assigned to field ‘sort’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/cutiController.js",
+            "textRange": {
+              "startLine": 85,
+              "endLine": 85,
+              "startOffset": 38,
+              "endOffset": 47
+            },
+            "msg": "Function call: Control is passed to this function, which is on the path to a security sink"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/cutiController.js",
+            "textRange": {
+              "startLine": 87,
+              "endLine": 87,
+              "startOffset": 4,
+              "endOffset": 40
+            },
+            "msg": "A malicious value can be assigned to field ‘sort’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/cutiController.js",
+            "textRange": {
+              "startLine": 87,
+              "endLine": 87,
+              "startOffset": 20,
+              "endOffset": 24
+            },
+            "msg": "Source: a user can craft an HTTP request with malicious content"
+          }
+        ]
+      }
+    ],
+    "status": "OPEN",
+    "message": "SQL Injection via unsanitized user input",
+    "effort": "30min",
+    "debt": "30min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "cwe",
+      "sql"
+    ],
+    "creationDate": "2026-10-05T09:17:16+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "VULNERABILITY",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "BLOCKER"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aSb6Za53JnjmapB",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/nilaiModel.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 124,
+    "hash": "a971c9ab6310cef3bba7d84c14a7b61a",
+    "textRange": {
+      "startLine": 124,
+      "endLine": 124,
+      "startOffset": 30,
+      "endOffset": 35
+    },
+    "flows": [
+      {
+        "locations": [
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/nilaiModel.js",
+            "textRange": {
+              "startLine": 124,
+              "endLine": 124,
+              "startOffset": 30,
+              "endOffset": 35
+            },
+            "msg": "Sink: this invocation is not safe; a malicious value can be used as argument"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/nilaiModel.js",
+            "textRange": {
+              "startLine": 125,
+              "endLine": 134,
+              "startOffset": 4,
+              "endOffset": 22
+            },
+            "msg": "This concatenation can propagate malicious content to the newly created string"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/nilaiModel.js",
+            "textRange": {
+              "startLine": 133,
+              "endLine": 133,
+              "startOffset": 28,
+              "endOffset": 36
+            },
+            "msg": "A malicious value was previously assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/nilaiModel.js",
+            "textRange": {
+              "startLine": 123,
+              "endLine": 123,
+              "startOffset": 50,
+              "endOffset": 58
+            },
+            "msg": "A malicious value can be assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 167,
+              "endLine": 167,
+              "startOffset": 28,
+              "endOffset": 47
+            },
+            "msg": "Function call: Control is passed to this function, which is on the path to a security sink"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 167,
+              "endLine": 167,
+              "startOffset": 61,
+              "endOffset": 69
+            },
+            "msg": "A malicious value was previously assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 158,
+              "endLine": 158,
+              "startOffset": 8,
+              "endOffset": 16
+            },
+            "msg": "A malicious value can be assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 158,
+              "endLine": 158,
+              "startOffset": 70,
+              "endOffset": 78
+            },
+            "msg": "Source: a user can craft an HTTP request with malicious content"
+          }
+        ]
+      }
+    ],
+    "status": "OPEN",
+    "message": "SQL Injection via unsanitized user input",
+    "effort": "30min",
+    "debt": "30min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "cwe",
+      "sql"
+    ],
+    "creationDate": "2026-10-05T09:02:08+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "VULNERABILITY",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "BLOCKER"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVh6Za53JnjmapO",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 160,
+    "hash": "6d4b4712deb704b54251baf5325d8875",
+    "textRange": {
+      "startLine": 160,
+      "endLine": 160,
+      "startOffset": 33,
+      "endOffset": 37
+    },
+    "flows": [
+      {
+        "locations": [
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 160,
+              "endLine": 160,
+              "startOffset": 33,
+              "endOffset": 37
+            },
+            "msg": "Sink: this invocation is not safe; a malicious value can be used as argument"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 160,
+              "endLine": 160,
+              "startOffset": 38,
+              "endOffset": 84
+            },
+            "msg": "This concatenation can propagate malicious content to the newly created string"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 160,
+              "endLine": 160,
+              "startOffset": 54,
+              "endOffset": 62
+            },
+            "msg": "A malicious value was previously assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 158,
+              "endLine": 158,
+              "startOffset": 8,
+              "endOffset": 16
+            },
+            "msg": "A malicious value can be assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 158,
+              "endLine": 158,
+              "startOffset": 70,
+              "endOffset": 78
+            },
+            "msg": "Source: a user can craft an HTTP request with malicious content"
+          }
+        ]
+      }
+    ],
+    "status": "OPEN",
+    "message": "Reflected XSS via unsanitized user input",
+    "effort": "30min",
+    "debt": "30min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "cwe"
+    ],
+    "creationDate": "2026-10-05T09:01:59+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "VULNERABILITY",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "BLOCKER"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVh6Za53JnjmapP",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 170,
+    "hash": "ad66e51c664d8df60a8f3a7aea1f12da",
+    "textRange": {
+      "startLine": 170,
+      "endLine": 170,
+      "startOffset": 19,
+      "endOffset": 23
+    },
+    "flows": [
+      {
+        "locations": [
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 170,
+              "endLine": 170,
+              "startOffset": 19,
+              "endOffset": 23
+            },
+            "msg": "Sink: this invocation is not safe; a malicious value can be used as argument"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 125,
+              "endLine": 154,
+              "startOffset": 9,
+              "endOffset": 1
+            },
+            "msg": "This concatenation can propagate malicious content to the newly created string"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/utils/html.js",
+            "textRange": {
+              "startLine": 4,
+              "endLine": 4,
+              "startOffset": 33,
+              "endOffset": 34
+            },
+            "msg": "A malicious value was previously assigned to field ‘v’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/utils/html.js",
+            "textRange": {
+              "startLine": 4,
+              "endLine": 4,
+              "startOffset": 20,
+              "endOffset": 21
+            },
+            "msg": "A malicious value can be assigned to field ‘v’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 129,
+              "endLine": 129,
+              "startOffset": 44,
+              "endOffset": 54
+            },
+            "msg": "Function call: Control is passed to this function, which is on the path to a security sink"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 129,
+              "endLine": 129,
+              "startOffset": 55,
+              "endOffset": 63
+            },
+            "msg": "A malicious value was previously assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 116,
+              "endLine": 116,
+              "startOffset": 31,
+              "endOffset": 39
+            },
+            "msg": "A malicious value can be assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 170,
+              "endLine": 170,
+              "startOffset": 24,
+              "endOffset": 34
+            },
+            "msg": "Function call: Control is passed to this function, which is on the path to a security sink"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 170,
+              "endLine": 170,
+              "startOffset": 46,
+              "endOffset": 54
+            },
+            "msg": "A malicious value was previously assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 158,
+              "endLine": 158,
+              "startOffset": 8,
+              "endOffset": 16
+            },
+            "msg": "A malicious value can be assigned to field ‘semester’"
+          },
+          {
+            "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/nilaiController.js",
+            "textRange": {
+              "startLine": 158,
+              "endLine": 158,
+              "startOffset": 70,
+              "endOffset": 78
+            },
+            "msg": "Source: a user can craft an HTTP request with malicious content"
+          }
+        ]
+      }
+    ],
+    "status": "OPEN",
+    "message": "Reflected XSS via unsanitized user input",
+    "effort": "30min",
+    "debt": "30min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "cwe"
+    ],
+    "creationDate": "2026-10-05T09:01:59+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "VULNERABILITY",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "BLOCKER"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aV26Za53JnjmapR",
+    "rule": "javascript:S7776",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/cutiController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 11,
+    "hash": "199ae817fb0a0dd617e54f7bd3955c7b",
+    "textRange": {
+      "startLine": 11,
+      "endLine": 11,
+      "startOffset": 6,
+      "endOffset": 15
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "`KEPUTUSAN` should be a `Set`, and use `KEPUTUSAN.has()` to check existence or non-existence.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "editable-source",
+      "es2015",
+      "optimization",
+      "performance"
+    ],
+    "creationDate": "2026-10-05T07:51:42+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "EFFICIENT",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aV26Za53JnjmapS",
+    "rule": "javascript:S6582",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/cutiController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 44,
+    "hash": "c85f1f81205c6cae8043d125916f1610",
+    "textRange": {
+      "startLine": 44,
+      "endLine": 44,
+      "startOffset": 8,
+      "endOffset": 53
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "editable-source",
+      "es2020",
+      "type-dependent"
+    ],
+    "creationDate": "2026-10-05T07:51:42+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aUN6Za53JnjmapC",
+    "rule": "javascript:S7780",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/cutiModel.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 85,
+    "hash": "6072afa7adb4794f315172cf73d974b9",
+    "textRange": {
+      "startLine": 85,
+      "endLine": 89,
+      "startOffset": 19,
+      "endOffset": 40
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "`String.raw` should be used to avoid escaping `\\`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "editable-source",
+      "es2015",
+      "readability"
+    ],
+    "creationDate": "2026-10-05T07:51:42+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aUY6Za53JnjmapE",
+    "rule": "javascript:S7780",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/krsModel.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 87,
+    "hash": "f2b3c43dae9ad87ced95bc7e4d0dd30a",
+    "textRange": {
+      "startLine": 87,
+      "endLine": 89,
+      "startOffset": 22,
+      "endOffset": 88
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "`String.raw` should be used to avoid escaping `\\`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "editable-source",
+      "es2015",
+      "readability"
+    ],
+    "creationDate": "2026-10-05T07:48:51+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aSb6Za53JnjmapA",
+    "rule": "javascript:S7780",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/models/nilaiModel.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 65,
+    "hash": "6072afa7adb4794f315172cf73d974b9",
+    "textRange": {
+      "startLine": 65,
+      "endLine": 75,
+      "startOffset": 19,
+      "endOffset": 71
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "`String.raw` should be used to avoid escaping `\\`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "editable-source",
+      "es2015",
+      "readability"
+    ],
+    "creationDate": "2026-10-05T07:48:51+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWM6Za53JnjmapV",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/utils/listQuery.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 16,
+    "hash": "8739698595c38591a4ff408784ed5dc4",
+    "textRange": {
+      "startLine": 16,
+      "endLine": 16,
+      "startOffset": 73,
+      "endOffset": 75
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "The arrow function should be named.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "es2015"
+    ],
+    "creationDate": "2026-10-05T07:48:51+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "IDENTIFIABLE",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWM6Za53JnjmapW",
+    "rule": "javascript:S4624",
+    "severity": "MAJOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/utils/listQuery.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 36,
+    "hash": "731781f292c848fa93a038b8963d19a0",
+    "textRange": {
+      "startLine": 36,
+      "endLine": 36,
+      "startOffset": 52,
+      "endOffset": 60
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Refactor this code to not use nested template literals.",
+    "effort": "10min",
+    "debt": "10min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "brain-overload",
+      "confusing",
+      "editable-source",
+      "es2015"
+    ],
+    "creationDate": "2026-10-05T07:48:51+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aUk6Za53JnjmapF",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/config/upload.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 1,
+    "hash": "44f9b15d3b1641faca5561b190d8261a",
+    "textRange": {
+      "startLine": 1,
+      "endLine": 1,
+      "startOffset": 19,
+      "endOffset": 23
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:fs` over `fs`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aUk6Za53JnjmapG",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/config/upload.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 2,
+    "hash": "85968f5b9f570a82c65709eacc211a09",
+    "textRange": {
+      "startLine": 2,
+      "endLine": 2,
+      "startOffset": 21,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:path` over `path`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVN6Za53JnjmapM",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/dokumenController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 1,
+    "hash": "85968f5b9f570a82c65709eacc211a09",
+    "textRange": {
+      "startLine": 1,
+      "endLine": 1,
+      "startOffset": 21,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:path` over `path`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWC6Za53JnjmapT",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/mahasiswaController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 1,
+    "hash": "1043155e6791d081f6d106abdb2833f0",
+    "textRange": {
+      "startLine": 1,
+      "endLine": 1,
+      "startOffset": 19,
+      "endOffset": 32
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:fs/promises` over `fs/promises`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWC6Za53JnjmapU",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/mahasiswaController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 2,
+    "hash": "85968f5b9f570a82c65709eacc211a09",
+    "textRange": {
+      "startLine": 2,
+      "endLine": 2,
+      "startOffset": 21,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:path` over `path`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVC6Za53JnjmapJ",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/middleware/upload.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 1,
+    "hash": "c830f6c4155a5cbeef0f28771e61ed4d",
+    "textRange": {
+      "startLine": 1,
+      "endLine": 1,
+      "startOffset": 23,
+      "endOffset": 31
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:crypto` over `crypto`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVC6Za53JnjmapK",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/middleware/upload.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 2,
+    "hash": "1043155e6791d081f6d106abdb2833f0",
+    "textRange": {
+      "startLine": 2,
+      "endLine": 2,
+      "startOffset": 19,
+      "endOffset": 32
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:fs/promises` over `fs/promises`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVC6Za53JnjmapL",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/middleware/upload.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 3,
+    "hash": "85968f5b9f570a82c65709eacc211a09",
+    "textRange": {
+      "startLine": 3,
+      "endLine": 3,
+      "startOffset": 21,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `node:path` over `path`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "import",
+      "nodejs"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWg6Za53JnjmapY",
+    "rule": "javascript:S8786",
+    "severity": "MAJOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/utils/validators.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 4,
+    "hash": "f6492610a5612b14fd357972b883b0be",
+    "textRange": {
+      "startLine": 4,
+      "endLine": 4,
+      "startOffset": 17,
+      "endOffset": 45
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Simplify this regular expression to reduce its runtime, as it has super-linear performance due to backtracking.",
+    "effort": "20min",
+    "debt": "20min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "performance",
+      "regex"
+    ],
+    "creationDate": "2026-10-05T07:46:31+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "EFFICIENT",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVr6Za53JnjmapQ",
+    "rule": "javascript:S7776",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/konsenController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 6,
+    "hash": "f913eee5760294d87d7dca837b56558d",
+    "textRange": {
+      "startLine": 6,
+      "endLine": 6,
+      "startOffset": 6,
+      "endOffset": 14
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "`STATUSES` should be a `Set`, and use `STATUSES.has()` to check existence or non-existence.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "editable-source",
+      "es2015",
+      "optimization",
+      "performance"
+    ],
+    "creationDate": "2026-09-30T09:22:10+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "EFFICIENT",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aUu6Za53JnjmapH",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/middleware/requireConsent.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 6,
+    "hash": "d20fe033adf99d38e6edc1ee872f5847",
+    "textRange": {
+      "startLine": 6,
+      "endLine": 6,
+      "startOffset": 40,
+      "endOffset": 42
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "The async arrow function should be named.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "es2015"
+    ],
+    "creationDate": "2026-09-30T09:22:10+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "IDENTIFIABLE",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWW6Za53JnjmapX",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/utils/audit.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 4,
+    "hash": "5751e8f5352ff4557f539ec1e37bb3be",
+    "textRange": {
+      "startLine": 4,
+      "endLine": 4,
+      "startOffset": 56,
+      "endOffset": 58
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "The arrow function should be named.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "es2015"
+    ],
+    "creationDate": "2026-09-30T09:13:55+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "IDENTIFIABLE",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aVW6Za53JnjmapN",
+    "rule": "javascript:S8786",
+    "severity": "MAJOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/controllers/authController.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 8,
+    "hash": "f6492610a5612b14fd357972b883b0be",
+    "textRange": {
+      "startLine": 8,
+      "endLine": 8,
+      "startOffset": 17,
+      "endOffset": 45
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Simplify this regular expression to reduce its runtime, as it has super-linear performance due to backtracking.",
+    "effort": "20min",
+    "debt": "20min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "performance",
+      "regex"
+    ],
+    "creationDate": "2026-09-30T09:03:01+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "EFFICIENT",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aU46Za53JnjmapI",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/middleware/errorHandler.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 3,
+    "hash": "047f887974656e8b19f7c809bcfaf981",
+    "textRange": {
+      "startLine": 3,
+      "endLine": 3,
+      "startOffset": 39,
+      "endOffset": 41
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "The arrow function should be named.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "convention",
+      "editable-source",
+      "es2015"
+    ],
+    "creationDate": "2026-09-30T09:03:01+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "CODE_SMELL",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "IDENTIFIABLE",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  },
+  {
+    "key": "AaEk6aWp6Za53JnjmapZ",
+    "rule": "javascript:S5122",
+    "severity": "MAJOR",
+    "component": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded:src/app.js",
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "line": 10,
+    "hash": "c130ad820d45a83a455ca80ab658384e",
+    "textRange": {
+      "startLine": 10,
+      "endLine": 10,
+      "startOffset": 0,
+      "endOffset": 15
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Make sure that enabling CORS is safe here.",
+    "effort": "4h",
+    "debt": "4h",
+    "assignee": "MIlhamRidhoP-iEl3Y@github",
+    "author": "[redacted]",
+    "tags": [
+      "cwe",
+      "express.js",
+      "former-hotspot"
+    ],
+    "creationDate": "2026-09-21T14:44:02+0000",
+    "updateDate": "2026-10-10T08:23:47+0000",
+    "type": "VULNERABILITY",
+    "organization": "milhamridhop",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "TA SIA seeded",
+    "internalTags": [],
+    "lastChangeAnalysisUuid": "0b69fde6-646d-45ab-903d-b452787c26ef",
+    "lastChangeSource": "ANALYSIS"
+  }
+]
