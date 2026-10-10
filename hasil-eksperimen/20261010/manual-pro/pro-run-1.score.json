@@ -1,7 +1,7 @@
 {
-  "sumber": "gemini-output/20261010-152454/manual-pro/pro-run-1.json",
-  "dinilai_pada": "2026-10-10T08:55:30.833Z",
-  "aturan": "cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file.",
+  "sumber": "hasil-eksperimen/20261010/manual-pro/pro-run-1.json",
+  "dinilai_pada": "2026-10-10T11:11:19.370Z",
+  "aturan": "cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file. Positif = status \"terbukti\" di SEEDED.md; jebakan FP (S2,S5) dan N1 dihitung FP; laten (S6) dicatat terpisah.",
   "keluarga_cwe": {
     "sqli": [
       89,
@@ -70,115 +70,140 @@
       "id": "S1",
       "kelas": "SQL Injection",
       "tingkat": "Mudah",
-      "status": "perlu cek manual"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "perlu cek manual"
     },
     {
       "id": "S2",
       "kelas": "SQL Injection (ORDER BY)",
       "tingkat": "Sedang",
-      "status": "cocok"
+      "klasifikasi": "jebakan fp",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S3",
       "kelas": "SQL Injection",
       "tingkat": "Sulit",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S4",
       "kelas": "Stored XSS",
       "tingkat": "Sedang",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S5",
       "kelas": "Reflected XSS",
       "tingkat": "Mudah",
-      "status": "cocok"
+      "klasifikasi": "jebakan fp",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S6",
       "kelas": "Path Traversal",
       "tingkat": "Sedang",
-      "status": "tidak"
+      "klasifikasi": "laten",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S7",
       "kelas": "IDOR",
       "tingkat": "Sedang",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S8",
       "kelas": "IDOR",
       "tingkat": "Sulit",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S9",
       "kelas": "Mass Assignment",
       "tingkat": "Sedang",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S10",
       "kelas": "Mass Assignment",
       "tingkat": "Mudah",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S11",
       "kelas": "Missing Authorization",
       "tingkat": "Mudah",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S12",
       "kelas": "Sensitive Data Exposure",
       "tingkat": "Sulit",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B1",
       "kelas": "CORS mengizinkan semua origin",
       "tingkat": "-",
-      "status": "cocok"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "cocok"
     },
     {
       "id": "B2",
       "kelas": "ReDoS regex email (regex sebelum cek panjang)",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B3",
       "kelas": "Tidak ada rate limiting login dan register",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B4",
       "kelas": "Respons 409 register membocorkan email terdaftar",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B5",
       "kelas": "Token tetap berlaku setelah akun dihapus",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B6",
       "kelas": "requireConsent meloloskan user nonaktif",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "N1",
       "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
+    }
+  ],
+  "laten_terdeteksi": [
+    {
+      "id": "S6",
+      "terdeteksi": "tidak"
     }
   ],
   "temuan": [
@@ -290,42 +315,28 @@
       "penjelasan": "Penggunaan cors() tanpa konfigurasi mengizinkan semua origin (*), yang dapat membahayakan keamanan."
     }
   ],
-  "metrik_s1_s12": {
-    "jumlah_target": 12,
-    "ketat": {
-      "tp": 3,
-      "fp": 0,
-      "fn": 9,
-      "precision": 1,
-      "recall": 0.25,
-      "f1": 0.4
+  "metrik": {
+    "jumlah_positif": 9,
+    "rincian_fp": {
+      "di_luar_ground_truth": 0,
+      "n1": 0,
+      "jebakan_terdeteksi": 2
     },
-    "longgar_cocok_lokasi": {
-      "tp": 3,
-      "fp": 0,
-      "fn": 9,
-      "precision": 1,
-      "recall": 0.25,
-      "f1": 0.4
-    }
-  },
-  "metrik_tanpa_s2_s5": {
-    "jumlah_target": 10,
     "ketat": {
       "tp": 1,
-      "fp": 0,
-      "fn": 9,
-      "precision": 1,
-      "recall": 0.1,
-      "f1": 0.18181818181818182
+      "fp": 2,
+      "fn": 8,
+      "precision": 0.3333333333333333,
+      "recall": 0.1111111111111111,
+      "f1": 0.16666666666666666
     },
     "longgar_cocok_lokasi": {
       "tp": 1,
-      "fp": 0,
-      "fn": 9,
-      "precision": 1,
-      "recall": 0.1,
-      "f1": 0.18181818181818182
+      "fp": 2,
+      "fn": 8,
+      "precision": 0.3333333333333333,
+      "recall": 0.1111111111111111,
+      "f1": 0.16666666666666666
     }
   }
 }

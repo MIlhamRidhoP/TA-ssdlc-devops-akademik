@@ -452,10 +452,13 @@ const bacaGroundTruth = () => {
   for (const baris of fs.readFileSync(SEEDED_FILE, 'utf8').split(/\r?\n/)) {
     const sel = selDariBaris(baris);
     if (/^S\d+$/.test(sel[0] ?? '') && sel.length >= 7) {
-      const [id, file, fungsi, kelas, cwe, , tingkat] = sel;
+      const [id, file, fungsi, kelas, cwe, , tingkat, status] = sel;
       const rute = fungsi.match(/^route\s+(\w+)\s+(\S+)/i);
+      // status dari kolom ke-8 SEEDED.md: 'terbukti' | 'jebakan FP' | 'laten'.
+      // Kalau kolom belum ada (format lama), default 'terbukti' supaya metrik lama tetap jalan.
+      const statusGt = (status || 'terbukti').toLowerCase();
       daftar.push({
-        id, kelas, tingkat, cwe: angkaCwe(cwe),
+        id, kelas, tingkat, cwe: angkaCwe(cwe), status: statusGt,
         file: file.split(',').map((f) => f.trim()),
         fungsi: rute ? [] : fungsi.split(',').map((f) => f.trim()),
         rute: rute ? { metode: rute[1].toLowerCase(), path: rute[2] } : null,
@@ -463,7 +466,7 @@ const bacaGroundTruth = () => {
     } else if (/^[BN]\d+$/.test(sel[0] ?? '') && sel.length >= 5) {
       const [id, deskripsi, lokasi, cwe] = sel;
       daftar.push({
-        id, kelas: deskripsi, tingkat: '-', cwe: angkaCwe(cwe),
+        id, kelas: deskripsi, tingkat: '-', cwe: angkaCwe(cwe), status: 'bawaan',
         file: [lokasi.trim()], fungsi: [], rute: null, level_file: true,
       });
     }
@@ -555,19 +558,39 @@ const nilaiTemuan = (t, gt) => {
 };
 
 const URUTAN_STATUS = ['cocok', 'cocok lokasi', 'perlu cek manual', 'tidak'];
+const TERDETEKSI_KETAT = ['cocok'];
+const TERDETEKSI_LONGGAR = ['cocok', 'cocok lokasi'];
 
-const hitungMetrik = (statusGt, penilaian, kecuali = []) => {
-  const target = Object.keys(statusGt).filter((id) => id.startsWith('S') && !kecuali.includes(id));
-  const tp = target.filter((id) => statusGt[id] === 'cocok').length;
-  const tpLonggar = target.filter((id) => ['cocok', 'cocok lokasi'].includes(statusGt[id])).length;
-  const fp = penilaian.filter((p) => ['di luar ground truth', 'false positive dikenal'].includes(p.status)).length;
-  const hitung = (benar) => {
-    const precision = benar + fp === 0 ? null : benar / (benar + fp);
-    const recall = target.length === 0 ? null : benar / target.length;
+// Metrik dengan klasifikasi ground truth dari kolom Status SEEDED.md:
+//   terbukti   -> himpunan positif (target recall)
+//   jebakan FP -> deteksi atasnya dihitung FALSE POSITIVE
+//   laten      -> dicatat terpisah, TIDAK dihitung positif maupun FP
+//   bawaan (B) -> kerentanan nyata di luar scope target; deteksi netral (bukan TP, bukan FP)
+//   N1         -> false positive yang diketahui; deteksi dihitung FP
+// statusGt = status deteksi terbaik per id (cocok/cocok lokasi/perlu cek manual/tidak).
+// penilaian = daftar temuan beserta hasil pencocokannya.
+const hitungMetrik = (gt, statusGt, penilaian) => {
+  const positif = gt.filter((g) => g.status === 'terbukti').map((g) => g.id);
+  const jebakan = gt.filter((g) => g.status === 'jebakan fp').map((g) => g.id);
+
+  const fpDiLuar = penilaian.filter((p) => p.status === 'di luar ground truth').length;
+  const fpN1 = penilaian.filter((p) => p.status === 'false positive dikenal').length;
+  const fpJebakan = jebakan.filter((id) => TERDETEKSI_LONGGAR.includes(statusGt[id])).length;
+  const fp = fpDiLuar + fpN1 + fpJebakan;
+
+  const hitung = (terdeteksi) => {
+    const tp = positif.filter((id) => terdeteksi.includes(statusGt[id])).length;
+    const precision = tp + fp === 0 ? null : tp / (tp + fp);
+    const recall = positif.length === 0 ? null : tp / positif.length;
     const f1 = precision && recall ? (2 * precision * recall) / (precision + recall) : 0;
-    return { tp: benar, fp, fn: target.length - benar, precision, recall, f1 };
+    return { tp, fp, fn: positif.length - tp, precision, recall, f1 };
   };
-  return { jumlah_target: target.length, ketat: hitung(tp), longgar_cocok_lokasi: hitung(tpLonggar) };
+  return {
+    jumlah_positif: positif.length,
+    rincian_fp: { di_luar_ground_truth: fpDiLuar, n1: fpN1, jebakan_terdeteksi: fpJebakan },
+    ketat: hitung(TERDETEKSI_KETAT),
+    longgar_cocok_lokasi: hitung(TERDETEKSI_LONGGAR),
+  };
 };
 
 const nilaiDaftarTemuan = (temuan) => {
@@ -578,28 +601,36 @@ const nilaiDaftarTemuan = (temuan) => {
     const terkait = penilaian.filter((p) => p.id.includes(g.id)).map((p) => (p.status === 'false positive dikenal' ? 'cocok' : p.status));
     statusGt[g.id] = URUTAN_STATUS.find((s) => terkait.includes(s)) ?? 'tidak';
   }
+  // Item laten (S6) yang terdeteksi: dicatat terpisah, tidak masuk metrik.
+  const laten = gt.filter((g) => g.status === 'laten')
+    .map((g) => ({ id: g.id, terdeteksi: TERDETEKSI_LONGGAR.includes(statusGt[g.id]) ? statusGt[g.id] : 'tidak' }));
   return {
     aturan: 'cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). '
-      + 'Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file.',
+      + 'Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file. '
+      + 'Positif = status "terbukti" di SEEDED.md; jebakan FP (S2,S5) dan N1 dihitung FP; laten (S6) dicatat terpisah.',
     keluarga_cwe: KELUARGA_CWE,
-    ground_truth: gt.map((g) => ({ id: g.id, kelas: g.kelas, tingkat: g.tingkat, status: statusGt[g.id] })),
+    ground_truth: gt.map((g) => ({ id: g.id, kelas: g.kelas, tingkat: g.tingkat, klasifikasi: g.status, status_deteksi: statusGt[g.id] })),
+    laten_terdeteksi: laten,
     temuan: penilaian,
-    metrik_s1_s12: hitungMetrik(statusGt, penilaian),
-    metrik_tanpa_s2_s5: hitungMetrik(statusGt, penilaian.filter((p) => !p.id.some((id) => ['S2', 'S5'].includes(id))), ['S2', 'S5']),
+    metrik: hitungMetrik(gt, statusGt, penilaian),
   };
 };
 
 const cetakSkor = (skor) => {
-  console.log('Status ground truth:');
-  for (const g of skor.ground_truth) console.log(`  ${g.id.padEnd(4)} ${g.status}`);
+  console.log('Status ground truth (klasifikasi | deteksi):');
+  for (const g of skor.ground_truth) console.log(`  ${g.id.padEnd(4)} ${(g.klasifikasi ?? '-').padEnd(11)} ${g.status_deteksi}`);
   const luar = skor.temuan.filter((p) => !['cocok'].includes(p.status));
   if (luar.length > 0) {
     console.log('Temuan selain "cocok":');
     for (const p of luar) console.log(`  [${p.status}] ${p.file}:${p.baris ?? '-'} CWE ${p.cwe.join('/') || '-'} ${p.id.join(',')} ${p.alasan ?? ''}`);
   }
-  const m = skor.metrik_s1_s12.ketat;
+  if (skor.laten_terdeteksi?.some((l) => l.terdeteksi !== 'tidak')) {
+    console.log('Item laten terdeteksi (dicatat, tidak dihitung FP):',
+      skor.laten_terdeteksi.filter((l) => l.terdeteksi !== 'tidak').map((l) => `${l.id}=${l.terdeteksi}`).join(', '));
+  }
+  const m = skor.metrik.ketat;
   const f = (x) => (x === null ? '-' : x.toFixed(3));
-  console.log(`S1-S12 ketat: TP ${m.tp} FP ${m.fp} FN ${m.fn} P ${f(m.precision)} R ${f(m.recall)} F1 ${f(m.f1)}`);
+  console.log(`Metrik ketat (${skor.metrik.jumlah_positif} positif): TP ${m.tp} FP ${m.fp} (${JSON.stringify(skor.metrik.rincian_fp)}) FN ${m.fn} P ${f(m.precision)} R ${f(m.recall)} F1 ${f(m.f1)}`);
 };
 
 const nilaiFile = (file) => {

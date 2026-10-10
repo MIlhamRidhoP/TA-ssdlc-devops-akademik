@@ -1,7 +1,7 @@
 {
-  "sumber": "../../../Users/Ridho/AppData/Local/Temp/gemini-ci/20261010-105910/run-1.json",
-  "dinilai_pada": "2026-10-10T11:06:39.552Z",
-  "aturan": "cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file.",
+  "sumber": "hasil-eksperimen/20261010/ci-run/run-1.json",
+  "dinilai_pada": "2026-10-10T11:11:20.074Z",
+  "aturan": "cocok = file sama + fungsi/lokasi sama + CWE sama atau satu keluarga (KELUARGA_CWE di skrip). Lokasi = fungsi yang membungkus baris temuan, atau nama fungsi disebut di penjelasan. Item B hanya punya lokasi level file. Positif = status \"terbukti\" di SEEDED.md; jebakan FP (S2,S5) dan N1 dihitung FP; laten (S6) dicatat terpisah.",
   "keluarga_cwe": {
     "sqli": [
       89,
@@ -70,115 +70,140 @@
       "id": "S1",
       "kelas": "SQL Injection",
       "tingkat": "Mudah",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S2",
       "kelas": "SQL Injection (ORDER BY)",
       "tingkat": "Sedang",
-      "status": "cocok"
+      "klasifikasi": "jebakan fp",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S3",
       "kelas": "SQL Injection",
       "tingkat": "Sulit",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S4",
       "kelas": "Stored XSS",
       "tingkat": "Sedang",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S5",
       "kelas": "Reflected XSS",
       "tingkat": "Mudah",
-      "status": "tidak"
+      "klasifikasi": "jebakan fp",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S6",
       "kelas": "Path Traversal",
       "tingkat": "Sedang",
-      "status": "tidak"
+      "klasifikasi": "laten",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S7",
       "kelas": "IDOR",
       "tingkat": "Sedang",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S8",
       "kelas": "IDOR",
       "tingkat": "Sulit",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "S9",
       "kelas": "Mass Assignment",
       "tingkat": "Sedang",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S10",
       "kelas": "Mass Assignment",
       "tingkat": "Mudah",
-      "status": "cocok lokasi"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok lokasi"
     },
     {
       "id": "S11",
       "kelas": "Missing Authorization",
       "tingkat": "Mudah",
-      "status": "cocok"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "cocok"
     },
     {
       "id": "S12",
       "kelas": "Sensitive Data Exposure",
       "tingkat": "Sulit",
-      "status": "tidak"
+      "klasifikasi": "terbukti",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B1",
       "kelas": "CORS mengizinkan semua origin",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B2",
       "kelas": "ReDoS regex email (regex sebelum cek panjang)",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B3",
       "kelas": "Tidak ada rate limiting login dan register",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B4",
       "kelas": "Respons 409 register membocorkan email terdaftar",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B5",
       "kelas": "Token tetap berlaku setelah akun dihapus",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "B6",
       "kelas": "requireConsent meloloskan user nonaktif",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
     },
     {
       "id": "N1",
       "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
       "tingkat": "-",
-      "status": "tidak"
+      "klasifikasi": "bawaan",
+      "status_deteksi": "tidak"
+    }
+  ],
+  "laten_terdeteksi": [
+    {
+      "id": "S6",
+      "terdeteksi": "tidak"
     }
   ],
   "temuan": [
@@ -320,42 +345,28 @@
       "penjelasan": "Properti nama mata kuliah (i.nama) disisipkan langsung ke template HTML halaman KHS tanpa melalui proses sanitasi escapeHtml, memungkinkan eksekusi kode skrip jika data nama mengandung tag HTML."
     }
   ],
-  "metrik_s1_s12": {
-    "jumlah_target": 12,
-    "ketat": {
-      "tp": 7,
-      "fp": 0,
-      "fn": 5,
-      "precision": 1,
-      "recall": 0.5833333333333334,
-      "f1": 0.7368421052631579
+  "metrik": {
+    "jumlah_positif": 9,
+    "rincian_fp": {
+      "di_luar_ground_truth": 0,
+      "n1": 0,
+      "jebakan_terdeteksi": 1
     },
-    "longgar_cocok_lokasi": {
-      "tp": 8,
-      "fp": 0,
-      "fn": 4,
-      "precision": 1,
-      "recall": 0.6666666666666666,
-      "f1": 0.8
-    }
-  },
-  "metrik_tanpa_s2_s5": {
-    "jumlah_target": 10,
     "ketat": {
       "tp": 6,
-      "fp": 0,
-      "fn": 4,
-      "precision": 1,
-      "recall": 0.6,
-      "f1": 0.7499999999999999
+      "fp": 1,
+      "fn": 3,
+      "precision": 0.8571428571428571,
+      "recall": 0.6666666666666666,
+      "f1": 0.75
     },
     "longgar_cocok_lokasi": {
       "tp": 7,
-      "fp": 0,
-      "fn": 3,
-      "precision": 1,
-      "recall": 0.7,
-      "f1": 0.8235294117647058
+      "fp": 1,
+      "fn": 2,
+      "precision": 0.875,
+      "recall": 0.7777777777777778,
+      "f1": 0.823529411764706
     }
   }
 }
