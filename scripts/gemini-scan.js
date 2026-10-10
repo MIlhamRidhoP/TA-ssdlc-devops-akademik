@@ -547,10 +547,21 @@ const cetakSkor = (skor) => {
 
 const nilaiFile = (file) => {
   const teks = fs.readFileSync(path.resolve(file), 'utf8');
-  // run-N.json dari run otomatis juga terbaca karena temuan ada di field "temuan"
-  const hasil = parseTemuan(teks);
-  if (!hasil.ok) throw new Error(`File ${file} bukan JSON valid`);
-  const skor = nilaiDaftarTemuan(hasil.temuan);
+  // Format yang diterima: {"temuan":[...]} (termasuk run-N.json), atau jawaban yang dibungkus
+  // sebagai string di field "response" seperti hasil salin dari AI Studio
+  let obj;
+  try {
+    obj = JSON.parse(teks.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim());
+  } catch {
+    throw new Error(`File ${file} bukan JSON valid`);
+  }
+  if (!Array.isArray(obj.temuan) && typeof obj.response === 'string') {
+    const dalam = parseTemuan(obj.response);
+    if (!dalam.ok) throw new Error(`Field "response" di ${file} bukan JSON valid`);
+    obj = { temuan: dalam.temuan };
+  }
+  if (!Array.isArray(obj.temuan)) throw new Error(`File ${file} tidak berisi daftar "temuan"`);
+  const skor = nilaiDaftarTemuan(obj.temuan);
   const keluaran = path.resolve(file).replace(/\.json$/i, '') + '.score.json';
   tulisJson(keluaran, { sumber: relatif(path.resolve(file)), dinilai_pada: new Date().toISOString(), ...skor });
   cetakSkor(skor);
