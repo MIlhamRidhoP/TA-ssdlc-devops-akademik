@@ -22,6 +22,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Catatan audit 2026-10-10: GitHub menandai versi ini "no longer supported" dan
+      # menyarankan sonarsource/sonarqube-scan-action@v6. Tidak dipindah di sini karena
+      # kompatibilitas input `args` dengan v6 belum diverifikasi, dan perubahan scanner
+      # bisa mengubah hasil Skenario A yang sudah dipakai sebagai data eksperimen. Pindah
+      # ke v6 sebaiknya dilakukan di langkah terpisah, diverifikasi dulu hasilnya identik.
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
@@ -29,3 +34,45 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded
+
+  gemini-scan:
+    name: Analisis Gemini (Skenario B)
+    needs: sonarcloud
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Non-blocking: kegagalan job ini (kuota habis, 503, dll) tidak menggagalkan pipeline.
+    # Ini bukti integrasi bahwa Skenario B BISA dijalankan dari pipeline, bukan pengganti
+    # data eksperimen utama di hasil-eksperimen/20261010/ (yang dijalankan terkontrol,
+    # 3 run, di luar CI).
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependency
+        run: npm ci
+
+      - name: Jalankan analisis Gemini (1 run)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GEMINI_MODEL: gemini-3.8-flash
+          SONAR_PROJECT: MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded
+          SONAR_BRANCH: main
+        run: node scripts/gemini-scan.js --runs=1
+
+      - name: Unggah hasil sebagai artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-output-${{ github.sha }}
+          path: gemini-output/
+          retention-days: 14
+          if-no-files-found: warn
