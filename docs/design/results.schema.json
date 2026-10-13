@@ -30,6 +30,8 @@
           "additionalProperties": false,
           "properties": {
             "alat": { "const": "SonarCloud" },
+            "status": { "enum": ["ok", "tidak-tersedia", null], "description": "tidak-tersedia: analisis branch tidak ditemukan atau API SonarCloud menolak (mis. paket gratis hanya membuka branch utama)" },
+            "galat": { "type": ["string", "null"] },
             "revisi_analisis": { "type": ["string", "null"] },
             "sesuai_commit": { "type": ["boolean", "null"], "description": "false berarti data Sonar berasal dari analisis commit lain" }
           }

@@ -556,6 +556,13 @@
   };
 
   // ---------- Turunan data ----------
+  const sastTidakTersedia = () => state.hasil?.run?.sast?.status === 'tidak-tersedia';
+  const teksSastTidakTersedia = () => {
+    const galat = state.hasil?.run?.sast?.galat ?? '';
+    return /non main branch/i.test(galat)
+      ? 'Data SonarCloud tidak tersedia: paket gratis SonarCloud hanya membuka data branch utama. Scan branch ini berjalan, tetapi hasilnya tidak bisa dibaca lewat API.'
+      : `Data SonarCloud tidak tersedia untuk run ini${galat ? ` (${galat})` : ''}.`;
+  };
   const sidikSebelumnya = () => (state.sebelumnya ? new Set(state.sebelumnya.findings.map((f) => f.fingerprint)) : null);
   const temuanBaru = (f, sidik) => Boolean(sidik && !sidik.has(f.fingerprint));
   const perluTindakan = (f) => {
@@ -620,12 +627,12 @@
     const commit = /^[0-9a-f]{7,40}$/.test(r.commit) && !p.demo_tanpa_workflow
       ? el('a', { href: urlGithub(p.owner, p.repo, 'commit', r.commit), target: '_blank', rel: 'noopener noreferrer', text: pendek(r.commit) })
       : pendek(r.commit);
-    const sast = r.sast?.sesuai_commit === false ? 'SonarCloud, commit lain' : 'SonarCloud';
+    const sast = r.sast?.status === 'tidak-tersedia' ? 'SonarCloud, data tidak tersedia' : (r.sast?.sesuai_commit === false ? 'SonarCloud, commit lain' : 'SonarCloud');
     isi($('title-block'),
       sel('Commit', commit, { data: true, title: r.commit }),
       sel('Model', r.model ?? 'tidak dipakai (SAST saja)'),
       sel('Prompt', r.prompt_sha256 ? pendek(r.prompt_sha256, 8) : '—', { data: true, title: r.prompt_sha256 ?? undefined }),
-      sel('SAST', sast, { warn: r.sast?.sesuai_commit === false, title: r.sast?.sesuai_commit === false ? `Data Sonar dari analisis ${r.sast.revisi_analisis}` : undefined }),
+      sel('SAST', sast, { warn: r.sast?.status === 'tidak-tersedia' || r.sast?.sesuai_commit === false, title: r.sast?.status === 'tidak-tersedia' ? (r.sast.galat ?? undefined) : (r.sast?.sesuai_commit === false ? `Data Sonar dari analisis ${r.sast.revisi_analisis}` : undefined) }),
       sel('Durasi', durasi(r.durasi_detik), { data: true }));
   };
 
@@ -674,7 +681,9 @@
     const per = { both: 0, gemini: 0, sonar: 0 };
     for (const x of f) per[x.sumber] += 1;
 
-    const cell = (cls, label, num, note) => el('div', { class: `cell ${cls}` }, el('span', { class: 'cell-label', text: label }), el('span', { class: 'cell-num' }, num), note);
+    // Tanpa satu pun sumber yang berhasil, angka nol tidak bermakna: tampilkan tanda kosong.
+    const tanpaSumber = sastTidakTersedia() && h.run.gemini?.status !== 'ok';
+    const cell = (cls, label, num, note) => el('div', { class: `cell ${cls}` }, el('span', { class: 'cell-label', text: label }), el('span', { class: 'cell-num', 'aria-label': tanpaSumber ? 'tidak diketahui' : null }, tanpaSumber ? '—' : num), tanpaSumber ? el('span', { class: 'cell-note', text: 'sumber analisis tidak tersedia' }) : note);
     const bar = el('div', { class: 'srcbar', role: 'img', 'aria-label': `${per.both} dari keduanya, ${per.gemini} hanya Gemini, ${per.sonar} hanya Sonar` },
       ['both', 'gemini', 'sonar'].map((k) => { const i = el('i', { class: `sw-${k}` }); i.style.setProperty('width', `${f.length ? (per[k] / f.length) * 100 : 0}%`); return i; }));
     isi(box,
@@ -759,6 +768,12 @@
     const sidik = sidikSebelumnya();
     const aturan = FILTER.find((x) => x.key === state.filter) ?? FILTER[0];
     const daftar = h.findings.filter((f) => aturan.cocok(f, sidik));
+    if (!h.findings.length && sastTidakTersedia()) {
+      isi(body, el('div', { class: 'state' }, el('h3', { text: 'Belum bisa dipastikan bebas temuan' }),
+        el('p', { text: teksSastTidakTersedia() }),
+        el('p', { text: h.run.gemini?.status === 'ok' ? 'Gemini tidak melaporkan temuan.' : 'Gemini tidak berjalan pada run ini, jadi tidak ada sumber temuan lain.' })));
+      return;
+    }
     if (!h.findings.length) {
       isi(body, el('div', { class: 'state' }, el('h3', { text: 'Tidak ada temuan pada run ini' }),
         el('p', { text: h.run.gemini?.status === 'gagal' ? 'SonarCloud tidak melaporkan apa pun dan analisis Gemini gagal. Jalankan ulang untuk memastikan.' : 'SonarCloud dan Gemini tidak melaporkan kerentanan.' })));
@@ -769,7 +784,7 @@
         el('button', { class: 'btn btn-sm', type: 'button', text: 'Tampilkan semua', onclick: () => { state.filter = 'semua'; renderFilter(); renderTemuan(); } })));
       return;
     }
-    isi(body, el('ul', { class: 'flist' }, daftar.map((f) => {
+    isi(body, sastTidakTersedia() ? el('p', { class: 'notice-sast', role: 'note', text: teksSastTidakTersedia() }) : null, el('ul', { class: 'flist' }, daftar.map((f) => {
       const terbuka = state.terbuka === f.id;
       const k = state.keputusan[f.id];
       const lokasi = f.file ? `${f.file}${f.baris ? `:${f.baris}` : ''}` : 'lokasi tidak disebut';
@@ -798,7 +813,7 @@
         el('div', { class: 'kv' }, el('span', { text: 'Dikonfirmasi Gemini' }), el('b', { text: String(v.dikonfirmasi) })),
         el('div', { class: 'kv' }, el('span', { text: 'Tidak dilaporkan ulang' }), el('b', { text: String(v.ditolak) })),
         el('div', { class: 'kv' }, el('span', { text: 'Perlu review manual' }), el('b', { text: String(v.perlu_review) })),
-        el('p', { class: 'note', text: h.run.gemini?.status === 'ok' ? 'Diturunkan dari pencocokan file, baris, dan CWE; bukan putusan eksplisit Gemini.' : 'Gemini tidak menilai run ini, jadi semua temuan Sonar perlu review manual.' }),
+        el('p', { class: 'note', text: sastTidakTersedia() ? teksSastTidakTersedia() : (h.run.gemini?.status === 'ok' ? 'Diturunkan dari pencocokan file, baris, dan CWE; bukan putusan eksplisit Gemini.' : 'Gemini tidak menilai run ini, jadi semua temuan Sonar perlu review manual.') }),
       ]
       : el('p', { class: 'note', text: 'Belum ada run.' }));
 

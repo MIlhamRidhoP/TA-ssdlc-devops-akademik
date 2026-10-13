@@ -15,6 +15,8 @@
     "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
     "sast": {
       "alat": "SonarCloud",
+      "status": "ok",
+      "galat": null,
       "revisi_analisis": "5cbf05c928cd375fa51f773a03ca4779dde42e70",
       "sesuai_commit": true
     },

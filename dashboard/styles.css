@@ -511,3 +511,4 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 }
 .start .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
 nav:has(.projects:empty) { display: none; }
+.notice-sast { font-size: 0.875rem; color: var(--ink); background: var(--high-soft); border-radius: var(--radius-ctl); padding: var(--s-2) var(--s-3); max-width: 80ch; }

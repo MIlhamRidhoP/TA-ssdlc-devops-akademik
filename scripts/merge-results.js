@@ -151,6 +151,18 @@ const verifikasiSonar = (findings, geminiBerjalan) => {
   };
 };
 
+// Data Sonar hanya dianggap tersedia bila analisis branch ditemukan dan semua panggilan API berhasil.
+// Tanpa ini, daftar kosong karena galat API terbaca sebagai "0 temuan".
+const statusSast = (ringkasan, sonarTemuan) => {
+  if (!sonarTemuan) return { status: 'tidak-tersedia', galat: 'Output temuan Sonar tidak ditemukan' };
+  const sonar = ringkasan?.sonar;
+  if (!sonar) return { status: null, galat: null };
+  const galat = (sonar.galat ?? []).map(String).filter(Boolean);
+  if (galat.length) return { status: 'tidak-tersedia', galat: galat.join('; ').slice(0, 400) };
+  if (!sonar.analisis) return { status: 'tidak-tersedia', galat: `SonarCloud tidak punya analisis untuk branch ${sonar.branch ?? '-'}` };
+  return { status: 'ok', galat: null };
+};
+
 // Susun results.json dari bahan yang sudah dibaca. Fungsi murni kecuali membaca potongan kode dari root.
 const susunHasil = ({ meta, sonarTemuan, geminiRun, ringkasan, skor, root = ROOT }) => {
   const geminiBerjalan = Boolean(geminiRun && geminiRun.parse_ok);
@@ -158,6 +170,7 @@ const susunHasil = ({ meta, sonarTemuan, geminiRun, ringkasan, skor, root = ROOT
     sonar: sonarTemuan?.temuan ?? [], gemini: geminiBerjalan ? geminiRun.temuan : [], geminiBerjalan, root,
   });
   const revisi = ringkasan?.sonar?.analisis?.revisi ?? null;
+  const sast = statusSast(ringkasan, sonarTemuan);
   const selesai = meta.selesai ?? new Date().toISOString();
   const durasi = meta.mulai ? Math.max(0, Math.round((Date.parse(selesai) - Date.parse(meta.mulai)) / 1000)) : null;
 
@@ -171,7 +184,7 @@ const susunHasil = ({ meta, sonarTemuan, geminiRun, ringkasan, skor, root = ROOT
       label: teks(meta.label), mulai: meta.mulai ?? null, selesai, durasi_detik: durasi,
       mode: meta.mode, model: meta.mode === 'sast-llm' ? (geminiRun?.model_diminta ?? meta.model ?? null) : null,
       prompt_sha256: meta.mode === 'sast-llm' ? (geminiRun?.prompt_sha256 ?? ringkasan?.prompt?.sha256 ?? null) : null,
-      sast: { alat: 'SonarCloud', revisi_analisis: revisi, sesuai_commit: revisi ? revisi === meta.commit : null },
+      sast: { alat: 'SonarCloud', status: sast.status, galat: sast.galat, revisi_analisis: revisi, sesuai_commit: revisi ? revisi === meta.commit : null },
       gemini: {
         status: statusGemini,
         parse_ok: meta.mode === 'sast-llm' ? Boolean(geminiRun?.parse_ok) : null,
@@ -220,6 +233,7 @@ const ringkasanMarkdown = (r) => {
     '',
   ];
   if (r.run.gemini.status === 'gagal') baris.push(`> Analisis Gemini gagal: ${sel(r.run.gemini.galat)}`, '');
+  if (r.run.sast.status === 'tidak-tersedia') baris.push(`> Data SonarCloud tidak tersedia: ${sel(r.run.sast.galat)}. Jumlah temuan di bawah tidak mencakup Sonar.`, '');
   if (r.run.sast.sesuai_commit === false) baris.push(`> Data Sonar berasal dari analisis commit ${sel(r.run.sast.revisi_analisis)}, bukan commit run ini.`, '');
   if (r.findings.length === 0) {
     baris.push('Tidak ada temuan.');

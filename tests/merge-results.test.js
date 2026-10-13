@@ -133,3 +133,18 @@ test('nama branch aman dipakai sebagai path', () => {
   assert.equal(pathBranch('../../etc'), 'etc');
   assert.equal(pathBranch('fix/a b'), 'fix/a_b');
 });
+
+test('data Sonar tidak tersedia ditandai, bukan dianggap nol temuan', () => {
+  const galatApi = { sonar: { branch: 'feat/x', analisis: null, galat: ['issues: Organization is not allowed to access data from non main branches.'] } };
+  const r = susunHasil({ meta: meta({ mode: 'sast' }), sonarTemuan: { temuan: [] }, geminiRun: null, ringkasan: galatApi, root: rootKosong });
+  assert.equal(r.run.sast.status, 'tidak-tersedia');
+  assert.match(r.run.sast.galat, /non main branches/);
+  assert.match(ringkasanMarkdown(r), /Data SonarCloud tidak tersedia/);
+
+  const tanpaAnalisis = susunHasil({ meta: meta({ mode: 'sast' }), sonarTemuan: { temuan: [] }, geminiRun: null, ringkasan: { sonar: { branch: 'feat/x', analisis: null, galat: [] } }, root: rootKosong });
+  assert.equal(tanpaAnalisis.run.sast.status, 'tidak-tersedia');
+
+  const ok = susunHasil({ meta: meta(), sonarTemuan, geminiRun, ringkasan: { sonar: { branch: 'main', analisis: { revisi: meta().commit }, galat: [] } }, root: rootKosong });
+  assert.equal(ok.run.sast.status, 'ok');
+  assert.equal(ok.run.sast.sesuai_commit, true);
+});
