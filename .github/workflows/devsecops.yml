@@ -130,8 +130,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
+          # Branch uji memakai project SonarCloud sendiri dan dianalisis sebagai branch utamanya,
+          # karena paket gratis menolak akses data branch non-main.
           args: >
-            -Dsonar.branch.name=${{ github.ref_name }}
+            -Dsonar.projectKey=milhamridhop_ta-sia-uji-dashboard
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
 
@@ -159,7 +161,8 @@ jobs:
         if: needs.rencana.outputs.mode == 'sast'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_BRANCH: ${{ github.ref_name }}
+          SONAR_PROJECT: milhamridhop_ta-sia-uji-dashboard
+          SONAR_BRANCH: main
         run: node scripts/gemini-scan.js --export-prompt
 
       # Non-blocking: kegagalan Gemini (kuota, 503) tetap menghasilkan results.json dengan status gagal.
@@ -170,7 +173,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GEMINI_MODEL: ${{ inputs.model }}
-          SONAR_BRANCH: ${{ github.ref_name }}
+          SONAR_PROJECT: milhamridhop_ta-sia-uji-dashboard
+          SONAR_BRANCH: main
           # 503 "high demand" biasanya sementara; 5 percobaan dengan backoff memberi waktu sekitar 2,5 menit.
           GEMINI_RETRIES: 5
         run: node scripts/gemini-scan.js --runs=1
