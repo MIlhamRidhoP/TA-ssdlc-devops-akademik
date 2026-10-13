@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": 38421941517,
+    "nomor": 21,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "commit": "f0fbcc8b2761c5bf785f4fa492f1440f8fd67f2c",
+    "branch": "feat/security-dashboard",
+    "label": "sd-mv6u1qd2g4nq",
+    "mulai": "2026-10-13T15:25:30Z",
+    "selesai": "2026-10-13T15:34:49.100Z",
+    "durasi_detik": 559,
+    "mode": "sast-llm",
+    "model": "gemini-3.8-flash",
+    "prompt_sha256": "419bc1916fedc6d01797560939b1e0bf5310a68edb3ad6ec65c63f136fb8fbb0",
+    "sast": {
+      "alat": "SonarCloud",
+      "status": "tidak-tersedia",
+      "galat": "analisis: SonarCloud api/project_analyses/search balas 400: {\"errors\":[{\"msg\":\"Branch \\u0027feat/security-dashboard\\u0027 is not of type LONG\"}]}; issues: SonarCloud api/issues/search balas 403: {\"errors\":[{\"msg\":\"Organization is not allowed to access data from non main branches.\"}]}; hotspots: SonarCloud api/hotspots/search balas 403: {\"errors\":[{\"msg\":\"Organization is not allowed to access data ",
+      "revisi_analisis": null,
+      "sesuai_commit": null
+    },
+    "gemini": {
+      "status": "gagal",
+      "parse_ok": false,
+      "jumlah_temuan": null,
+      "galat": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    "jobs": {
+      "build_test": "success",
+      "sonarcloud": "success",
+      "analisis": "success"
+    }
+  },
+  "findings": [],
+  "sonar_verification": {
+    "dikonfirmasi": 0,
+    "ditolak": 0,
+    "perlu_review": 0,
+    "asal": "turunan-pencocokan"
+  }
+}
