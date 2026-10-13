@@ -1,4 +1,7 @@
 name: DevSecOps Pipeline
+# Label dari Security Dashboard dipakai untuk menemukan run hasil dispatch. Tanpa label,
+# run-name kosong dan GitHub memakai judul bawaan seperti sebelumnya.
+run-name: ${{ inputs.label && format('DevSecOps [{0}]', inputs.label) || '' }}
 
 on:
   push:
@@ -9,6 +12,20 @@ on:
         description: 'Jalankan step Gemini (true = Skenario B, false = Skenario A)'
         type: boolean
         default: false
+      mode:
+        description: 'Mode analisis. auto = ikuti use_gemini (true = sast-llm, false = hanya build dan uji seperti sebelumnya)'
+        type: choice
+        options: [auto, sast, sast-llm]
+        default: auto
+      model:
+        description: 'Model Gemini untuk mode sast-llm'
+        type: choice
+        options: [gemini-3.8-flash]
+        default: gemini-3.8-flash
+      label:
+        description: 'Label unik dari Security Dashboard (opsional)'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -68,3 +85,174 @@ jobs:
       - name: Bersihkan
         if: always()
         run: docker compose down -v
+
+  # Job analisis hanya berjalan pada workflow_dispatch dengan mode sast atau sast-llm.
+  # Pada push, semua job di bawah ini dilewati sehingga perilaku lama tidak berubah.
+  rencana:
+    name: Tentukan mode analisis
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+    steps:
+      - name: Tentukan mode
+        id: mode
+        env:
+          MODE_INPUT: ${{ inputs.mode }}
+          USE_GEMINI: ${{ inputs.use_gemini }}
+        run: |
+          mode=none
+          case "$MODE_INPUT" in
+            sast|sast-llm) mode="$MODE_INPUT" ;;
+            *) if [ "$USE_GEMINI" = "true" ]; then mode=sast-llm; fi ;;
+          esac
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Mode analisis: $mode"
+
+  sonarcloud:
+    name: Analisis SonarCloud
+    needs: rencana
+    if: needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # qualitygate.wait membuat scanner menunggu server selesai memproses, supaya job berikutnya
+      # membaca analisis commit ini. Gate yang merah tidak menghentikan pipeline analisis.
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.branch.name=${{ github.ref_name }}
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+  analisis:
+    name: Analisis temuan (Sonar dan Gemini)
+    needs: [rencana, sonarcloud]
+    if: needs.sonarcloud.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependency
+        run: npm ci
+
+      # --export-prompt mengambil data Sonar dan menyusun prompt tanpa memanggil Gemini.
+      - name: Ambil temuan Sonar
+        if: needs.rencana.outputs.mode == 'sast'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_BRANCH: ${{ github.ref_name }}
+        run: node scripts/gemini-scan.js --export-prompt
+
+      # Non-blocking: kegagalan Gemini (kuota, 503) tetap menghasilkan results.json dengan status gagal.
+      - name: Analisis Gemini (1 run)
+        if: needs.rencana.outputs.mode == 'sast-llm'
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GEMINI_MODEL: ${{ inputs.model }}
+          SONAR_BRANCH: ${{ github.ref_name }}
+        run: node scripts/gemini-scan.js --runs=1
+
+      - name: Unggah output analisis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-output-${{ github.run_id }}
+          path: gemini-output/
+          retention-days: 14
+          if-no-files-found: warn
+
+  hasil:
+    name: Gabung dan terbitkan hasil
+    needs: [rencana, build-test, sonarcloud, analisis]
+    if: always() && (needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Satu-satunya job yang boleh menulis: commit results.json ke branch security-results.
+    permissions:
+      contents: write
+      actions: read
+    concurrency:
+      group: security-results
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Unduh output analisis
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: gemini-output-${{ github.run_id }}
+          path: gemini-output
+
+      - name: Ambil waktu mulai run
+        id: waktu
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "mulai=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at)" >> "$GITHUB_OUTPUT"
+
+      - name: Gabung temuan dan tulis Job Summary
+        env:
+          MODE: ${{ needs.rencana.outputs.mode }}
+          MODEL: ${{ inputs.model }}
+          RUN_LABEL: ${{ inputs.label }}
+          RUN_STARTED_AT: ${{ steps.waktu.outputs.mulai }}
+          JOB_BUILD_TEST: ${{ needs.build-test.result }}
+          JOB_SONARCLOUD: ${{ needs.sonarcloud.result }}
+          JOB_ANALISIS: ${{ needs.analisis.result }}
+        run: node scripts/merge-results.js merge --input=gemini-output --out=results.json --summary="$GITHUB_STEP_SUMMARY"
+
+      - name: Unggah results.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-results-${{ github.run_id }}
+          path: results.json
+          retention-days: 14
+
+      - name: Terbitkan ke branch security-results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for percobaan in 1 2 3; do
+            rm -rf ../pub
+            git worktree prune
+            git branch -D security-results 2>/dev/null || true
+            if git fetch --depth=1 origin security-results 2>/dev/null; then
+              git worktree add -B security-results ../pub FETCH_HEAD
+            else
+              git worktree add --orphan -b security-results ../pub
+            fi
+            node scripts/merge-results.js publish --results=results.json --dir=../pub
+            git -C ../pub add -A
+            git -C ../pub commit -q -m "hasil: run #$GITHUB_RUN_NUMBER ($GITHUB_REF_NAME)"
+            if git -C ../pub push origin security-results; then exit 0; fi
+            echo "Push gagal (percobaan $percobaan), coba lagi"
+            sleep 5
+          done
+          exit 1
