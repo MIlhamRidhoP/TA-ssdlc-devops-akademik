@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "diperbarui": "2026-10-13T15:17:20.659Z",
+  "runs": [
+    {
+      "id": 38420515410,
+      "nomor": 17,
+      "branch": "feat/security-dashboard",
+      "commit": "adaa347277dd2cc0099b83eebafb83eb8048ccca",
+      "label": "sd-mv6tp2cf8c9x",
+      "mode": "sast",
+      "model": null,
+      "mulai": "2026-10-13T15:15:40Z",
+      "selesai": "2026-10-13T15:17:20.659Z",
+      "durasi_detik": 101,
+      "path": "feat/security-dashboard/17.json",
+      "gemini": "dilewati",
+      "jumlah": {
+        "total": 0,
+        "kritis": 0,
+        "tinggi": 0,
+        "sedang": 0,
+        "rendah": 0
+      }
+    }
+  ]
+}
