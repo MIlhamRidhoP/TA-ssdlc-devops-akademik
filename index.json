@@ -1,7 +1,28 @@
 {
   "schema_version": 1,
-  "diperbarui": "2026-10-13T15:53:13.030Z",
+  "diperbarui": "2026-10-13T16:15:07.867Z",
   "runs": [
+    {
+      "id": 38428393072,
+      "nomor": 27,
+      "branch": "uji/seeded-dashboard",
+      "commit": "4aa35b1fcfe37f321b535d028ee6ce9014f49a58",
+      "label": "sd-mv6vobj7zqf7",
+      "mode": "sast-llm",
+      "model": "gemini-3.8-flash",
+      "mulai": "2026-10-13T16:11:04Z",
+      "selesai": "2026-10-13T16:15:07.867Z",
+      "durasi_detik": 244,
+      "path": "uji/seeded-dashboard/27.json",
+      "gemini": "gagal",
+      "jumlah": {
+        "total": 5,
+        "kritis": 4,
+        "tinggi": 0,
+        "sedang": 1,
+        "rendah": 0
+      }
+    },
     {
       "id": 38424935430,
       "nomor": 25,
