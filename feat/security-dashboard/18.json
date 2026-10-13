@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": 38420924233,
+    "nomor": 18,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "commit": "adaa347277dd2cc0099b83eebafb83eb8048ccca",
+    "branch": "feat/security-dashboard",
+    "label": "sd-mv6tsoojd783",
+    "mulai": "2026-10-13T15:18:29Z",
+    "selesai": "2026-10-13T15:21:01.810Z",
+    "durasi_detik": 153,
+    "mode": "sast-llm",
+    "model": "gemini-3.8-flash",
+    "prompt_sha256": "419bc1916fedc6d01797560939b1e0bf5310a68edb3ad6ec65c63f136fb8fbb0",
+    "sast": {
+      "alat": "SonarCloud",
+      "revisi_analisis": null,
+      "sesuai_commit": null
+    },
+    "gemini": {
+      "status": "gagal",
+      "parse_ok": false,
+      "jumlah_temuan": null,
+      "galat": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    "jobs": {
+      "build_test": "success",
+      "sonarcloud": "success",
+      "analisis": "success"
+    }
+  },
+  "findings": [],
+  "sonar_verification": {
+    "dikonfirmasi": 0,
+    "ditolak": 0,
+    "perlu_review": 0,
+    "asal": "turunan-pencocokan"
+  }
+}

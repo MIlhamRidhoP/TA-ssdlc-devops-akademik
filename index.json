@@ -1,7 +1,28 @@
 {
   "schema_version": 1,
-  "diperbarui": "2026-10-13T15:17:20.659Z",
+  "diperbarui": "2026-10-13T15:21:01.810Z",
   "runs": [
+    {
+      "id": 38420924233,
+      "nomor": 18,
+      "branch": "feat/security-dashboard",
+      "commit": "adaa347277dd2cc0099b83eebafb83eb8048ccca",
+      "label": "sd-mv6tsoojd783",
+      "mode": "sast-llm",
+      "model": "gemini-3.8-flash",
+      "mulai": "2026-10-13T15:18:29Z",
+      "selesai": "2026-10-13T15:21:01.810Z",
+      "durasi_detik": 153,
+      "path": "feat/security-dashboard/18.json",
+      "gemini": "gagal",
+      "jumlah": {
+        "total": 0,
+        "kritis": 0,
+        "tinggi": 0,
+        "sedang": 0,
+        "rendah": 0
+      }
+    },
     {
       "id": 38420515410,
       "nomor": 17,
