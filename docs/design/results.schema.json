@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik/docs/design/results.schema.json",
+  "title": "Hasil analisis keamanan per run (results.json)",
+  "description": "Gabungan temuan SonarCloud dan Gemini untuk satu run pipeline. Ditulis oleh scripts/merge-results.js dan dibaca Security Dashboard. Naikkan schema_version bila ada perubahan yang tidak kompatibel.",
+  "type": "object",
+  "required": ["schema_version", "run", "findings", "sonar_verification"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run": {
+      "type": "object",
+      "required": ["id", "nomor", "repo", "commit", "branch", "mulai", "selesai", "durasi_detik", "mode", "model", "prompt_sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "integer", "description": "GitHub Actions run id" },
+        "nomor": { "type": "integer", "description": "GitHub Actions run number" },
+        "repo": { "type": "string", "description": "owner/repo" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "branch": { "type": "string" },
+        "label": { "type": ["string", "null"], "description": "Label unik dari dashboard saat dispatch" },
+        "mulai": { "type": ["string", "null"], "format": "date-time" },
+        "selesai": { "type": "string", "format": "date-time" },
+        "durasi_detik": { "type": ["integer", "null"], "minimum": 0 },
+        "mode": { "enum": ["sast", "sast-llm"] },
+        "model": { "type": ["string", "null"], "description": "Model Gemini; null pada mode sast" },
+        "prompt_sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "sast": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "alat": { "const": "SonarCloud" },
+            "status": { "enum": ["ok", "tidak-tersedia", null], "description": "tidak-tersedia: analisis branch tidak ditemukan atau API SonarCloud menolak (mis. paket gratis hanya membuka branch utama)" },
+            "galat": { "type": ["string", "null"] },
+            "revisi_analisis": { "type": ["string", "null"] },
+            "sesuai_commit": { "type": ["boolean", "null"], "description": "false berarti data Sonar berasal dari analisis commit lain" }
+          }
+        },
+        "gemini": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "enum": ["ok", "gagal", "dilewati"] },
+            "parse_ok": { "type": ["boolean", "null"] },
+            "jumlah_temuan": { "type": ["integer", "null"] },
+            "galat": { "type": ["string", "null"] }
+          }
+        },
+        "jobs": {
+          "type": "object",
+          "description": "Hasil job GitHub Actions: success, failure, cancelled, skipped",
+          "additionalProperties": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "fingerprint", "judul", "severity", "file", "baris", "sumber", "status_ai", "alasan", "rekomendasi"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^T-[0-9]{2,}$" },
+          "fingerprint": { "type": "string", "description": "Hash file, baris, CWE, dan judul; stabil antar-run selama baris tidak bergeser" },
+          "judul": { "type": "string" },
+          "severity": { "enum": ["kritis", "tinggi", "sedang", "rendah"] },
+          "severity_asal": { "enum": ["sonar", "turunan-cwe"], "description": "turunan-cwe: Gemini tidak memberi severity, nilai diturunkan dari tabel CWE di merge-results.js" },
+          "kategori_owasp": { "type": ["string", "null"] },
+          "cwe": { "type": "array", "items": { "type": "string", "pattern": "^CWE-[0-9]+$" } },
+          "file": { "type": ["string", "null"] },
+          "baris": { "type": ["integer", "null"] },
+          "sumber": { "enum": ["sonar", "gemini", "both"] },
+          "status_ai": { "enum": ["confirmed", "rejected", "new", null], "description": "null bila Gemini tidak berjalan" },
+          "status_ai_asal": { "enum": ["turunan-pencocokan", null], "description": "Status diturunkan dari pencocokan file, baris, dan CWE, bukan putusan eksplisit model" },
+          "alasan": { "type": ["string", "null"] },
+          "rekomendasi": { "type": ["string", "null"], "description": "null: prompt saat ini tidak meminta rekomendasi" },
+          "keyakinan_gemini": { "type": ["string", "null"] },
+          "sonar_rule": { "type": ["string", "null"] },
+          "potongan_kode": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "properties": {
+              "mulai": { "type": "integer", "minimum": 1 },
+              "baris": { "type": "array", "items": { "type": "string" }, "maxItems": 7 }
+            }
+          }
+        }
+      }
+    },
+    "sonar_verification": {
+      "type": "object",
+      "required": ["dikonfirmasi", "ditolak", "perlu_review"],
+      "additionalProperties": false,
+      "properties": {
+        "dikonfirmasi": { "type": "integer", "minimum": 0 },
+        "ditolak": { "type": "integer", "minimum": 0 },
+        "perlu_review": { "type": "integer", "minimum": 0 },
+        "asal": { "const": "turunan-pencocokan" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Hanya ada bila ground truth tersedia (branch eksperimen/seeded). Disalin dari run-N.score.json.",
+      "additionalProperties": true,
+      "properties": {
+        "sumber": { "type": "string" },
+        "jumlah_positif": { "type": "integer" },
+        "ketat": { "$ref": "#/$defs/skor" },
+        "longgar_cocok_lokasi": { "$ref": "#/$defs/skor" }
+      }
+    }
+  },
+  "$defs": {
+    "skor": {
+      "type": "object",
+      "properties": {
+        "tp": { "type": "integer" }, "fp": { "type": "integer" }, "fn": { "type": "integer" },
+        "precision": { "type": "number" }, "recall": { "type": "number" }, "f1": { "type": "number" }
+      }
+    }
+  }
+}
