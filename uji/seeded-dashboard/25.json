@@ -1,0 +1,356 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": 38424935430,
+    "nomor": 25,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "commit": "75a0df72853fa8daeff9f868545d102308fd77f9",
+    "branch": "uji/seeded-dashboard",
+    "label": "sd-mv6ust1swgsr",
+    "mulai": "2026-10-13T15:46:34Z",
+    "selesai": "2026-10-13T15:53:13.030Z",
+    "durasi_detik": 399,
+    "mode": "sast-llm",
+    "model": "gemini-3.8-flash",
+    "prompt_sha256": "2b55903b88373b12ca4f4952a77ac9eb40d3dd094a196ab5b6c0fa8f8cfcf6f9",
+    "sast": {
+      "alat": "SonarCloud",
+      "status": "tidak-tersedia",
+      "galat": "analisis: SonarCloud api/project_analyses/search balas 400: {\"errors\":[{\"msg\":\"Branch \\u0027uji/seeded-dashboard\\u0027 is not of type LONG\"}]}; issues: SonarCloud api/issues/search balas 403: {\"errors\":[{\"msg\":\"Organization is not allowed to access data from non main branches.\"}]}; hotspots: SonarCloud api/hotspots/search balas 403: {\"errors\":[{\"msg\":\"Organization is not allowed to access data fro",
+      "revisi_analisis": null,
+      "sesuai_commit": null
+    },
+    "gemini": {
+      "status": "ok",
+      "parse_ok": true,
+      "jumlah_temuan": 9,
+      "galat": null
+    },
+    "jobs": {
+      "build_test": "failure",
+      "sonarcloud": "success",
+      "analisis": "success"
+    }
+  },
+  "findings": [
+    {
+      "id": "T-01",
+      "fingerprint": "2cd6238aee227b27",
+      "judul": "SQL Injection",
+      "severity": "kritis",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A03:2021 - Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 44,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Variabel pola digabungkan langsung ke dalam query string SQL pada fungsi listFrom tanpa escaping tanda kutip satu, memungkinkan injeksi SQL melalui parameter pencarian q.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 41,
+        "baris": [
+          "  return rows[0] || null;",
+          "};",
+          "",
+          "exports.findByUserId = async (userId) => {",
+          "  const { rows } = await pool.query(`${DETAIL_SELECT} WHERE m.user_id = $2`, [KEY, userId]);",
+          "  return rows[0] || null;",
+          "};"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "fingerprint": "d9de1fe3a6c7effe",
+      "judul": "SQL Injection",
+      "severity": "kritis",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A03:2021 - Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 120,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Nama kolom dari Object.keys(d) langsung diinterpolasi ke klausul SET pada query UPDATE tanpa validasi atau whitelist nama kolom, membuka celah injeksi SQL melalui kunci objek req.body.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 117,
+        "baris": [
+          "         kode_pos_asal = COALESCE($13, kode_pos_asal),",
+          "         nama_ayah = COALESCE($14, nama_ayah),",
+          "         nama_ibu = COALESCE($15, nama_ibu),",
+          "         nomor_hp_orang_tua = COALESCE(pgp_sym_encrypt($16::text, $1), nomor_hp_orang_tua),",
+          "         updated_at = now()",
+          "       WHERE id = $2",
+          "       RETURNING user_id`,"
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "fingerprint": "947905c91ed6a434",
+      "judul": "SQL Injection",
+      "severity": "kritis",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A03:2021 - Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "file": "src/models/nilaiModel.js",
+      "baris": 136,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Variabel semester disisipkan langsung ke dalam query SQL menggunakan template string pada publishedBySemester, dan parameter semester tidak divalidasi formatnya pada nilaiController.khs.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 133,
+        "baris": [
+          "       AND ks.semester = '${semester}'",
+          "     ORDER BY mk.kode`,",
+          "    [mahasiswaId]",
+          "  );",
+          "  return rows;",
+          "};",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "fingerprint": "7559dc53ebea7af6",
+      "judul": "Mass Assignment",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A01:2021 - Broken Access Control",
+      "cwe": [
+        "CWE-915"
+      ],
+      "file": "src/controllers/cutiController.js",
+      "baris": 49,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Pengguna dapat menyisipkan status langsung melalui req.body saat membuat pengajuan cuti baru, sehingga pengajuan dapat langsung berstatus disetujui tanpa persetujuan admin.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 46,
+        "baris": [
+          "    }",
+          "    data.dokumen_id = dokumenId;",
+          "  }",
+          "",
+          "  if (req.body?.status) data.status = req.body.status;",
+          "  const id = await model.create({ ...data, mahasiswa_id: mahasiswaId });",
+          "  "
+        ]
+      }
+    },
+    {
+      "id": "T-05",
+      "fingerprint": "0e858335cfab1276",
+      "judul": "Mass Assignment",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A01:2021 - Broken Access Control",
+      "cwe": [
+        "CWE-915"
+      ],
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 92,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Endpoint updateMe meneruskan seluruh req.body ke updateByUserId tanpa penyaringan atribut (whitelisting), memungkinkan mahasiswa mengubah kolom profil terproteksi atau kolom administratif.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 89,
+        "baris": [
+          "  const profile = await model.findByUserId(req.user.id);",
+          "  if (!profile) throw new AppError(404, 'NOT_FOUND', 'Profil mahasiswa belum dibuat');",
+          "  res.json({ success: true, data: await profilLengkap(profile) });",
+          "  audit(req, 'READ_MAHASISWA', 'mahasiswa', profile.id);",
+          "};",
+          "",
+          "exports.updateMe = async (req, res) => {"
+        ]
+      }
+    },
+    {
+      "id": "T-06",
+      "fingerprint": "cdcc2f24a72ca168",
+      "judul": "Cross-Site Scripting (XSS)",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A03:2021 - Injection",
+      "cwe": [
+        "CWE-79"
+      ],
+      "file": "src/controllers/nilaiController.js",
+      "baris": 118,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Properti i.nama (nama mata kuliah) dirender ke dalam HTML pada fungsi halamanKhs tanpa melalui fungsi escapeHtml, berpotensi menimbulkan kerentanan Stored XSS.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 115,
+        "baris": [
+          "",
+          "const halamanKhs = (identitas, semester, items, ips) => {",
+          "  const baris = items.map((i) => `",
+          "      <tr>",
+          "        <td>${escapeHtml(i.kode)}</td>",
+          "        <td>${i.nama}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.sks)}</td>"
+        ]
+      }
+    },
+    {
+      "id": "T-07",
+      "fingerprint": "fb0257f22908a07d",
+      "judul": "Insecure Direct Object Reference (IDOR)",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A01:2021 - Broken Access Control",
+      "cwe": [
+        "CWE-639"
+      ],
+      "file": "src/models/cutiModel.js",
+      "baris": 47,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Fungsi findOwned menerima parameter mahasiswaId namun tidak menyertakannya dalam klausul WHERE query SQL, sehingga mahasiswa dapat melihat data pengajuan cuti milik mahasiswa lain via GET /me/:id.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 44,
+        "baris": [
+          "};",
+          "",
+          "exports.findById = async (id) => {",
+          "  const { rows } = await pool.query(`${DETAIL_SELECT} WHERE c.id = $2`, [KEY, id]);",
+          "  return rows[0] || null;",
+          "};",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-08",
+      "fingerprint": "d25f4dffc6cee0ca",
+      "judul": "Insecure Direct Object Reference (IDOR)",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A01:2021 - Broken Access Control",
+      "cwe": [
+        "CWE-639"
+      ],
+      "file": "src/models/profilModel.js",
+      "baris": 30,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Fungsi removeEmail tidak memfilter berdasarkan mahasiswa_id dalam query SQL DELETE, memungkinkan mahasiswa menghapus data email milik mahasiswa lain.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 27,
+        "baris": [
+          "    `INSERT INTO email_mahasiswa (mahasiswa_id, tipe, email)",
+          "     SELECT $1, $2, $3",
+          "     WHERE (SELECT count(*) FROM email_mahasiswa WHERE mahasiswa_id = $1) < $4",
+          "     RETURNING id, tipe, email, created_at`,",
+          "    [mahasiswaId, tipe, email, maks]",
+          "  );",
+          "  return rows[0] || null;"
+        ]
+      }
+    },
+    {
+      "id": "T-09",
+      "fingerprint": "f403e7fe68dbcff4",
+      "judul": "Missing Authorization",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A01:2021 - Broken Access Control",
+      "cwe": [
+        "CWE-862"
+      ],
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Endpoint PUT /:id/status tidak dilengkapi middleware authorize('admin'), memungkinkan mahasiswa atau pengguna terotentikasi mana pun mengubah status pengajuan cuti.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "high",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 14,
+        "baris": [
+          "",
+          "router.get('/', authorize('admin'), c.listAdmin);",
+          "router.get('/:id', authorize('admin'), c.getById);",
+          "router.put('/:id/status', c.updateStatus);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    }
+  ],
+  "sonar_verification": {
+    "dikonfirmasi": 0,
+    "ditolak": 0,
+    "perlu_review": 0,
+    "asal": "turunan-pencocokan"
+  },
+  "metrics": {
+    "sumber": "run-1.json",
+    "jumlah_positif": 9,
+    "rincian_fp": {
+      "di_luar_ground_truth": 0,
+      "n1": 0,
+      "jebakan_terdeteksi": 0
+    },
+    "ketat": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0.8888888888888888,
+      "f1": 0.9411764705882353
+    },
+    "longgar_cocok_lokasi": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0.8888888888888888,
+      "f1": 0.9411764705882353
+    }
+  }
+}
