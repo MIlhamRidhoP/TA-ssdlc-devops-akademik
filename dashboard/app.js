@@ -563,6 +563,12 @@
       ? 'Data SonarCloud tidak tersedia: paket gratis SonarCloud hanya membuka data branch utama. Scan branch ini berjalan, tetapi hasilnya tidak bisa dibaca lewat API.'
       : `Data SonarCloud tidak tersedia untuk run ini${galat ? ` (${galat})` : ''}.`;
   };
+  const teksGeminiGagal = () => {
+    const g = state.hasil?.run?.gemini;
+    if (g?.status !== 'gagal') return null;
+    const sibuk = /high demand|overloaded|503|UNAVAILABLE/i.test(g.galat ?? '');
+    return `Analisis Gemini gagal${g.galat ? `: ${g.galat}` : '.'}${sibuk ? ' Server Gemini sedang sibuk; jalankan lagi beberapa menit kemudian.' : ''}`;
+  };
   const sidikSebelumnya = () => (state.sebelumnya ? new Set(state.sebelumnya.findings.map((f) => f.fingerprint)) : null);
   const temuanBaru = (f, sidik) => Boolean(sidik && !sidik.has(f.fingerprint));
   const perluTindakan = (f) => {
@@ -771,12 +777,12 @@
     if (!h.findings.length && sastTidakTersedia()) {
       isi(body, el('div', { class: 'state' }, el('h3', { text: 'Belum bisa dipastikan bebas temuan' }),
         el('p', { text: teksSastTidakTersedia() }),
-        el('p', { text: h.run.gemini?.status === 'ok' ? 'Gemini tidak melaporkan temuan.' : 'Gemini tidak berjalan pada run ini, jadi tidak ada sumber temuan lain.' })));
+        el('p', { text: h.run.gemini?.status === 'ok' ? 'Gemini tidak melaporkan temuan.' : (teksGeminiGagal() ?? 'Gemini tidak berjalan pada run ini, jadi tidak ada sumber temuan lain.') })));
       return;
     }
     if (!h.findings.length) {
       isi(body, el('div', { class: 'state' }, el('h3', { text: 'Tidak ada temuan pada run ini' }),
-        el('p', { text: h.run.gemini?.status === 'gagal' ? 'SonarCloud tidak melaporkan apa pun dan analisis Gemini gagal. Jalankan ulang untuk memastikan.' : 'SonarCloud dan Gemini tidak melaporkan kerentanan.' })));
+        el('p', { text: h.run.gemini?.status === 'gagal' ? `SonarCloud tidak melaporkan apa pun. ${teksGeminiGagal()}` : 'SonarCloud dan Gemini tidak melaporkan kerentanan.' })));
       return;
     }
     if (!daftar.length) {
@@ -784,7 +790,7 @@
         el('button', { class: 'btn btn-sm', type: 'button', text: 'Tampilkan semua', onclick: () => { state.filter = 'semua'; renderFilter(); renderTemuan(); } })));
       return;
     }
-    isi(body, sastTidakTersedia() ? el('p', { class: 'notice-sast', role: 'note', text: teksSastTidakTersedia() }) : null, el('ul', { class: 'flist' }, daftar.map((f) => {
+    isi(body, teksGeminiGagal() ? el('p', { class: 'notice-sast', role: 'note', text: teksGeminiGagal() }) : null, sastTidakTersedia() ? el('p', { class: 'notice-sast', role: 'note', text: teksSastTidakTersedia() }) : null, el('ul', { class: 'flist' }, daftar.map((f) => {
       const terbuka = state.terbuka === f.id;
       const k = state.keputusan[f.id];
       const lokasi = f.file ? `${f.file}${f.baris ? `:${f.baris}` : ''}` : 'lokasi tidak disebut';
@@ -957,7 +963,7 @@
         state.sibuk = false;
         state.pantau = null;
         await muatIndex(run.id);
-        perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.`));
+        perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.${state.hasil?.run?.gemini?.status === 'gagal' ? ' Analisis Gemini gagal, lihat catatan di daftar temuan.' : ''}`));
         return;
       }
       await tunggu(JEDA_HASIL);

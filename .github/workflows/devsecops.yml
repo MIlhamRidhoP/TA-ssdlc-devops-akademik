@@ -171,6 +171,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GEMINI_MODEL: ${{ inputs.model }}
           SONAR_BRANCH: ${{ github.ref_name }}
+          # 503 "high demand" biasanya sementara; 5 percobaan dengan backoff memberi waktu sekitar 2,5 menit.
+          GEMINI_RETRIES: 5
         run: node scripts/gemini-scan.js --runs=1
 
       - name: Unggah output analisis
