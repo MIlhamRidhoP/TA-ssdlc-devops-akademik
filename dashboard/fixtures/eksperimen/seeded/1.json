@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": 1,
+    "nomor": 1,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "commit": "5cbf05c928cd375fa51f773a03ca4779dde42e70",
+    "branch": "eksperimen/seeded",
+    "label": null,
+    "mulai": "2026-10-10T07:40:02Z",
+    "selesai": "2026-10-10T07:46:51Z",
+    "durasi_detik": 409,
+    "mode": "sast-llm",
+    "model": "gemini-3.8-flash",
+    "prompt_sha256": "de8f35e00b5682581d03fd605306c650f42e1813112d871657ba71589a78c49c",
+    "sast": {
+      "alat": "SonarCloud",
+      "revisi_analisis": "5cbf05c928cd375fa51f773a03ca4779dde42e70",
+      "sesuai_commit": true
+    },
+    "gemini": {
+      "status": "gagal",
+      "parse_ok": false,
+      "jumlah_temuan": null,
+      "galat": "Contoh sintetis: HTTP 503, model sedang kelebihan beban"
+    },
+    "jobs": {
+      "build_test": "success",
+      "sonarcloud": "success",
+      "analisis": "success"
+    }
+  },
+  "findings": [
+    {
+      "id": "T-01",
+      "fingerprint": "e42c1d58bfba0a8c",
+      "judul": "Reflected XSS via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": null,
+      "cwe": [
+        "CWE-79"
+      ],
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "sumber": "sonar",
+      "status_ai": null,
+      "status_ai_asal": null,
+      "alasan": "Reflected XSS via unsanitized user input",
+      "rekomendasi": null,
+      "keyakinan_gemini": null,
+      "sonar_rule": "jssecurity:S5131",
+      "potongan_kode": {
+        "mulai": 157,
+        "baris": [
+          "exports.khs = async (req, res) => {",
+          "  const semester = typeof req.query.semester === 'string' ? req.query.semester : '';",
+          "  if (!semester) {",
+          "    res.status(400).type('html').send(`<p>Semester \"${semester}\" tidak dikenali</p>`);",
+          "    return;",
+          "  }",
+          "  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "fingerprint": "414eeb7be457aa0f",
+      "judul": "Reflected XSS via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": null,
+      "cwe": [
+        "CWE-79"
+      ],
+      "file": "src/controllers/nilaiController.js",
+      "baris": 170,
+      "sumber": "sonar",
+      "status_ai": null,
+      "status_ai_asal": null,
+      "alasan": "Reflected XSS via unsanitized user input",
+      "rekomendasi": null,
+      "keyakinan_gemini": null,
+      "sonar_rule": "jssecurity:S5131",
+      "potongan_kode": {
+        "mulai": 167,
+        "baris": [
+          "  const items = await model.publishedBySemester(mahasiswaId, semester);",
+          "",
+          "  res.set('Cache-Control', 'no-store');",
+          "  res.type('html').send(halamanKhs(identitas, semester, items, hitungIps(items)));",
+          "};",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "fingerprint": "103dd8c74f7caf81",
+      "judul": "SQL Injection via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": null,
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "sumber": "sonar",
+      "status_ai": null,
+      "status_ai_asal": null,
+      "alasan": "SQL Injection via unsanitized user input",
+      "rekomendasi": null,
+      "keyakinan_gemini": null,
+      "sonar_rule": "jssecurity:S3649",
+      "potongan_kode": {
+        "mulai": 90,
+        "baris": [
+          "",
+          "exports.listAdmin = async ({ pola, sort, order, limit, offset }) => {",
+          "    const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, [pola]);",
+          "    const { rows } = await pool.query(",
+          "      `SELECT ${RINGKAS_COLS}, m.id AS mahasiswa_id, m.nim, m.nama,",
+          "              pgp_sym_decrypt(c.alamat_cuti, $4) AS alamat_cuti,",
+          "              pgp_sym_decrypt(c.nomor_telepon, $4) AS nomor_telepon"
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "fingerprint": "639bd7d0f25d9852",
+      "judul": "SQL Injection via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": null,
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "sumber": "sonar",
+      "status_ai": null,
+      "status_ai_asal": null,
+      "alasan": "SQL Injection via unsanitized user input",
+      "rekomendasi": null,
+      "keyakinan_gemini": null,
+      "sonar_rule": "jssecurity:S3649",
+      "potongan_kode": {
+        "mulai": 121,
+        "baris": [
+          "};",
+          "",
+          "exports.publishedBySemester = async (mahasiswaId, semester) => {",
+          "  const { rows } = await pool.query(",
+          "    `SELECT ks.semester, mk.kode, mk.nama, mk.sks,",
+          "            n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka",
+          "     FROM nilai n"
+        ]
+      }
+    },
+    {
+      "id": "T-05",
+      "fingerprint": "1c08ae5fee1fced3",
+      "judul": "Make sure that enabling CORS is safe here.",
+      "severity": "sedang",
+      "severity_asal": "sonar",
+      "kategori_owasp": null,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "file": "src/app.js",
+      "baris": 10,
+      "sumber": "sonar",
+      "status_ai": null,
+      "status_ai_asal": null,
+      "alasan": "Make sure that enabling CORS is safe here.",
+      "rekomendasi": null,
+      "keyakinan_gemini": null,
+      "sonar_rule": "javascript:S5122",
+      "potongan_kode": {
+        "mulai": 7,
+        "baris": [
+          "const app = express();",
+          "",
+          "app.use(helmet());",
+          "app.use(cors());",
+          "app.use(express.json());",
+          "",
+          "app.get('/health', (req, res) => {"
+        ]
+      }
+    }
+  ],
+  "sonar_verification": {
+    "dikonfirmasi": 0,
+    "ditolak": 0,
+    "perlu_review": 5,
+    "asal": "turunan-pencocokan"
+  }
+}

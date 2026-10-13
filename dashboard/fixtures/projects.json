@@ -1,0 +1,20 @@
+{
+  "projects": [
+    {
+      "owner": "MIlhamRidhoP",
+      "repo": "TA-ssdlc-devops-akademik",
+      "workflow": "devsecops.yml",
+      "branches": [
+        { "name": "main", "dispatch": true },
+        { "name": "eksperimen/seeded", "dispatch": false, "catatan": "Arsip eksperimen. Workflow branch ini dikunci untuk menjaga data eksperimen." }
+      ]
+    },
+    {
+      "owner": "contoh",
+      "repo": "aplikasi-lain",
+      "workflow": "devsecops.yml",
+      "demo_tanpa_workflow": true,
+      "branches": [{ "name": "main", "dispatch": true }]
+    }
+  ]
+}
