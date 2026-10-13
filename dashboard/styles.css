@@ -125,7 +125,6 @@ body {
   color: var(--ink-2);
   font: 400 0.9375rem/1.55 var(--font-body);
   font-variant-numeric: tabular-nums;
-  overflow-x: clip;
   caret-color: var(--accent);
 }
 
