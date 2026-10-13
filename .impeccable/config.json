@@ -13,6 +13,105 @@
         ],
         "createdAt": "2026-10-13T13:16:24.605Z",
         "reason": "Claude: canon decision sketch intentionally renders the category-standard look (Inter); not used in the dashboard build"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          ".impeccable/mocks/decision/r2-canon.html"
+        ],
+        "createdAt": "2026-10-13T14:20:20.657Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/; kartu standar kategori sengaja memakai Inter"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-assigned.html"
+        ],
+        "createdAt": "2026-10-13T14:20:20.919Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/; dunia Halaman Bursa memakai kertas salem"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-assigned.html"
+        ],
+        "createdAt": "2026-10-13T14:20:21.184Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-assigned.html"
+        ],
+        "createdAt": "2026-10-13T14:20:21.445Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-assigned.html"
+        ],
+        "createdAt": "2026-10-13T14:20:21.684Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-pick.html"
+        ],
+        "createdAt": "2026-10-13T14:20:21.933Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-pick.html"
+        ],
+        "createdAt": "2026-10-13T14:20:22.174Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-pick.html"
+        ],
+        "createdAt": "2026-10-13T14:20:22.436Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-canon.html"
+        ],
+        "createdAt": "2026-10-13T14:20:22.667Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-canon.html"
+        ],
+        "createdAt": "2026-10-13T14:20:22.917Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r2-canon.html"
+        ],
+        "createdAt": "2026-10-13T14:20:23.178Z",
+        "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
       }
     ]
   }

@@ -609,7 +609,7 @@
     const jumlah = state.hasil?.findings.length ?? 0;
     const kritis = state.hasil?.findings.filter((f) => f.severity === 'kritis').length ?? 0;
     $('run-title').textContent = r
-      ? `Run #${r.nomor} · ${jumlah} temuan${kritis ? `, ${kritis} kritis` : ''}`
+      ? `Run #${r.nomor} · ${jumlah} temuan${kritis ? ` · ${kritis} kritis` : ''}`
       : (state.entri ? `Memuat run #${state.entri.nomor}…` : `Belum ada run di ${state.branch.name}`);
 
     const sel = (label, nilai, opsi = {}) => el('div', {}, el('dt', { text: label }), el('dd', { class: [opsi.data ? 'data' : '', opsi.warn ? 'warn' : ''].join(' ').trim() || null, title: opsi.title }, nilai));

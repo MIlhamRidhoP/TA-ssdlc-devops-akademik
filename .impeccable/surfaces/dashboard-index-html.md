@@ -32,26 +32,25 @@ related_targets: []
 
 ## Selected direction
 
-Gambar Teknik, dipilih user di putaran 2 (pilihan Impeccable). Putaran 1 (Lembar Hasil Laboratorium) ditolak user.
+Mockup + perbaikan, ditetapkan user (13 Okt 2026) setelah melihat build Gambar Teknik. Acuan visual: `docs/design/mockup-dashboard.html` (palet Cobalt, panel graphite, kartu bergaris tipis, chip lembut, langkah pipeline vertikal), ditambah perbaikan yang disepakati: font bukan Inter/Space Grotesk, tanpa label di atas judul, monospace hanya untuk data, teks minimal 13px, data asli eksperimen, konten utama di tengah. Arah ini adalah keputusan user dan mengalahkan undian; Gambar Teknik dan Lembar Hasil Laboratorium tidak dipakai.
 
 ## Direction contract
 
-THESIS: Setiap run adalah satu lembar gambar kerja: identitas run di kotak judul, pipeline digambar sebagai jalur bernode dengan garis ukur durasi, temuan yang baru sejak run sebelumnya diberi segitiga revisi. Menolak dashboard kategori standar berupa kartu berbayang, chip pastel, dan radius besar.
+THESIS: Alat kerja developer yang tenang dan presisi: setiap temuan bisa ditelusuri ke file, baris, CWE, dan sumbernya; satu panel graphite untuk aksi utama. Menolak tampilan pamer metrik dan dekorasi.
 
-OWN-WORLD: Kertas gambar biru-pucat; tinta biru kobalt untuk garis, label kotak judul, dan aksen; panel biru Prusia pekat untuk Jalankan analisis dengan garis kerja biru muda; merah revisi hanya untuk kritis dan tanda revisi; amber untuk tinggi. Garis 1 sampai 1,5 px, tanpa radius, tanpa bayangan dekoratif. Barlow untuk teks, Barlow Semi Condensed untuk judul, JetBrains Mono hanya untuk data (hash, path:baris, CWE, durasi, nomor run).
+OWN-WORLD: Kertas biru-pucat dingin, kartu putih radius 10 px bergaris tipis, satu aksen Cobalt, panel graphite untuk Jalankan analisis, chip severity berwarna lembut (kritis merah, tinggi amber, sedang netral), titik warna per sumber (Sonar ungu, Gemini Cobalt, keduanya teal). Hanken Grotesk untuk teks, Schibsted Grotesk untuk judul, JetBrains Mono hanya untuk data.
 
-STORY: Developer membuka lembar run terbaru, membaca kotak judul (commit, model, prompt, SAST, durasi), melihat berapa yang kritis dan mana yang baru, membuka satu temuan, membaca alasan dan rekomendasi berlabel AI, lalu memberi keputusan. Penguji melihat pipeline berjalan sebagai gambar dan bahwa AI hanya menyarankan.
+STORY: Developer membuka run terbaru, membaca identitas run, melihat jumlah yang perlu tindakan dan yang baru, membuka satu temuan, membaca alasan dan rekomendasi berlabel AI, lalu memberi keputusan. Penguji melihat pipeline berjalan langkah demi langkah dan bahwa AI hanya menyarankan.
 
-FIRST VIEWPORT: Kiri: rail project dan bagian token. Atas konten: breadcrumb repo/branch, judul run, kotak judul lima sel di kanan. Lalu panel biru Prusia selebar konten: form Jalankan analisis di kiri, jalur pipeline empat node dengan garis ukur durasi di kanan. Di bawahnya strip ringkasan bergaris (kritis dengan jumlah revisi baru, tinggi, sedang, ditolak AI, diverifikasi developer), lalu daftar temuan dengan filter sumber di kiri dan kolom samping (verifikasi Sonar, riwayat run, metrik riset bila ada) di kanan. Aksi utama: tombol Jalankan analisis di panel biru.
+FIRST VIEWPORT: Kiri: rail project, akses GitHub, preferensi. Tengah (berpusat, maks 80rem): breadcrumb, judul run, baris meta (Commit, Model, Prompt, SAST, Durasi), lalu panel graphite dengan form Jalankan analisis di kiri dan langkah pipeline vertikal di kanan, strip ringkasan, lalu kartu Temuan dan kolom samping (verifikasi Sonar, riwayat run, metrik riset bila ada). Aksi utama: tombol Jalankan analisis di panel graphite.
 
-FORM: Gambar Teknik, posisi 1 dari daftar grounded putaran 2 (pilihan Impeccable), seed key 456fb8f5 (re-roll 1). Signature move: jalur pipeline yang tergambar node demi node saat job selesai, dengan garis ukur durasi di bawah setiap segmen; dan segitiga revisi pada temuan yang sidik jarinya tidak ada di run sebelumnya.
+FORM: Mockup user (standar kategori yang dikerjakan rapi), dipilih user di luar undian; seed key 456fb8f5 tercatat untuk riwayat putaran. Signature move: langkah pipeline yang berubah status secara langsung saat run dipantau, dan tanda segitiga merah "baru" pada temuan yang tidak ada di run sebelumnya.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 
 ## Anti-goals
 
 - Tidak ada hero-metric, eyebrow di atas judul, kartu berbayang bersarang, emoji atau glyph unicode sebagai ikon.
-- Grid gambar tidak dipakai sebagai hiasan latar.
 - Data dari API dan laporan LLM tidak pernah dirender sebagai markup.
 
 ## Open decisions
