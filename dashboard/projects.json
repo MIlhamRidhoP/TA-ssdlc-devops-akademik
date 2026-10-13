@@ -15,6 +15,11 @@
           "catatan": "Branch pengembangan dashboard; workflow-nya sudah memuat input mode, model, dan label."
         },
         {
+          "name": "uji/seeded-dashboard",
+          "dispatch": true,
+          "catatan": "Kode eksperimen/seeded dengan pipeline dashboard. Run di sini adalah run tambahan, bukan pengganti data eksperimen 10 Okt 2026."
+        },
+        {
           "name": "eksperimen/seeded",
           "dispatch": false,
           "catatan": "Arsip eksperimen. Workflow branch ini dikunci untuk menjaga data eksperimen."
