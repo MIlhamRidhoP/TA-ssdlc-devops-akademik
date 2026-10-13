@@ -112,6 +112,42 @@
         ],
         "createdAt": "2026-10-13T14:20:23.178Z",
         "reason": "Claude: sketsa keputusan putaran 2 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-10-13T15:07:31.268Z",
+        "reason": "Claude: sketsa keputusan putaran 1 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-10-13T15:07:31.533Z",
+        "reason": "Claude: sketsa keputusan putaran 1 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-crouwel.html"
+        ],
+        "createdAt": "2026-10-13T15:07:31.823Z",
+        "reason": "Claude: sketsa keputusan putaran 1 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-10-13T15:07:32.104Z",
+        "reason": "Claude: sketsa keputusan putaran 1 (gitignored, tidak dikirim); bukan bagian dashboard/"
       }
     ]
   }

@@ -132,7 +132,7 @@
       case 'ratelimit': return `Batas permintaan GitHub habis. Coba lagi ${err.reset ? `setelah pukul ${fmtJam.format(err.reset)}` : 'beberapa menit lagi'}.`;
       case 'forbidden': return 'GitHub menolak akses (403). Pastikan token punya izin Actions: Read and write dan Contents: Read-only untuk repo ini.';
       case 'notfound': return 'Tidak ditemukan (404). Repo tidak ada, atau token tidak diberi akses ke repo ini.';
-      case 'unprocessable': return 'Workflow menolak permintaan (422). Pastikan devsecops.yml di branch ini sudah memuat input mode, model, dan label.';
+      case 'unprocessable': return 'Workflow menolak permintaan (422). Biasanya devsecops.yml di branch ini belum memuat input mode, model, dan label; perubahan workflow perlu di-push atau di-merge ke branch tersebut.';
       case 'network': return 'Tidak bisa terhubung ke GitHub. Periksa koneksi internet, lalu coba lagi.';
       case 'lokal': case 'format': case 'invalid': return err.message;
       default: return `GitHub mengembalikan galat ${err?.status ?? 'tak dikenal'}. Coba lagi beberapa saat lagi.`;
@@ -905,6 +905,13 @@
   const dispatchLive = async (p, branch, mode, model, pantau) => {
     const label = `sd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const dikirim = Date.now();
+    // Dispatch memakai workflow di branch tujuan; branch yang belum di-push menghasilkan 422 yang membingungkan.
+    try {
+      await gh(`${repoPath(p)}/branches/${branch.split("/").map(enc).join("/")}`);
+    } catch (err) {
+      if (err.jenis === 'notfound') throw new GhError('invalid', `Branch ${branch} belum ada di GitHub. Push branch itu dulu, lalu jalankan lagi.`);
+      throw err;
+    }
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs: { mode, model, label } } });
     perbaruiTombolJalankan('Permintaan diterima. Menunggu GitHub membuat run…');
 
