@@ -20,7 +20,7 @@ on:
       model:
         description: 'Model Gemini untuk mode sast-llm'
         type: choice
-        options: [gemini-3.8-flash]
+        options: [gemini-3.8-flash, gemini-3.1-pro-preview]
         default: gemini-3.8-flash
       label:
         description: 'Label unik dari Security Dashboard (opsional)'

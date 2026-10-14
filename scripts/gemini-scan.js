@@ -35,14 +35,26 @@ const BATAS_RETRY_DELAY_DETIK = 120;
 // Harga paid tier resmi gemini-3.8-flash per 1 juta token, berlaku sampai 31 Des 2026.
 // Sumber: https://ai.google.dev/gemini-api/docs/pricing (dicek 2026-10-10).
 // Output mencakup token thinking (candidatesTokenCount + thoughtsTokenCount dihitung dengan tarif output).
-const HARGA_PAID_TIER = {
-  model: 'gemini-3.8-flash',
-  berlaku_sampai: '2026-12-31',
-  sumber: 'https://ai.google.dev/gemini-api/docs/pricing',
-  dicek_pada: '2026-10-10',
-  usd_per_1m_token_input: 0.75,
-  usd_per_1m_token_output: 3.75, // termasuk thinking token
+const TARIF_PER_MODEL = {
+  'gemini-3.8-flash': {
+    model: 'gemini-3.8-flash',
+    berlaku_sampai: '2026-12-31',
+    sumber: 'https://ai.google.dev/gemini-api/docs/pricing',
+    dicek_pada: '2026-10-10',
+    usd_per_1m_token_input: 0.75,
+    usd_per_1m_token_output: 3.75, // termasuk thinking token
+  },
+  // Dari daftar model Google AI Studio, prompt <= 200 ribu token.
+  'gemini-3.1-pro-preview': {
+    model: 'gemini-3.1-pro-preview',
+    sumber: 'Google AI Studio, daftar model (prompt <= 200K token)',
+    dicek_pada: '2026-10-13',
+    usd_per_1m_token_input: 2,
+    usd_per_1m_token_output: 12, // termasuk thinking token
+  },
 };
+// Model tanpa tarif tercatat tidak diberi estimasi biaya, supaya tidak memakai tarif model lain.
+const HARGA_PAID_TIER = TARIF_PER_MODEL[GEMINI_MODEL] ?? null;
 
 const ambilArg = (nama) => {
   const arg = process.argv.find((a) => a.startsWith(`--${nama}=`));
@@ -378,7 +390,7 @@ const panggilGemini = async (prompt, maxOutputTokens) => {
 // Perkiraan biaya satu run berdasarkan usageMetadata dan HARGA_PAID_TIER.
 // thoughtsTokenCount dihitung dengan tarif output (sesuai definisi "output" Gemini API).
 const hitungBiaya = (usageMetadata) => {
-  if (!usageMetadata) return null;
+  if (!usageMetadata || !HARGA_PAID_TIER) return null;
   const inputToken = usageMetadata.promptTokenCount ?? 0;
   const outputToken = (usageMetadata.candidatesTokenCount ?? 0) + (usageMetadata.thoughtsTokenCount ?? 0);
   const usdInput = (inputToken / 1_000_000) * HARGA_PAID_TIER.usd_per_1m_token_input;

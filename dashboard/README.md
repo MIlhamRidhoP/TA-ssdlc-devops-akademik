@@ -105,6 +105,6 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
   dan CWE di `merge-results.js`, bukan putusan eksplisit model. Dashboard memberi label pada semuanya.
 - **Metrik riset** hanya muncul bila `results.json` memuat `metrics`, yaitu untuk run dengan ground truth.
   Branch `eksperimen/seeded` tidak dipicu dari dashboard, jadi metrik saat ini hanya terlihat di mode demo.
-- **Model**: hanya Gemini 3.8 Flash yang berjalan otomatis. Gemini 3.1 Pro tampil nonaktif karena kuota API
-  free tier bernilai 0.
+- **Model**: Gemini 3.8 Flash (default) dan Gemini 3.1 Pro Preview. Pro butuh billing aktif di project Google
+  milik `GEMINI_API_KEY`; tanpa billing, kuota API Pro bernilai 0 dan run gagal.
 - Pemantauan memakai polling. Satu run memakan sekitar 2 permintaan tiap 5 detik dari batas 5.000 per jam.
