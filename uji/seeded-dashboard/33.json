@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": 38844440289,
+    "nomor": 33,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "commit": "3e9f7b3876025056ff8132f4236158a8502cd8d6",
+    "branch": "uji/seeded-dashboard",
+    "label": "sd-mvae7vyxcci2",
+    "mulai": "2026-10-16T03:13:31Z",
+    "selesai": "2026-10-16T03:16:46.771Z",
+    "durasi_detik": 196,
+    "mode": "sast-llm",
+    "model": "gemini-3.1-pro-preview",
+    "prompt_sha256": "355989292f5e81ac494a8d51f28ce9afa44dfadf3eda60f0fc3d1c7d61ad38b8",
+    "sast": {
+      "alat": "SonarCloud",
+      "status": "ok",
+      "galat": null,
+      "revisi_analisis": "3e9f7b3876025056ff8132f4236158a8502cd8d6",
+      "sesuai_commit": true
+    },
+    "gemini": {
+      "status": "ok",
+      "parse_ok": true,
+      "jumlah_temuan": 7,
+      "galat": null
+    },
+    "jobs": {
+      "build_test": "failure",
+      "sonarcloud": "success",
+      "analisis": "success"
+    }
+  },
+  "findings": [
+    {
+      "id": "T-01",
+      "fingerprint": "e42c1d58bfba0a8c",
+      "judul": "Reflected XSS via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": [
+        "CWE-79"
+      ],
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "sumber": "both",
+      "status_ai": "confirmed",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Input 'semester' dari req.query.semester langsung dikembalikan dalam respons HTML tanpa proses escaping, memungkinkan eksekusi skrip berbahaya.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "High",
+      "sonar_rule": "jssecurity:S5131",
+      "potongan_kode": {
+        "mulai": 157,
+        "baris": [
+          "exports.khs = async (req, res) => {",
+          "  const semester = typeof req.query.semester === 'string' ? req.query.semester : '';",
+          "  if (!semester) {",
+          "    res.status(400).type('html').send(`<p>Semester \"${semester}\" tidak dikenali</p>`);",
+          "    return;",
+          "  }",
+          "  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "fingerprint": "414eeb7be457aa0f",
+      "judul": "Reflected XSS via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": null,
+      "cwe": [
+        "CWE-79"
+      ],
+      "file": "src/controllers/nilaiController.js",
+      "baris": 170,
+      "sumber": "sonar",
+      "status_ai": "rejected",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Reflected XSS via unsanitized user input",
+      "rekomendasi": null,
+      "keyakinan_gemini": null,
+      "sonar_rule": "jssecurity:S5131",
+      "potongan_kode": {
+        "mulai": 167,
+        "baris": [
+          "  const items = await model.publishedBySemester(mahasiswaId, semester);",
+          "",
+          "  res.set('Cache-Control', 'no-store');",
+          "  res.type('html').send(halamanKhs(identitas, semester, items, hitungIps(items)));",
+          "};",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "fingerprint": "103dd8c74f7caf81",
+      "judul": "SQL Injection via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "sumber": "both",
+      "status_ai": "confirmed",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Variabel 'sort' dan 'order' digabungkan langsung ke dalam query SQL tanpa parameterisasi. Nilai ini berasal dari req.query yang mem-bypass validasi listQuery di cutiController.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "High",
+      "sonar_rule": "jssecurity:S3649",
+      "potongan_kode": {
+        "mulai": 90,
+        "baris": [
+          "",
+          "exports.listAdmin = async ({ pola, sort, order, limit, offset }) => {",
+          "    const total = await pool.query(`SELECT count(*)::int AS n ${ADMIN_FROM}`, [pola]);",
+          "    const { rows } = await pool.query(",
+          "      `SELECT ${RINGKAS_COLS}, m.id AS mahasiswa_id, m.nim, m.nama,",
+          "              pgp_sym_decrypt(c.alamat_cuti, $4) AS alamat_cuti,",
+          "              pgp_sym_decrypt(c.nomor_telepon, $4) AS nomor_telepon"
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "fingerprint": "a5009fd4bcc7b350",
+      "judul": "SQL Injection",
+      "severity": "kritis",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 52,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Variabel 'pola' digabungkan langsung ke dalam query SQL. Fungsi listQuery tidak melakukan escape pada karakter kutip tunggal ('), sehingga rentan terhadap SQL Injection.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "High",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 49,
+        "baris": [
+          "exports.SORT = { nim: 'm.nim', nama: 'm.nama', email: 'u.email', created_at: 'm.created_at' };",
+          "",
+          "const listFrom = (pola) => `",
+          "  FROM mahasiswa m",
+          "  JOIN users u ON u.id = m.user_id",
+          "  WHERE ('${pola}' IS NULL",
+          "    OR m.nim ILIKE '${pola}' OR m.nama ILIKE '${pola}' OR u.email ILIKE '${pola}')`;"
+        ]
+      }
+    },
+    {
+      "id": "T-05",
+      "fingerprint": "2088d84670329848",
+      "judul": "SQL Injection",
+      "severity": "kritis",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 135,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Key dari objek input (Object.keys(d)) langsung digabungkan ke dalam klausa SET pada query UPDATE tanpa sanitasi, memungkinkan SQL Injection jika key berisi payload berbahaya.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "High",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 132,
+        "baris": [
+          "      await client.query(",
+          "        'UPDATE users SET is_minor = $2, updated_at = now() WHERE id = $1',",
+          "        [rows[0].user_id, d.is_minor]",
+          "      );",
+          "    }",
+          "    return true;",
+          "  });"
+        ]
+      }
+    },
+    {
+      "id": "T-06",
+      "fingerprint": "639bd7d0f25d9852",
+      "judul": "SQL Injection via unsanitized user input",
+      "severity": "kritis",
+      "severity_asal": "sonar",
+      "kategori_owasp": "A03:2021-Injection",
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "sumber": "both",
+      "status_ai": "confirmed",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Variabel 'semester' disisipkan langsung ke dalam string query SQL ('${semester}'). Input ini berasal dari req.query.semester yang tidak divalidasi formatnya di nilaiController.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "High",
+      "sonar_rule": "jssecurity:S3649",
+      "potongan_kode": {
+        "mulai": 121,
+        "baris": [
+          "};",
+          "",
+          "exports.publishedBySemester = async (mahasiswaId, semester) => {",
+          "  const { rows } = await pool.query(",
+          "    `SELECT ks.semester, mk.kode, mk.nama, mk.sks,",
+          "            n.nilai_huruf, n.nilai_angka::float8 AS nilai_angka",
+          "     FROM nilai n"
+        ]
+      }
+    },
+    {
+      "id": "T-07",
+      "fingerprint": "b86e51b596964547",
+      "judul": "Mass Assignment",
+      "severity": "tinggi",
+      "severity_asal": "turunan-cwe",
+      "kategori_owasp": "A08:2021-Software and Data Integrity Failures",
+      "cwe": [
+        "CWE-915"
+      ],
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 80,
+      "sumber": "gemini",
+      "status_ai": "new",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Objek req.body langsung digunakan untuk memperbarui data tanpa memfilter field yang diizinkan. Pengguna dapat mengubah field sensitif atau menyuntikkan SQL melalui key objek.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "High",
+      "sonar_rule": null,
+      "potongan_kode": {
+        "mulai": 77,
+        "baris": [
+          "    profilModel.listEmail(profile.id),",
+          "    profilModel.listAkunSosial(profile.id),",
+          "  ]);",
+          "  return {",
+          "    ...profile,",
+          "    rekening: rekening && { ...rekening, nomor_rekening: samarkan(rekening.nomor_rekening) },",
+          "    email_tambahan: emailTambahan,"
+        ]
+      }
+    },
+    {
+      "id": "T-08",
+      "fingerprint": "1c08ae5fee1fced3",
+      "judul": "Make sure that enabling CORS is safe here.",
+      "severity": "sedang",
+      "severity_asal": "sonar",
+      "kategori_owasp": "A05:2021-Security Misconfiguration",
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "file": "src/app.js",
+      "baris": 10,
+      "sumber": "both",
+      "status_ai": "confirmed",
+      "status_ai_asal": "turunan-pencocokan",
+      "alasan": "Penggunaan cors() tanpa opsi mengizinkan semua origin (*) untuk mengakses API, yang dapat membahayakan jika API memproses data sensitif.",
+      "rekomendasi": null,
+      "keyakinan_gemini": "Medium",
+      "sonar_rule": "javascript:S5122",
+      "potongan_kode": {
+        "mulai": 7,
+        "baris": [
+          "const app = express();",
+          "",
+          "app.use(helmet());",
+          "app.use(cors());",
+          "app.use(express.json());",
+          "",
+          "app.get('/health', (req, res) => {"
+        ]
+      }
+    }
+  ],
+  "sonar_verification": {
+    "dikonfirmasi": 4,
+    "ditolak": 1,
+    "perlu_review": 0,
+    "asal": "turunan-pencocokan"
+  },
+  "metrics": {
+    "sumber": "run-1.json",
+    "jumlah_positif": 9,
+    "rincian_fp": {
+      "di_luar_ground_truth": 0,
+      "n1": 0,
+      "jebakan_terdeteksi": 2
+    },
+    "ketat": {
+      "tp": 2,
+      "fp": 2,
+      "fn": 7,
+      "precision": 0.5,
+      "recall": 0.2222222222222222,
+      "f1": 0.30769230769230765
+    },
+    "longgar_cocok_lokasi": {
+      "tp": 2,
+      "fp": 2,
+      "fn": 7,
+      "precision": 0.5,
+      "recall": 0.2222222222222222,
+      "f1": 0.30769230769230765
+    }
+  }
+}
