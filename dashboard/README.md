@@ -1,8 +1,10 @@
 # Security Dashboard
 
 Halaman statis untuk menjalankan dan membaca analisis keamanan framework SSDLC DevOps: memilih project,
-memicu `devsecops.yml`, memantau tiap job, lalu menampilkan `results.json` (skema
-[`docs/design/results.schema.json`](../docs/design/results.schema.json)) dari branch `security-results`.
+memicu `devsecops.yml`, memantau tiap job, lalu menampilkan `results.json` skema 2
+([`docs/design/results-v2.schema.json`](../docs/design/results-v2.schema.json)) dari branch
+`security-results`. Skema 1 ([`results.schema.json`](../docs/design/results.schema.json)) masih sah
+sebagai format arsip, tetapi tidak lagi ditampilkan.
 Tidak ada server sendiri; browser memanggil GitHub REST API langsung dengan token milik pengguna.
 
 ## Menjalankan secara lokal
@@ -20,18 +22,30 @@ Buka `http://127.0.0.1:8765/`. Alternatif tanpa Python: `npx http-server dashboa
 ## Mode demo
 
 Buka `http://127.0.0.1:8765/#demo` atau tekan **Buka mode demo**. Tidak perlu token dan tidak ada
-panggilan ke GitHub. Data di `fixtures/`:
+panggilan ke GitHub. Data di `fixtures/v2/`:
 
 | Berkas | Isi | Asal |
 |---|---|---|
-| `fixtures/eksperimen/seeded/3.json` | run sast-llm, 11 temuan, metrik riset | hasil nyata: `hasil-eksperimen/20261010/flash/run-1.json`, `ci-run/sonar-temuan.json`, `flash/run-1.score.json` di branch `eksperimen/seeded`, digabung dengan `scripts/merge-results.js` |
-| `fixtures/eksperimen/seeded/2.json` | run sast (Sonar saja) | data Sonar nyata yang sama |
-| `fixtures/eksperimen/seeded/1.json` | run dengan Gemini gagal | **sintetis**, untuk menunjukkan state gagal |
-| `fixtures/jobs.json` | durasi per job | **sintetis** |
-| `fixtures/projects.json` | daftar project demo, termasuk `contoh/aplikasi-lain` tanpa workflow | **sintetis**, untuk state repo tanpa workflow |
+| `fixtures/v2/index.json` | Daftar tiga run demo | diturunkan dari ketiga berkas di bawah |
+| `fixtures/v2/eksperimen/seeded/1.json` | Run Gemini, 7 temuan, 5 alert | hasil nyata `hasil-eksperimen/20261019/utama/google/run-1.json` di branch `eksperimen/seeded` |
+| `fixtures/v2/eksperimen/seeded/2.json` | Run Claude, 14 temuan, 5 alert | hasil nyata `utama/anthropic/run-1.json` |
+| `fixtures/v2/eksperimen/seeded/3.json` | Run GPT, 14 temuan, 5 alert | hasil nyata `utama/openai/run-1.json` |
 
-Potongan kode di fixture diambil dari `src/` branch `eksperimen/seeded`, jadi nomor barisnya cocok
-dengan kode yang dianalisis. Tombol **Jalankan analisis** di mode demo hanya menyimulasikan job.
+Ketiganya memuat blok `eksperimen` yang sama, disalin apa adanya dari berkas skor
+`skor-utama.json`, `skor-setelah-triase.json`, `skor-setelah-triase-konservatif.json`, dan
+`skor-sensitivitas-sonar03.json`. Seluruh data demo nyata; tidak ada yang sintetis.
+
+Berkas dibuat ulang dengan:
+
+```
+node scripts/merge-results.js merge --v2   --folder=<objek>/hasil-eksperimen/20261019/utama/<vendor> --run=1 --nomor=<n>   --objek=<objek> --biaya=<objek>/hasil-eksperimen/20261019/utama   --skor=... --skor-triase=... --skor-triase-konservatif=... --skor-sensitivitas=...   --out=dashboard/fixtures/v2/eksperimen/seeded/<n>.json
+```
+
+Run v2 dijalankan dari CLI, bukan lewat GitHub Actions, sehingga tidak punya status job pipeline.
+Tombol **Jalankan analisis** di mode demo hanya menyimulasikan job.
+
+Arsip demo lama (skema 1, pilot 10 Oktober) ada di
+[`docs/arsip/pilot-20261010/`](../docs/arsip/pilot-20261010/README.md) dan tidak lagi ditampilkan.
 
 ## Token GitHub
 
@@ -95,16 +109,22 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
 
 ## Keterbatasan
 
-- **Keputusan developer** (konfirmasi rentan atau false positive) disimpan di `localStorage` per run.
-  Tidak tersinkron antar browser atau antar developer, dan hilang bila data situs dihapus.
+- **Catatan developer** (konfirmasi rentan atau false positive) disimpan di `localStorage` per project
+  dan dikunci sidik jari temuan, sehingga terbawa antar run selama temuannya sama. Tetap hanya di
+  browser ini: tidak tersinkron antar perangkat maupun antar developer, dan hilang bila data situs
+  dihapus. Tombol **Ekspor** dan **Impor** menyediakan satu-satunya jalan memindahkannya.
 - **Branch `security-results` di repo publik bisa dibaca siapa pun**, termasuk daftar temuan dan potongan
   kode.
 - **Rekomendasi perbaikan** belum tersedia: prompt eksperimen tidak memintanya, jadi field `rekomendasi`
   selalu kosong sampai tahap rekomendasi ditambahkan ke pipeline.
-- **Status AI, verifikasi Sonar, dan severity temuan Gemini diturunkan** dari pencocokan file, baris,
-  dan CWE di `merge-results.js`, bukan putusan eksplisit model. Dashboard memberi label pada semuanya.
-- **Metrik riset** hanya muncul bila `results.json` memuat `metrics`, yaitu untuk run dengan ground truth.
-  Branch `eksperimen/seeded` tidak dipicu dari dashboard, jadi metrik saat ini hanya terlihat di mode demo.
-- **Model**: Gemini 3.8 Flash (default) dan Gemini 3.1 Pro Preview. Pro butuh billing aktif di project Google
-  milik `GEMINI_API_KEY`; tanpa billing, kuota API Pro bernilai 0 dan run gagal.
+- **Status alert berasal dari putusan verifikasi model** (`true_positive`, `false_positive`,
+  `uncertain`), bukan dari pencocokan file, baris, dan CWE seperti skema 1. Putusan yang tidak sah
+  (panggilan gagal, parse gagal, enum tidak valid) ditampilkan sebagai "Tanpa putusan", tidak ditebak.
+- **Temuan LLM tidak punya severity.** Skema 2 memakai `sifat` (vulnerability atau hardening) dan
+  `keyakinan`. Severity hanya ada pada alert Sonar dan ditampilkan apa adanya dengan label sumbernya.
+- **Tab Eksperimen** hanya muncul bila `results.json` memuat blok `eksperimen`, yaitu untuk run dengan
+  ground truth. Branch `eksperimen/seeded` tidak dipicu dari dashboard, jadi tab itu saat ini hanya
+  terlihat di mode demo.
+- **Model**: Gemini 3.8 Flash (bawaan) dan Gemini 3.1 Pro Preview. Pro butuh billing aktif di project
+  Google milik `GEMINI_API_KEY`; tanpa billing, kuota API Pro bernilai 0 dan run gagal.
 - Pemantauan memakai polling. Satu run memakan sekitar 2 permintaan tiap 5 detik dari batas 5.000 per jam.

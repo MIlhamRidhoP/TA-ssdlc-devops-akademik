@@ -31,11 +31,11 @@ test('fixture v2 sah terhadap skema v2, dan fixture v1 tetap sah terhadap skema 
     assert.equal(f.schema_version, 2);
   }
   for (const n of [1, 2, 3]) {
-    const v1 = require(`../dashboard/fixtures/eksperimen/seeded/${n}.json`);
+    const v1 = require(`../docs/arsip/pilot-20261010/eksperimen/seeded/${n}.json`);
     assert.deepEqual(validasiSkema(skemaV1, v1), [], `fixture v1 #${n} harus tetap sah`);
   }
   // Fixture v1 tidak boleh lolos skema v2 dan sebaliknya: keduanya memang tidak kompatibel.
-  assert.notEqual(validasiSkema(skemaV2, require('../dashboard/fixtures/eksperimen/seeded/3.json')).length, 0);
+  assert.notEqual(validasiSkema(skemaV2, require('../docs/arsip/pilot-20261010/eksperimen/seeded/3.json')).length, 0);
   assert.notEqual(validasiSkema(skemaV1, fixtureV2[0]).length, 0);
 });
 

@@ -11,8 +11,6 @@
   const JEDA_HASIL = 5000;
   const BATAS_CARI_RUN = 30;
   const BATAS_TUNGGU_HASIL = 24;
-  const SEVERITY = ['kritis', 'tinggi', 'sedang', 'rendah'];
-  const NAMA_SUMBER = { sonar: 'Sonar', gemini: 'LLM', both: 'Sonar + LLM' };
   // Kegagalan yang memang diharapkan, bukan tanda pipeline rusak. Satu-satunya tempat daftar ini hidup.
   // Dicocokkan per branch dan per job; ditampilkan amber dengan sebabnya, berbeda dari kegagalan sungguhan.
   const GAGAL_DIHARAPKAN = [
@@ -126,7 +124,6 @@
   // ---------- State ----------
   const state = {
     demo: false,
-    demoV2: false,
     nav: 'ringkasan',
     tab: 'operasional',
     eksLabel: 'utama',
@@ -282,7 +279,7 @@
 
   // Mode demo punya dua kumpulan fixture: v1 (arsip pilot 10 Okt) dan v2 (eksperimen 19 Okt).
   // Dipilih lewat hash #demo atau #demo-v2, bukan digabung, supaya jalur v1 tidak terganggu.
-  const basisDemo = () => (state.demoV2 ? 'fixtures/v2' : 'fixtures');
+  const basisDemo = () => 'fixtures/v2';
 
   const sumberDemo = {
     projects: () => jsonLokal('fixtures/projects.json'),
@@ -292,24 +289,8 @@
       if (!pathAman(entri.path)) throw new GhError('format', 'Path hasil di index.json tidak valid.');
       return validasiHasil(await jsonLokal(`${basisDemo()}/${entri.path}`));
     },
-    jobs: async (p, runId) => {
-      // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions, jadi tidak ada status job.
-      if (state.demoV2) return null;
-      try {
-        const data = await jsonLokal('fixtures/jobs.json');
-        const run = data.runs?.[String(runId)];
-        if (!run) return null;
-        return Object.fromEntries(NODE.map((n) => {
-          const v = run[n.key];
-          // Bentuk [offset, durasi] berarti selesai; bentuk objek boleh menyebut status lain (mis. gagal).
-          if (Array.isArray(v)) return [n.key, v[1] ? { s: 'done', durasi: v[1] } : { s: 'skip', durasi: null }];
-          if (v && typeof v === 'object') return [n.key, { s: v.s ?? 'done', durasi: v.durasi ?? null }];
-          return [n.key, { s: 'skip', durasi: null }];
-        }));
-      } catch {
-        return null;
-      }
-    },
+    // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions, jadi tidak ada status job di mode demo.
+    jobs: async () => null,
   };
 
   const sumber = () => (state.demo ? sumberDemo : sumberLive);
@@ -342,9 +323,8 @@
     state.banner = null;
     if (state.demo) bannerDemo();
   };
-  const bannerDemo = () => tampilBanner('demo', state.demoV2
-    ? 'Mode demo v2. Data nyata dari eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing. Alert Sonar diverifikasi model satu per satu. Run dijalankan dari CLI, bukan lewat pipeline.'
-    : 'Mode demo. Data diambil dari arsip eksperimen 10 Okt 2026 (eksperimen/seeded, commit 5cbf05c). Run #1 adalah contoh sintetis untuk state analisis LLM gagal, dan durasi job juga contoh.',
+  const bannerDemo = () => tampilBanner('demo',
+    'Mode demo. Data nyata dari eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing. Alert Sonar diverifikasi model satu per satu. Run dijalankan dari CLI, bukan lewat pipeline.',
     { label: 'Keluar dari mode demo', fn: () => keluarDemo() });
 
   // ---------- Token ----------
@@ -444,12 +424,10 @@
     await muatProjects();
   };
 
-  const masukDemo = async (v2 = false) => {
+  const masukDemo = async () => {
     hentikanPantau();
     state.demo = true;
-    state.demoV2 = v2;
-    const hash = v2 ? '#demo-v2' : '#demo';
-    if (location.hash !== hash) history.replaceState(null, '', hash);
+    if (location.hash !== '#demo') history.replaceState(null, '', '#demo');
     $('demo-toggle').textContent = 'Keluar dari mode demo';
     bannerDemo();
     await muatProjects();
@@ -458,7 +436,6 @@
   const keluarDemo = () => {
     hentikanPantau();
     state.demo = false;
-    state.demoV2 = false;
     history.replaceState(null, '', location.pathname + location.search);
     $('banner').hidden = true;
     state.banner = null;
@@ -591,46 +568,8 @@
       try { state.sebelumnya = await sumber().hasil(state.proyek, lebihLama); } catch { state.sebelumnya = null; }
     }
     state.jobs = await sumber().jobs(state.proyek, entri.id);
-    state.keputusan = state.hasil?.schema_version === 2
-      ? bacaJsonLokal(kunciKeputusanV2(), {})
-      : bacaJsonLokal(kunciKeputusan(), {});
+    state.keputusan = bacaJsonLokal(kunciKeputusanV2(), {});
     renderSemua();
-  };
-
-  // ---------- Keputusan developer ----------
-  const kunciKeputusan = () => `${KUNCI.keputusan}${state.proyek.owner}/${state.proyek.repo}.${state.hasil?.run?.id ?? state.entri?.id}`;
-  const putuskan = (f, v) => {
-    const kini = state.keputusan[f.id]?.v === v ? null : v;
-    if (kini) state.keputusan[f.id] = { v: kini, t: new Date().toISOString(), fp: f.fingerprint };
-    else delete state.keputusan[f.id];
-    if (!store.set('localStorage', kunciKeputusan(), JSON.stringify(state.keputusan))) {
-      tampilBanner('info', 'Browser menolak penyimpanan. Keputusan hanya bertahan sampai halaman dimuat ulang.');
-    }
-    renderRingkasan();
-    renderTemuan(`${f.id}-${v}`);
-  };
-
-  // ---------- Turunan data ----------
-  const sastTidakTersedia = () => state.hasil?.run?.sast?.status === 'tidak-tersedia';
-  const teksSastTidakTersedia = () => {
-    const galat = state.hasil?.run?.sast?.galat ?? '';
-    return /non main branch/i.test(galat)
-      ? 'Data SonarCloud tidak tersedia: paket gratis SonarCloud hanya membuka data branch utama. Scan branch ini berjalan, tetapi hasilnya tidak bisa dibaca lewat API.'
-      : `Data SonarCloud tidak tersedia untuk run ini${galat ? ` (${galat})` : ''}.`;
-  };
-  const teksGeminiGagal = () => {
-    const g = state.hasil?.run?.gemini;
-    if (g?.status !== 'gagal') return null;
-    const sibuk = /high demand|overloaded|503|UNAVAILABLE/i.test(g.galat ?? '');
-    return `Analisis LLM gagal${g.galat ? `: ${g.galat}` : '.'}${sibuk ? ' Server model sedang sibuk; jalankan lagi beberapa menit kemudian.' : ''}`;
-  };
-  const sidikSebelumnya = () => (state.sebelumnya ? new Set(state.sebelumnya.findings.map((f) => f.fingerprint)) : null);
-  const temuanBaru = (f, sidik) => Boolean(sidik && !sidik.has(f.fingerprint));
-  const perluTindakan = (f) => {
-    const k = state.keputusan[f.id]?.v;
-    if (k === 'fp') return false;
-    if (k === 'ok') return true;
-    return f.status_ai !== 'rejected';
   };
 
   // ---------- Render ----------
@@ -638,14 +577,11 @@
     $('summary').hidden = true;
     isi($('findings-body'), el('div', { class: 'skeleton', 'aria-label': 'Memuat hasil' }, el('i'), el('i'), el('i'), el('i')));
     isi($('filters'));
-    renderKepala();
     renderPipeline();
   };
 
   const renderKosong = (pesanGalatTeks, galat) => {
-    renderKepala();
     renderPipeline();
-    renderSamping();
     $('summary').hidden = true;
     isi($('filters'));
     let judul;
@@ -668,41 +604,13 @@
     isi($('findings-body'), el('div', { class: 'state' }, el('h3', { text: judul }), el('p', { text: teks }), aksi));
   };
 
-  const renderKepala = () => {
-    const p = state.proyek;
-    const r = state.hasil?.run;
-    const crumb = $('crumb');
-    const repoLink = p.demo_tanpa_workflow ? el('span', { text: `${p.owner} / ${p.repo}` }) : el('a', { href: urlGithub(p.owner, p.repo), target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` });
-    isi(crumb, repoLink, ` / ${state.branch.name}`, r ? ` · selesai ${waktu(r.selesai)}` : '');
-    const jumlah = state.hasil?.findings.length ?? 0;
-    const kritis = state.hasil?.findings.filter((f) => f.severity === 'kritis').length ?? 0;
-    $('run-title').textContent = r
-      ? `Run #${r.nomor} · ${jumlah} temuan${kritis ? ` · ${kritis} kritis` : ''}`
-      : (state.entri ? `Memuat run #${state.entri.nomor}…` : `Belum ada run di ${state.branch.name}`);
-
-    const sel = (label, nilai, opsi = {}) => el('div', {}, el('dt', { text: label }), el('dd', { class: [opsi.data ? 'data' : '', opsi.warn ? 'warn' : ''].join(' ').trim() || null, title: opsi.title }, nilai));
-    if (!r) {
-      isi($('title-block'), ['Commit', 'Model', 'Prompt', 'SAST', 'Durasi'].map((l) => sel(l, '—')));
-      return;
-    }
-    const commit = /^[0-9a-f]{7,40}$/.test(r.commit) && !p.demo_tanpa_workflow
-      ? el('a', { href: urlGithub(p.owner, p.repo, 'commit', r.commit), target: '_blank', rel: 'noopener noreferrer', text: pendek(r.commit) })
-      : pendek(r.commit);
-    const sast = r.sast?.status === 'tidak-tersedia' ? 'SonarCloud, data tidak tersedia' : (r.sast?.sesuai_commit === false ? 'SonarCloud, commit lain' : 'SonarCloud');
-    isi($('title-block'),
-      sel('Commit', commit, { data: true, title: r.commit }),
-      sel('Model', r.model ?? 'tidak dipakai (SAST saja)'),
-      sel('Prompt', r.prompt_sha256 ? pendek(r.prompt_sha256, 8) : '—', { data: true, title: r.prompt_sha256 ?? undefined }),
-      sel('SAST', sast, { warn: r.sast?.status === 'tidak-tersedia' || r.sast?.sesuai_commit === false, title: r.sast?.status === 'tidak-tersedia' ? (r.sast.galat ?? undefined) : (r.sast?.sesuai_commit === false ? `Data Sonar dari analisis ${r.sast.revisi_analisis}` : undefined) }),
-      sel('Durasi', durasi(r.durasi_detik), { data: true }));
-  };
-
+  // Skema 2 menaruh status job di run.pipeline; null berarti run dijalankan dari CLI, bukan lewat pipeline.
   const statusNodeDariHasil = () => {
-    const r = state.hasil?.run;
-    if (!r) return null;
+    const pipeline = state.hasil?.run?.pipeline;
+    if (!pipeline) return null;
     return Object.fromEntries(NODE.map((n) => {
       if (!n.hasil) return [n.key, { s: 'done', durasi: null }];
-      const v = r.jobs?.[n.hasil];
+      const v = pipeline[n.hasil];
       return [n.key, { s: { success: 'done', skipped: 'skip', failure: 'fail', cancelled: 'fail' }[v] ?? 'wait', durasi: null }];
     }));
   };
@@ -730,199 +638,6 @@
     }));
   };
 
-  const renderRingkasan = () => {
-    const h = state.hasil;
-    const box = $('summary');
-    if (!h) { box.hidden = true; return; }
-    box.hidden = false;
-    const f = h.findings;
-    const sidik = sidikSebelumnya();
-    const tindakan = (sev) => f.filter((x) => (Array.isArray(sev) ? sev.includes(x.severity) : x.severity === sev) && perluTindakan(x)).length;
-    const baruKritis = f.filter((x) => x.severity === 'kritis' && temuanBaru(x, sidik)).length;
-    const sonarTotal = f.filter((x) => x.sumber !== 'gemini').length;
-    const diputuskan = Object.keys(state.keputusan).filter((id) => f.some((x) => x.id === id)).length;
-    const per = { both: 0, gemini: 0, sonar: 0 };
-    // Nilai sumber di luar tiga yang dikenal tidak boleh menghasilkan NaN pada bar dan legenda.
-    for (const x of f) if (x.sumber in per) per[x.sumber] += 1;
-
-    // Tanpa satu pun sumber yang berhasil, angka nol tidak bermakna: tampilkan tanda kosong.
-    const tanpaSumber = sastTidakTersedia() && h.run.gemini?.status !== 'ok';
-    const cell = (cls, label, num, note) => el('div', { class: `cell ${cls}` }, el('span', { class: 'cell-label', text: label }), el('span', { class: 'cell-num', 'aria-label': tanpaSumber ? 'tidak diketahui' : null }, tanpaSumber ? '—' : num), tanpaSumber ? el('span', { class: 'cell-note', text: 'sumber analisis tidak tersedia' }) : note);
-    const bar = el('div', { class: 'srcbar', role: 'img', 'aria-label': `${per.both} dari keduanya, ${per.gemini} hanya LLM, ${per.sonar} hanya Sonar` },
-      ['both', 'gemini', 'sonar'].map((k) => { const i = el('i', { class: `sw-${k}` }); i.style.setProperty('width', `${f.length ? (per[k] / f.length) * 100 : 0}%`); return i; }));
-    isi(box,
-      cell('crit', 'Kritis, perlu tindakan', String(tindakan('kritis')),
-        sidik ? el('span', { class: `cell-note${baruKritis ? ' rev' : ''}` }, baruKritis ? [segitigaRevisiKecil(), `${baruKritis} baru sejak run #${state.sebelumnya.run.nomor}`] : `tidak ada yang baru sejak run #${state.sebelumnya.run.nomor}`) : el('span', { class: 'cell-note', text: 'run pertama di branch ini' })),
-      cell('high', 'Tinggi, perlu tindakan', String(tindakan('tinggi')), null),
-      cell('', 'Sedang dan rendah', String(tindakan(['sedang', 'rendah'])), null),
-      cell('', 'Ditolak AI', String(f.filter((x) => x.status_ai === 'rejected').length), el('span', { class: 'cell-note', text: h.run.gemini?.status === 'ok' ? `dari ${sonarTotal} temuan Sonar` : 'Model tidak menilai run ini' })),
-      cell('', 'Diverifikasi developer', [String(diputuskan), el('small', { text: ` / ${f.length}` })], el('span', { class: 'cell-note', text: 'tersimpan di browser ini' })),
-      el('div', { class: 'cell' }, el('span', { class: 'cell-label', text: 'Per sumber' }), bar,
-        el('div', { class: 'legend' }, ['both', 'gemini', 'sonar'].map((k) => el('span', {}, el('i', { class: `sw sw-${k}`, 'aria-hidden': 'true' }), `${NAMA_SUMBER[k]} ${per[k]}`)))));
-  };
-
-  const segitigaRevisiKecil = () => { const s = segitigaRevisi(); s.setAttribute('class', 'icon'); s.style.setProperty('fill', 'currentColor'); s.style.setProperty('stroke', 'none'); return s; };
-
-  const FILTER = [
-    { key: 'semua', label: 'Semua', cocok: () => true },
-    { key: 'both', label: 'Sonar + LLM', cocok: (f) => f.sumber === 'both' },
-    { key: 'gemini', label: 'LLM', cocok: (f) => f.sumber === 'gemini' },
-    { key: 'sonar', label: 'Sonar', cocok: (f) => f.sumber === 'sonar' },
-    { key: 'baru', label: 'Baru', cocok: (f, sidik) => temuanBaru(f, sidik), butuhSebelumnya: true },
-  ];
-
-  const renderFilter = () => {
-    const h = state.hasil;
-    if (!h) { isi($('filters')); return; }
-    const sidik = sidikSebelumnya();
-    if (state.filter === 'baru' && !sidik) state.filter = 'semua';
-    isi($('filters'), FILTER.filter((x) => !x.butuhSebelumnya || sidik).map((x) => el('button', {
-      class: 'btn btn-sm', type: 'button', 'aria-pressed': state.filter === x.key ? 'true' : 'false',
-      onclick: () => { state.filter = x.key; state.terbuka = null; renderFilter(); renderTemuan(); },
-    }, x.label, ' ', el('span', { class: 'count', text: String(h.findings.filter((f) => x.cocok(f, sidik)).length) }))));
-  };
-
-  const teksStatusAi = (f, run) => {
-    if (f.status_ai === 'confirmed') return 'Model juga melaporkan temuan ini.';
-    if (f.status_ai === 'rejected') return 'Model tidak melaporkan ulang temuan Sonar ini.';
-    if (f.status_ai === 'new') return 'Hanya ditemukan model, tidak ada di laporan Sonar.';
-    return run.mode === 'sast' ? 'Analisis LLM tidak berjalan pada mode SAST saja.' : 'Analisis LLM gagal pada run ini, jadi temuan Sonar belum diperiksa ulang.';
-  };
-
-  const renderDetail = (f) => {
-    const run = state.hasil.run;
-    const dariAi = f.sumber !== 'sonar';
-    const kode = f.potongan_kode?.baris?.length
-      ? el('pre', { class: 'code', 'aria-label': `Potongan kode ${f.file} sekitar baris ${f.baris}` },
-        f.potongan_kode.baris.map((teks, i) => {
-          const ln = f.potongan_kode.mulai + i;
-          return el('span', { class: ln === f.baris ? 'hit' : null, dataset: { ln: String(ln) }, text: teks });
-        }))
-      : null;
-    const k = state.keputusan[f.id];
-    const fakta = [
-      f.cwe?.length ? ['CWE', f.cwe.join(', ')] : null,
-      f.kategori_owasp ? ['OWASP', f.kategori_owasp] : null,
-      f.keyakinan_gemini ? ['Keyakinan model', f.keyakinan_gemini] : null,
-      f.sonar_rule ? ['Aturan Sonar', f.sonar_rule] : null,
-    ].filter(Boolean);
-    return el('div', { class: 'fdetail', id: `d-${f.id}`, role: 'region', 'aria-label': `Detail ${f.id}` },
-      el('div', { class: 'fdetail-grid' },
-        el('div', {},
-          el('h3', { class: 'block-h' }, 'Alasan', el('span', { class: 'tag-ai', text: dariAi ? 'Temuan AI' : 'Temuan Sonar' })),
-          f.alasan ? el('p', { text: f.alasan }) : el('p', { class: 'empty-note', text: 'Tidak ada penjelasan dari sumber.' })),
-        el('div', {},
-          el('h3', { class: 'block-h' }, 'Rekomendasi', el('span', { class: 'tag-ai', text: 'Rekomendasi AI' })),
-          f.rekomendasi ? el('p', { text: f.rekomendasi }) : el('p', { class: 'empty-note', text: 'Belum tersedia pada versi prompt ini.' }))),
-      kode,
-      el('p', { class: 'facts' }, fakta.map(([l, v]) => el('span', {}, `${l} `, el('b', { class: 'data', text: v })))),
-      el('p', { class: 'derived' }, teksStatusAi(f, run),
-        f.status_ai_asal ? ' Status diturunkan dari pencocokan file, baris, dan CWE.' : '',
-        f.severity_asal === 'turunan-cwe' ? ' Severity diturunkan dari CWE karena model tidak memberi severity.' : ''),
-      el('div', { class: 'decide' },
-        el('button', { class: 'btn btn-sm', type: 'button', id: `${f.id}-ok`, 'aria-pressed': k?.v === 'ok' ? 'true' : 'false', onclick: () => putuskan(f, 'ok') }, 'Konfirmasi rentan'),
-        el('button', { class: 'btn btn-sm', type: 'button', id: `${f.id}-fp`, 'aria-pressed': k?.v === 'fp' ? 'true' : 'false', onclick: () => putuskan(f, 'fp') }, 'Tandai false positive'),
-        el('span', { class: 'stamp', text: k ? `${k.v === 'ok' ? 'Dikonfirmasi rentan' : 'Ditandai false positive'} · ${waktu(k.t)}` : 'Belum ada keputusan developer.' })));
-  };
-
-  const renderTemuan = (fokusId) => {
-    const h = state.hasil;
-    const body = $('findings-body');
-    if (!h) return;
-    const sidik = sidikSebelumnya();
-    const aturan = FILTER.find((x) => x.key === state.filter) ?? FILTER[0];
-    const daftar = h.findings.filter((f) => aturan.cocok(f, sidik));
-    if (!h.findings.length && sastTidakTersedia()) {
-      isi(body, el('div', { class: 'state' }, el('h3', { text: 'Belum bisa dipastikan bebas temuan' }),
-        el('p', { text: teksSastTidakTersedia() }),
-        el('p', { text: h.run.gemini?.status === 'ok' ? 'Model tidak melaporkan temuan.' : (teksGeminiGagal() ?? 'Analisis LLM tidak berjalan pada run ini, jadi tidak ada sumber temuan lain.') })));
-      return;
-    }
-    if (!h.findings.length) {
-      isi(body, el('div', { class: 'state' }, el('h3', { text: 'Tidak ada temuan pada run ini' }),
-        el('p', { text: h.run.gemini?.status === 'gagal' ? `SonarCloud tidak melaporkan apa pun. ${teksGeminiGagal()}` : 'SonarCloud dan model tidak melaporkan kerentanan.' })));
-      return;
-    }
-    if (!daftar.length) {
-      isi(body, el('div', { class: 'state' }, el('h3', { text: 'Tidak ada temuan untuk saringan ini' }),
-        el('button', { class: 'btn btn-sm', type: 'button', text: 'Tampilkan semua', onclick: () => { state.filter = 'semua'; renderFilter(); renderTemuan(); } })));
-      return;
-    }
-    isi(body, teksGeminiGagal() ? el('p', { class: 'notice-sast', role: 'note', text: teksGeminiGagal() }) : null, sastTidakTersedia() ? el('p', { class: 'notice-sast', role: 'note', text: teksSastTidakTersedia() }) : null, el('ul', { class: 'flist' }, daftar.map((f) => {
-      const terbuka = state.terbuka === f.id;
-      const k = state.keputusan[f.id];
-      const lokasi = f.file ? `${f.file}${f.baris ? `:${f.baris}` : ''}` : 'lokasi tidak disebut';
-      return el('li', {},
-        el('button', {
-          class: 'frow', type: 'button', 'aria-expanded': terbuka ? 'true' : 'false', 'aria-controls': `d-${f.id}`,
-          onclick: () => { state.terbuka = terbuka ? null : f.id; renderTemuan(f.id); },
-        },
-        el('span', { class: 'fid', text: f.id }),
-        el('span', { class: `sev sev-${f.severity}`, text: f.severity }),
-        el('span', { class: 'ftitle' }, el('span', { text: f.judul }), temuanBaru(f, sidik) ? el('span', { class: 'rev-mark', title: 'Baru sejak run sebelumnya' }, segitigaRevisi(), 'baru') : null),
-        el('span', { class: 'floc', title: lokasi }, el('bdi', { text: lokasi })),
-        el('span', { class: 'fsrc' }, el('i', { class: `sw sw-${f.sumber}`, 'aria-hidden': 'true' }), NAMA_SUMBER[f.sumber]),
-        k ? el('span', { class: 'fdec', dataset: { v: k.v } }, ikon(k.v === 'ok' ? IKON.cek : IKON.silang), k.v === 'ok' ? 'rentan' : 'false positive')
-          : el('span', { class: 'fdec-empty' }, el('span', { class: 'visually-hidden', text: 'belum diputuskan' }), '—')),
-        terbuka ? renderDetail(f) : null);
-    })));
-    if (fokusId) document.getElementById(fokusId)?.focus({ preventScroll: true });
-  };
-
-  const renderSamping = () => {
-    const h = state.hasil;
-    // Jalur v1 memakai blok verifikasi di sidebar, bukan tabel alert kolom utama.
-    $('alerts-box').hidden = true;
-    $('verif-box').hidden = false;
-    $('catatan-alat').hidden = true;
-    $('tabs').hidden = true;
-    $('railnav-box').hidden = true;
-    $('panel-operasional').hidden = false;
-    $('panel-eksperimen').hidden = true;
-    $('verif-h').textContent = 'Verifikasi temuan Sonar';
-    const v = h?.sonar_verification;
-    isi($('verif'), v
-      ? [
-        el('div', { class: 'kv' }, el('span', { text: 'Dikonfirmasi model' }), el('b', { text: String(v.dikonfirmasi) })),
-        el('div', { class: 'kv' }, el('span', { text: 'Tidak dilaporkan ulang' }), el('b', { text: String(v.ditolak) })),
-        el('div', { class: 'kv' }, el('span', { text: 'Perlu review manual' }), el('b', { text: String(v.perlu_review) })),
-        el('p', { class: 'note', text: sastTidakTersedia() ? teksSastTidakTersedia() : (h.run.gemini?.status === 'ok' ? 'Diturunkan dari pencocokan file, baris, dan CWE; bukan putusan eksplisit model.' : 'Model tidak menilai run ini, jadi semua temuan Sonar perlu review manual.') }),
-      ]
-      : el('p', { class: 'note', text: 'Belum ada run.' }));
-
-    const daftar = entriBranch();
-    isi($('history'), daftar.length
-      ? daftar.slice(0, 12).map((e) => {
-        const tot = e.jumlah?.total ?? 0;
-        const bar = el('span', { class: 'hbar', 'aria-hidden': 'true' }, [['kritis', 'var(--crit)'], ['tinggi', 'var(--high)'], ['sedang', 'var(--rule-2)']].map(([k, warna]) => {
-          const i = el('i');
-          i.style.setProperty('width', `${tot ? ((e.jumlah?.[k] ?? 0) / tot) * 100 : 0}%`);
-          i.style.setProperty('background', warna);
-          return i;
-        }));
-        const gagal = e.gemini === 'gagal' ? ' · analisis LLM gagal' : '';
-        return el('button', {
-          class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
-          'aria-label': `Run ${e.nomor}, ${e.mode}, ${tot} temuan${gagal}`, onclick: () => muatRun(e),
-        }, el('span', { class: 'hnum', text: `#${e.nomor}` }), el('span', { class: 'hmeta', text: `${e.mode} · ${waktu(e.selesai)}${gagal}` }), bar, el('span', { class: 'htotal', text: String(tot) }));
-      })
-      : el('p', { class: 'note', text: 'Belum ada run di branch ini.' }));
-
-    const m = h?.metrics;
-    $('metrics-box').hidden = !m;
-    if (!m) return;
-    const baris = (label, nilai) => {
-      const i = el('i');
-      i.style.setProperty('width', `${Math.max(0, Math.min(1, Number(nilai) || 0)) * 100}%`);
-      return el('div', { class: 'mbar' }, el('span', { text: label }), el('span', { class: 'mtrack', 'aria-hidden': 'true' }, i), el('span', { class: 'v', text: Number.isFinite(Number(nilai)) ? Number(nilai).toFixed(3).replace('.', ',') : '—' }));
-    };
-    const blok = (judul, skor) => (skor ? el('div', { class: 'metric' }, el('p', { class: 'metric-h', text: judul }), baris('Precision', skor.precision), baris('Recall', skor.recall), baris('F1', skor.f1),
-      el('p', { class: 'note', text: `TP ${skor.tp} · FP ${skor.fp} · FN ${skor.fn}` })) : null);
-    isi($('metrics'),
-      el('p', { class: 'note', text: `${m.jumlah_positif ?? '—'} kerentanan berstatus terbukti di SEEDED.md. Angka untuk run ini saja.` }),
-      blok('Ketat: file, lokasi, dan CWE cocok', m.ketat),
-      blok('Longgar: lokasi cocok', m.longgar_cocok_lokasi));
-  };
 
   // ---------- Renderer v2 ----------
   // Renderer terpisah, bukan tambalan di atas renderer v1: kosakata v2 berbeda mendasar (alert punya
@@ -1017,7 +732,6 @@
   const renderAlertV2 = () => {
     const alerts = state.hasil.alerts;
     $('alerts-box').hidden = false;
-    $('verif-box').hidden = true; // Digantikan tabel di kolom utama
 
     const urut = ['true_positive', 'false_positive', 'uncertain', null];
     isi($('alerts-ringkas'), urut.map((p) => {
@@ -1207,7 +921,6 @@
         ]),
       ]
       : el('p', { class: 'note', text: 'Belum ada run di branch ini.' }));
-    $('metrics-box').hidden = true; // Blok riset pindah ke tab Eksperimen (S5)
   };
 
   // ---------- Drawer "Jalankan analisis" ----------
@@ -1403,10 +1116,14 @@
     $('tabs').hidden = !state.hasil.eksperimen;
     if (!state.hasil.eksperimen && state.tab === 'eksperimen') state.tab = 'operasional';
     renderKepalaV2();
-    // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions.
-    $('pipeline-title').textContent = 'Dijalankan dari CLI, tidak lewat pipeline';
-    $('pipeline-total').textContent = '—';
-    isi($('nodes'));
+    // Run v2 bisa berasal dari CLI (tanpa pipeline) atau dari workflow (punya status job).
+    if (state.jobs || state.hasil.run.pipeline) {
+      renderPipeline();
+    } else {
+      $('pipeline-title').textContent = 'Dijalankan dari CLI, tidak lewat pipeline';
+      $('pipeline-total').textContent = '—';
+      isi($('nodes'));
+    }
     renderRingkasanV2();
     if (!FILTER_V2.some((x) => x.key === state.filter)) state.filter = 'semua';
     renderFilterV2();
@@ -1418,16 +1135,35 @@
     perbaruiTombolJalankan();
   };
 
+  // Skema 1 tidak lagi dirender. Berkasnya tetap sah, hanya tidak punya tempat di dashboard ini:
+  // status alert di skema 1 berasal dari pencocokan, bukan putusan model, sehingga kolom yang sama
+  // akan berarti lain tergantung run.
+  const renderArsipV1 = () => {
+    $('summary').hidden = true;
+    $('alerts-box').hidden = true;
+    $('catatan-alat').hidden = true;
+    $('tabs').hidden = true;
+    $('railnav-box').hidden = true;
+    $('panel-operasional').hidden = false;
+    $('panel-eksperimen').hidden = true;
+    isi($('filters'));
+    isi($('nodes'));
+    $('pipeline-title').textContent = 'Status pipeline';
+    $('pipeline-total').textContent = '';
+    $('run-title').textContent = 'Format v1 (arsip pilot 10 Oktober), tidak lagi ditampilkan';
+    isi($('crumb'));
+    isi($('title-block'));
+    isi($('findings-body'), el('div', { class: 'state' },
+      el('p', { text: 'Run ini memakai results.json skema 1. Dashboard sekarang membaca skema 2, tempat status tiap alert berasal dari putusan verifikasi model, bukan dari pencocokan file, baris, dan CWE.' }),
+      el('p', { class: 'note', text: 'Datanya tetap disimpan apa adanya sebagai arsip, beserta penjelasan mengapa dipensiunkan.' }),
+      el('a', { class: 'btn-text', href: 'https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik/tree/main/docs/arsip/pilot-20261010', target: '_blank', rel: 'noopener noreferrer', text: 'Buka arsip pilot 10 Oktober 2026' })));
+    isi($('history'), el('p', { class: 'note', text: 'Riwayat tidak ditampilkan untuk arsip skema 1.' }));
+    perbaruiTombolJalankan();
+  };
+
   const renderSemua = () => {
     if (state.hasil?.schema_version === 2) return renderSemuaV2();
-    if (!FILTER.some((x) => x.key === state.filter)) state.filter = 'semua';
-    renderKepala();
-    renderPipeline();
-    renderRingkasan();
-    renderFilter();
-    renderTemuan();
-    renderSamping();
-    perbaruiTombolJalankan();
+    renderArsipV1();
   };
 
   // ---------- Menjalankan analisis ----------
@@ -1589,8 +1325,7 @@
     if (location.protocol === 'file:') {
       tampilBanner('error', 'Dashboard dibuka langsung dari file. Jalankan lewat server lokal (lihat README) supaya projects.json dan mode demo bisa dibaca.');
     }
-    if (location.hash === '#demo-v2') masukDemo(true);
-    else if (location.hash === '#demo') masukDemo();
+    if (location.hash === '#demo' || location.hash === '#demo-v2') masukDemo();
     else if (state.token) masukLive();
     else tampilStart();
   };
