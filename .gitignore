@@ -7,6 +7,16 @@ uploads/
 gemini-output/
 llm-output/
 
+# Tooling lokal agen: tidak dipakai aplikasi maupun CI, jangan di-commit.
+# .github/workflows/ sengaja TIDAK diabaikan (pipeline CI harus tetap di-commit).
+.agents/
+.claude/
+.codex/
+.github/agents/
+.github/hooks/
+.github/skills/
+skills-lock.json
+
 # impeccable-ignore: berkas lokal Impeccable (config.json, design.json, surfaces/, critique/ tetap di-commit)
 .impeccable/config.local.json
 .impeccable/hook.cache.json
