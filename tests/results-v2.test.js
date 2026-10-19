@@ -5,6 +5,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const crypto = require('crypto');
 
 const { validasiSkema } = require('../scripts/validasi-skema');
 const { parseCwe } = require('../scripts/merge-results');
@@ -13,15 +14,28 @@ const {
 } = require('../scripts/llm/results-v2');
 
 const ROOT = path.resolve(__dirname, '..');
+const acuan = require('./fixtures/acuan-skor-20261019.json');
 const skemaV2 = require('../docs/design/results-v2.schema.json');
 const skemaV1 = require('../docs/design/results.schema.json');
 const fixtureV2 = [1, 2, 3].map((n) => require(`../dashboard/fixtures/v2/eksperimen/seeded/${n}.json`));
 const indexV2 = require('../dashboard/fixtures/v2/index.json');
 
-const DIR_SKOR = 'eksperimen/seeded:hasil-eksperimen/20261019';
-const bacaSkor = (nama) => JSON.parse(execFileSync('git', ['-C', ROOT, 'show', `${DIR_SKOR}/${nama}`], {
-  encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
-}));
+// Berkas skor hidup di branch lain. Runner CI hanya mengambil satu branch, jadi `git show` tidak
+// selalu bisa. Angkanya karena itu disalin ke tests/fixtures/acuan-skor-20261019.json beserta
+// provenance (commit, path, sha256). Bila branch kebetulan tersedia, acuan ikut dilintas-periksa
+// supaya tidak bisa menyimpang diam-diam dari sumbernya.
+const DIR_SKOR = `${acuan.sumber.branch}:${acuan.sumber.dir}`;
+const bacaSkorMentah = (nama) => execFileSync('git', ['-C', ROOT, 'show', `${DIR_SKOR}/${nama}`], {
+  encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+});
+const skorTersedia = (() => {
+  try {
+    execFileSync('git', ['-C', ROOT, 'rev-parse', '--verify', '--quiet', acuan.sumber.branch], { encoding: 'utf8' });
+    return true;
+  } catch {
+    return false;
+  }
+})();
 
 // ---------- Skema ----------
 
@@ -132,85 +146,84 @@ test('pemetaan temuan: id berurutan, cwe jadi array, sifat dan keyakinan tervali
 
 // ---------- Blok eksperimen: harus identik dengan berkas skor sumber ----------
 
-test('blok eksperimen menyalin angka apa adanya dari berkas skor', () => {
-  const utama = bacaSkor('skor-utama.json');
-  const triase = bacaSkor('skor-setelah-triase.json');
-  const kons = bacaSkor('skor-setelah-triase-konservatif.json');
-  const sens = bacaSkor('skor-sensitivitas-sonar03.json');
-
+test('blok eksperimen di fixture identik dengan acuan angka skor', () => {
   for (const fix of fixtureV2) {
     const eks = fix.eksperimen;
     assert.ok(eks, 'blok eksperimen harus ada di fixture');
-    assert.equal(eks.sumber.commit_kode_scoring, utama.commit_kode_scoring.head);
-    // Label SONAR-03 berbeda antara analisis utama dan analisis sensitivitas; keduanya harus terbawa.
-    assert.equal(eks.label_alert['SONAR-03'].label, utama.utama.label_alert['SONAR-03'].label);
-    assert.equal(eks.label_alert_sensitivitas['SONAR-03'].label, sens.utama.label_alert['SONAR-03'].label);
+    assert.equal(eks.sumber.commit_kode_scoring, acuan.commit_kode_scoring);
+    assert.equal(eks.sumber.aturan_hardening, acuan.aturan_hardening);
+    assert.equal(eks.sumber.objek_uji_commit, acuan.objek_uji_commit);
+    assert.equal(eks.per_model.length, acuan.per_model.length);
+
+    // Label SONAR-03 berbeda antara analisis utama dan sensitivitas; keduanya harus terbawa.
+    assert.equal(eks.label_alert['SONAR-03'].label, acuan.label_alert['SONAR-03'].label);
+    assert.equal(eks.label_alert_sensitivitas['SONAR-03'].label, acuan.label_alert_sensitivitas['SONAR-03'].label);
     assert.notEqual(eks.label_alert['SONAR-03'].label, eks.label_alert_sensitivitas['SONAR-03'].label);
-    assert.equal(eks.sumber.aturan_hardening, utama.aturan_hardening);
-    assert.equal(eks.per_model.length, utama.utama.per_model.length);
 
-    for (const m of eks.per_model) {
-      const sumber = utama.utama.per_model.find((x) => x.vendor === m.vendor);
-      assert.ok(sumber, `vendor ${m.vendor} ada di skor sumber`);
-      assert.equal(m.model, sumber.model);
-      assert.equal(m.jumlah_run, sumber.runs.length);
-
-      // Skenario A: disalin dari skenario_a.b_filter_v2.ketat (sama untuk semua model).
-      const a = utama.utama.skenario_a.b_filter_v2.ketat;
-      assert.deepEqual(m.skenario_a, { tp: a.tp, fp: a.fp, fn: a.fn, precision: a.precision, recall: a.recall, f1: a.f1 });
+    for (const m of acuan.per_model) {
+      const got = eks.per_model.find((x) => x.vendor === m.vendor);
+      assert.ok(got, `vendor ${m.vendor} ada di fixture`);
+      assert.equal(got.model, m.model);
+      assert.equal(got.jumlah_run, m.jumlah_run);
+      assert.deepEqual(got.skenario_a, m.skenario_a, `${m.vendor} skenario A`);
 
       for (const r of m.runs) {
-        const rs = sumber.runs.find((x) => x.run === r.run);
-        const rt = triase.utama.per_model.find((x) => x.vendor === m.vendor).runs.find((x) => x.run === r.run);
-        const rk = kons.utama.per_model.find((x) => x.vendor === m.vendor).runs.find((x) => x.run === r.run);
-
+        const gr = got.runs.find((x) => x.run === r.run);
+        assert.ok(gr, `${m.vendor} run ${r.run} ada`);
         for (const sk of ['skenario_b', 'skenario_c']) {
-          const k = rs[sk].ketat;
-          assert.deepEqual(r[sk].ketat, { tp: k.tp, fp: k.fp, fn: k.fn, precision: k.precision, recall: k.recall, f1: k.f1 },
-            `${m.vendor} run ${r.run} ${sk} ketat harus identik`);
-
-          const tu = rt[sk].setelah_triase;
-          assert.equal(r[sk].triase_utama.varian, 'utama');
-          assert.equal(r[sk].triase_utama.fp, tu.fp, `${m.vendor} run ${r.run} ${sk} fp triase utama`);
-          assert.equal(r[sk].triase_utama.precision, tu.precision);
-          assert.equal(r[sk].triase_utama.recall, tu.recall);
-          assert.equal(r[sk].triase_utama.f1, tu.f1);
-          assert.deepEqual(r[sk].triase_utama.rincian_triase, tu.rincian_triase);
-
-          const tk = rk[sk].setelah_triase;
-          assert.equal(r[sk].triase_konservatif.varian, 'konservatif');
-          assert.equal(r[sk].triase_konservatif.fp, tk.fp, `${m.vendor} run ${r.run} ${sk} fp triase konservatif`);
-          assert.equal(r[sk].triase_konservatif.precision, tk.precision);
+          assert.deepEqual(gr[sk].ketat, r[sk].ketat, `${m.vendor} run ${r.run} ${sk} ketat`);
+          assert.deepEqual(gr[sk].triase_utama, r[sk].triase_utama, `${m.vendor} run ${r.run} ${sk} triase utama`);
+          assert.deepEqual(gr[sk].triase_konservatif, r[sk].triase_konservatif, `${m.vendor} run ${r.run} ${sk} triase konservatif`);
         }
-
-        // Verifikasi empat kategori disalin apa adanya.
-        assert.deepEqual(r.verifikasi.jumlah, rs.verifikasi.jumlah, `${m.vendor} run ${r.run} verifikasi`);
-        assert.deepEqual(r.verifikasi.metrik_fp_positif, rs.verifikasi.metrik_fp_positif);
-
-        // Varian sensitivitas SONAR-03 juga disalin apa adanya, dari berkas skor sensitivitas.
-        const rsen = sens.utama.per_model.find((x) => x.vendor === m.vendor).runs.find((x) => x.run === r.run);
-        assert.deepEqual(r.verifikasi.sensitivitas.jumlah, rsen.verifikasi.jumlah, `${m.vendor} run ${r.run} verifikasi sensitivitas`);
-        assert.deepEqual(r.verifikasi.sensitivitas.metrik_fp_positif, rsen.verifikasi.metrik_fp_positif);
+        assert.deepEqual(gr.verifikasi.jumlah, r.verifikasi.jumlah, `${m.vendor} run ${r.run} verifikasi`);
+        assert.deepEqual(gr.verifikasi.metrik_fp_positif, r.verifikasi.metrik_fp_positif);
+        assert.deepEqual(gr.verifikasi.sensitivitas.jumlah, r.verifikasi.sensitivitas.jumlah, `${m.vendor} run ${r.run} sensitivitas`);
+        assert.deepEqual(gr.verifikasi.sensitivitas.metrik_fp_positif, r.verifikasi.sensitivitas.metrik_fp_positif);
       }
 
       // rata_rata ketat disalin; rata_rata triase dihitung dengan aturan rataRata yang sama dengan score.js.
       for (const sk of ['skenario_b', 'skenario_c']) {
-        assert.equal(m.rata_rata[sk].ketat.precision, sumber.rata_rata[sk].precision, `${m.vendor} ${sk} rata ketat precision`);
-        assert.equal(m.rata_rata[sk].ketat.recall, sumber.rata_rata[sk].recall);
-        assert.equal(m.rata_rata[sk].ketat.f1, sumber.rata_rata[sk].f1);
-        for (const [varian, lap] of [['triase_utama', triase], ['triase_konservatif', kons]]) {
-          const runs = lap.utama.per_model.find((x) => x.vendor === m.vendor).runs;
-          assert.equal(m.rata_rata[sk][varian].precision, rataRata(runs.map((x) => x[sk].setelah_triase.precision)),
-            `${m.vendor} ${sk} rata ${varian} precision`);
-          assert.equal(m.rata_rata[sk][varian].f1, rataRata(runs.map((x) => x[sk].setelah_triase.f1)));
+        assert.equal(got.rata_rata[sk].ketat.precision, m.rata_rata[sk].precision, `${m.vendor} ${sk} rata ketat precision`);
+        assert.equal(got.rata_rata[sk].ketat.recall, m.rata_rata[sk].recall);
+        assert.equal(got.rata_rata[sk].ketat.f1, m.rata_rata[sk].f1);
+        for (const varian of ['triase_utama', 'triase_konservatif']) {
+          const nilai = (k) => rataRata(m.runs.map((x) => x[sk][varian][k]));
+          assert.equal(got.rata_rata[sk][varian].precision, nilai('precision'), `${m.vendor} ${sk} rata ${varian} precision`);
+          assert.equal(got.rata_rata[sk][varian].f1, nilai('f1'));
         }
       }
     }
   }
 });
 
-test('susunEksperimen tanpa berkas triase tetap menghasilkan varian ketat saja', () => {
-  const utama = bacaSkor('skor-utama.json');
+test('acuan angka skor masih cocok dengan berkas skor aslinya', (t) => {
+  if (!skorTersedia) {
+    t.skip(`branch ${acuan.sumber.branch} tidak tersedia di klon ini; perbandingan dengan acuan sudah dilakukan di tes sebelumnya`);
+    return;
+  }
+  // sha256 tiap berkas sumber harus sama dengan yang tercatat saat acuan dibuat.
+  for (const [nama, sha] of Object.entries(acuan.sumber.sha256)) {
+    const kini = crypto.createHash('sha256').update(bacaSkorMentah(nama)).digest('hex');
+    assert.equal(kini, sha, `${nama} berubah sejak acuan dibuat; jalankan ulang scripts/buat-acuan-skor.js`);
+  }
+  // Dan angkanya benar-benar sama, bukan hanya hash berkasnya.
+  const utama = JSON.parse(bacaSkorMentah('skor-utama.json'));
+  for (const m of acuan.per_model) {
+    const sumber = utama.utama.per_model.find((x) => x.vendor === m.vendor);
+    assert.equal(sumber.model, m.model);
+    for (const r of m.runs) {
+      const rs = sumber.runs.find((x) => x.run === r.run);
+      const k = rs.skenario_b.ketat;
+      assert.deepEqual(r.skenario_b.ketat, { tp: k.tp, fp: k.fp, fn: k.fn, precision: k.precision, recall: k.recall, f1: k.f1 },
+        `${m.vendor} run ${r.run} skenario_b ketat di acuan`);
+      assert.deepEqual(r.verifikasi.jumlah, rs.verifikasi.jumlah);
+    }
+  }
+});
+
+test('susunEksperimen tanpa berkas triase tetap menghasilkan varian ketat saja', (t) => {
+  if (!skorTersedia) { t.skip(`branch ${acuan.sumber.branch} tidak tersedia di klon ini`); return; }
+  const utama = JSON.parse(bacaSkorMentah('skor-utama.json'));
   const eks = susunEksperimen({ utama, triaseUtama: null, triaseKonservatif: null, sumber: { skor_utama: 'skor-utama.json' } });
   const r = eks.per_model[0].runs[0];
   assert.ok(r.skenario_b.ketat, 'ketat tetap ada');

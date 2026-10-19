@@ -1,0 +1,1125 @@
+{
+  "catatan": "Acuan angka skor untuk tes. Disalin apa adanya dari berkas skor di branch eksperimen/seeded; tidak dihitung ulang. Dibuat dengan scripts/buat-acuan-skor.js. Jangan disunting tangan: kalau berkas skor berubah, jalankan ulang skrip itu.",
+  "sumber": {
+    "branch": "eksperimen/seeded",
+    "commit": "27613a896b9dbbda5c2cce812118ac153040f384",
+    "dir": "hasil-eksperimen/20261019",
+    "sha256": {
+      "skor-utama.json": "2fd80a55befb3b5f827e2725dece62d2d051342e2904d8f9bcb8abc2e07a2f82",
+      "skor-setelah-triase.json": "3b6af79a70179c1e8ed9e5f5d9c7ca953362e6394177464c6442877ca89f8486",
+      "skor-setelah-triase-konservatif.json": "7f073750bc01950327f0d9f8d37d2e4de2d31029366d2910dbe6dabc36654fbd",
+      "skor-sensitivitas-sonar03.json": "5a23039a85081de93a7b4bcc506196ed626b3fd810bf1f5fdbc9294b139d7491"
+    }
+  },
+  "aturan_hardening": "spesifikasi",
+  "commit_kode_scoring": "10be9aac06e22e7d3e81d80322fa9bf924df402c",
+  "objek_uji_commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+  "label_alert": {
+    "SONAR-01": {
+      "label": "nyata",
+      "sumber": "otomatis"
+    },
+    "SONAR-02": {
+      "label": "fp",
+      "sumber": "otomatis"
+    },
+    "SONAR-03": {
+      "label": "fp",
+      "sumber": "otomatis"
+    },
+    "SONAR-04": {
+      "label": "fp",
+      "sumber": "otomatis"
+    },
+    "SONAR-05": {
+      "label": "nyata",
+      "sumber": "otomatis"
+    }
+  },
+  "label_alert_sensitivitas": {
+    "SONAR-01": {
+      "label": "nyata",
+      "sumber": "otomatis"
+    },
+    "SONAR-02": {
+      "label": "fp",
+      "sumber": "otomatis"
+    },
+    "SONAR-03": {
+      "label": "nyata",
+      "sumber": "paksa"
+    },
+    "SONAR-04": {
+      "label": "fp",
+      "sumber": "otomatis"
+    },
+    "SONAR-05": {
+      "label": "nyata",
+      "sumber": "otomatis"
+    }
+  },
+  "per_model": [
+    {
+      "vendor": "google",
+      "model": "gemini-3.1-pro-preview",
+      "jumlah_run": 3,
+      "skenario_a": {
+        "tp": 1,
+        "fp": 2,
+        "fn": 8,
+        "precision": 0.3333333333333333,
+        "recall": 0.1111111111111111,
+        "f1": 0.16666666666666666
+      },
+      "rata_rata": {
+        "skenario_b": {
+          "precision": 0.8000000000000002,
+          "recall": 0.4444444444444444,
+          "f1": 0.5714285714285714
+        },
+        "skenario_c": {
+          "precision": 0.8000000000000002,
+          "recall": 0.4444444444444444,
+          "f1": 0.5714285714285714
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "skenario_b": {
+            "ketat": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 5,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 5,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 3,
+              "missed_fp": 0,
+              "misidentified_fp": 0,
+              "correct_retention": 2
+            },
+            "metrik_fp_positif": {
+              "precision": 1,
+              "recall": 1,
+              "f1": 1
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 0.6666666666666666,
+                "recall": 1,
+                "f1": 0.8
+              }
+            }
+          }
+        },
+        {
+          "run": 2,
+          "skenario_b": {
+            "ketat": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 5,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.4444444444444444,
+              "f1": 0.6153846153846153,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.4444444444444444,
+              "f1": 0.6153846153846153,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 5,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.4444444444444444,
+              "f1": 0.6153846153846153,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.4444444444444444,
+              "f1": 0.6153846153846153,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 3,
+              "missed_fp": 0,
+              "misidentified_fp": 0,
+              "correct_retention": 2
+            },
+            "metrik_fp_positif": {
+              "precision": 1,
+              "recall": 1,
+              "f1": 1
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 0.6666666666666666,
+                "recall": 1,
+                "f1": 0.8
+              }
+            }
+          }
+        },
+        {
+          "run": 3,
+          "skenario_b": {
+            "ketat": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 5,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 4,
+              "fp": 1,
+              "fn": 5,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 1,
+              "precision": 0.8,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 3,
+              "missed_fp": 0,
+              "misidentified_fp": 0,
+              "correct_retention": 2
+            },
+            "metrik_fp_positif": {
+              "precision": 1,
+              "recall": 1,
+              "f1": 1
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 0.6666666666666666,
+                "recall": 1,
+                "f1": 0.8
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "vendor": "anthropic",
+      "model": "claude-sonnet-5-5",
+      "jumlah_run": 3,
+      "skenario_a": {
+        "tp": 1,
+        "fp": 2,
+        "fn": 8,
+        "precision": 0.3333333333333333,
+        "recall": 0.1111111111111111,
+        "f1": 0.16666666666666666
+      },
+      "rata_rata": {
+        "skenario_b": {
+          "precision": 0.7962962962962963,
+          "recall": 0.8518518518518517,
+          "f1": 0.8226120857699805
+        },
+        "skenario_c": {
+          "precision": 0.8629629629629628,
+          "recall": 0.8518518518518517,
+          "f1": 0.855635821580094
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "skenario_b": {
+            "ketat": {
+              "tp": 8,
+              "fp": 2,
+              "fn": 1,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 1,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 1,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 8,
+              "fp": 1,
+              "fn": 1,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "f1": 0.8888888888888888
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 1,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "f1": 0.8888888888888888,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 1,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 1,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "f1": 0.8888888888888888,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 1,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 1,
+              "missed_fp": 2,
+              "misidentified_fp": 1,
+              "correct_retention": 1
+            },
+            "metrik_fp_positif": {
+              "precision": 0.5,
+              "recall": 0.3333333333333333,
+              "f1": 0.4
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 1,
+                "missed_fp": 1,
+                "misidentified_fp": 1,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 0.5,
+                "f1": 0.5
+              }
+            }
+          }
+        },
+        {
+          "run": 2,
+          "skenario_b": {
+            "ketat": {
+              "tp": 7,
+              "fp": 3,
+              "fn": 2,
+              "precision": 0.7,
+              "recall": 0.7777777777777778,
+              "f1": 0.7368421052631577
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 3,
+              "precision": 0.7,
+              "recall": 0.7777777777777778,
+              "f1": 0.7368421052631577,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 2,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 3,
+              "precision": 0.7,
+              "recall": 0.7777777777777778,
+              "f1": 0.7368421052631577,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 2,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 7,
+              "fp": 3,
+              "fn": 2,
+              "precision": 0.7,
+              "recall": 0.7777777777777778,
+              "f1": 0.7368421052631577
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 3,
+              "precision": 0.7,
+              "recall": 0.7777777777777778,
+              "f1": 0.7368421052631577,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 2,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 3,
+              "precision": 0.7,
+              "recall": 0.7777777777777778,
+              "f1": 0.7368421052631577,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 2,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 1,
+              "missed_fp": 2,
+              "misidentified_fp": 1,
+              "correct_retention": 1
+            },
+            "metrik_fp_positif": {
+              "precision": 0.5,
+              "recall": 0.3333333333333333,
+              "f1": 0.4
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 1,
+                "missed_fp": 1,
+                "misidentified_fp": 1,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 0.5,
+                "f1": 0.5
+              }
+            }
+          }
+        },
+        {
+          "run": 3,
+          "skenario_b": {
+            "ketat": {
+              "tp": 8,
+              "fp": 1,
+              "fn": 1,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "f1": 0.8888888888888888
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 1,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "f1": 0.8888888888888888,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 1,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "f1": 0.8888888888888888,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 8,
+              "fp": 0,
+              "fn": 1,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 0,
+                "fp": 0,
+                "teoretis": 0,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 2,
+              "missed_fp": 1,
+              "misidentified_fp": 1,
+              "correct_retention": 1
+            },
+            "metrik_fp_positif": {
+              "precision": 0.6666666666666666,
+              "recall": 0.6666666666666666,
+              "f1": 0.6666666666666666
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 0.6666666666666666,
+                "recall": 1,
+                "f1": 0.8
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "vendor": "openai",
+      "model": "gpt-6.1-sol",
+      "jumlah_run": 3,
+      "skenario_a": {
+        "tp": 1,
+        "fp": 2,
+        "fn": 8,
+        "precision": 0.3333333333333333,
+        "recall": 0.1111111111111111,
+        "f1": 0.16666666666666666
+      },
+      "rata_rata": {
+        "skenario_b": {
+          "precision": 0.7272727272727272,
+          "recall": 0.8888888888888888,
+          "f1": 0.7999999999999999
+        },
+        "skenario_c": {
+          "precision": 0.7272727272727272,
+          "recall": 0.8888888888888888,
+          "f1": 0.7999999999999999
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "skenario_b": {
+            "ketat": {
+              "tp": 8,
+              "fp": 3,
+              "fn": 1,
+              "precision": 0.7272727272727273,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 8,
+              "fp": 3,
+              "fn": 1,
+              "precision": 0.7272727272727273,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 3,
+              "missed_fp": 0,
+              "misidentified_fp": 1,
+              "correct_retention": 1
+            },
+            "metrik_fp_positif": {
+              "precision": 0.75,
+              "recall": 1,
+              "f1": 0.8571428571428571
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 2,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 1,
+                "f1": 0.6666666666666666
+              }
+            }
+          }
+        },
+        {
+          "run": 2,
+          "skenario_b": {
+            "ketat": {
+              "tp": 8,
+              "fp": 3,
+              "fn": 1,
+              "precision": 0.7272727272727273,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 8,
+              "fp": 3,
+              "fn": 1,
+              "precision": 0.7272727272727273,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 3,
+              "missed_fp": 0,
+              "misidentified_fp": 1,
+              "correct_retention": 1
+            },
+            "metrik_fp_positif": {
+              "precision": 0.75,
+              "recall": 1,
+              "f1": 0.8571428571428571
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 2,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 1,
+                "f1": 0.6666666666666666
+              }
+            }
+          }
+        },
+        {
+          "run": 3,
+          "skenario_b": {
+            "ketat": {
+              "tp": 8,
+              "fp": 3,
+              "fn": 1,
+              "precision": 0.7272727272727273,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "tp": 8,
+              "fp": 3,
+              "fn": 1,
+              "precision": 0.7272727272727273,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "varian": "utama",
+              "fp": 0,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            },
+            "triase_konservatif": {
+              "varian": "konservatif",
+              "fp": 2,
+              "precision": 0.8,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948,
+              "rincian_triase": {
+                "tp_di_luar_seeded": 1,
+                "fp": 0,
+                "teoretis": 2,
+                "informasional": 0,
+                "duplikat": 0
+              },
+              "belum_ditriase": 0
+            }
+          },
+          "verifikasi": {
+            "jumlah": {
+              "identified_fp": 3,
+              "missed_fp": 0,
+              "misidentified_fp": 1,
+              "correct_retention": 1
+            },
+            "metrik_fp_positif": {
+              "precision": 0.75,
+              "recall": 1,
+              "f1": 0.8571428571428571
+            },
+            "sensitivitas": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 0,
+                "misidentified_fp": 2,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 1,
+                "f1": 0.6666666666666666
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
