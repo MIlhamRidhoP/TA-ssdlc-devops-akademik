@@ -1,0 +1,56 @@
+{
+  "catatan": "Satu sumber daftar model untuk dashboard dan untuk validasi input workflow. Perkiraan biaya adalah rata-rata biaya satu run kondisi utama (1 panggilan deteksi + 5 panggilan verifikasi) dari eksperimen 19 Oktober 2026, hasil-eksperimen/20261019 di branch eksperimen/seeded. Angka ini perkiraan, bukan tarif: biaya nyata bergantung panjang kode, jumlah alert, dan tarif vendor saat run.",
+  "sumber_biaya": "hasil-eksperimen/20261019 (3 run per vendor, kondisi utama)",
+  "models": [
+    {
+      "vendor": "google",
+      "id": "gemini-3.8-flash",
+      "label": "Gemini 3.8 Flash",
+      "jalur": "v1",
+      "bawaan": true,
+      "secret": "GEMINI_API_KEY",
+      "biaya_perkiraan_usd": null,
+      "catatan": "Model bawaan jalur v1. Biaya belum diukur pada eksperimen 19 Oktober."
+    },
+    {
+      "vendor": "google",
+      "id": "gemini-3.1-pro-preview",
+      "label": "Gemini 3.1 Pro Preview (berbayar)",
+      "jalur": "v1",
+      "bawaan": false,
+      "secret": "GEMINI_API_KEY",
+      "biaya_perkiraan_usd": 0.7631,
+      "catatan": "Butuh billing aktif di project Google milik GEMINI_API_KEY."
+    },
+    {
+      "vendor": "google",
+      "id": "gemini-3.1-pro-preview",
+      "label": "Gemini 3.1 Pro Preview",
+      "jalur": "v2",
+      "bawaan": true,
+      "secret": "GEMINI_API_KEY",
+      "biaya_perkiraan_usd": 0.7631,
+      "catatan": "Model bawaan jalur v2."
+    },
+    {
+      "vendor": "anthropic",
+      "id": "claude-sonnet-5-5",
+      "label": "Claude Sonnet 5.5",
+      "jalur": "v2",
+      "bawaan": false,
+      "secret": "ANTHROPIC_API_KEY",
+      "biaya_perkiraan_usd": 0.3702,
+      "catatan": "Secret ANTHROPIC_API_KEY belum dibuat di repo."
+    },
+    {
+      "vendor": "openai",
+      "id": "gpt-6.1-sol",
+      "label": "GPT 6.1 Sol",
+      "jalur": "v2",
+      "bawaan": false,
+      "secret": "OPENAI_API_KEY",
+      "biaya_perkiraan_usd": 0.2031,
+      "catatan": "Secret OPENAI_API_KEY belum dibuat di repo."
+    }
+  ]
+}

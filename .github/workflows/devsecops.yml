@@ -26,6 +26,20 @@ on:
         description: 'Label unik dari Security Dashboard (opsional)'
         type: string
         default: ''
+      jalur:
+        description: 'Jalur analisis. v1 = gemini-scan (satu panggilan). v2 = llm-scan (deteksi + verifikasi per alert).'
+        type: choice
+        options: [v1, v2]
+        default: v1
+      vendor_v2:
+        description: 'Vendor untuk jalur v2'
+        type: choice
+        options: [google, anthropic, openai]
+        default: google
+      konfirmasi_v2:
+        description: 'Ketik JALANKAN untuk menyetujui biaya panggilan berbayar jalur v2'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -181,6 +195,83 @@ jobs:
         with:
           name: gemini-output-${{ github.run_id }}
           path: gemini-output/
+          retention-days: 14
+          if-no-files-found: warn
+
+  # Jalur v2: satu run kondisi utama dengan llm-scan.js. Belum pernah dijalankan; lihat README dashboard.
+  # Pengaman berlapis: hanya workflow_dispatch, wajib konfirmasi eksplisit, dikunci satu run,
+  # satu run sekaligus lewat concurrency, timeout job, dan menolak branch objek uji eksperimen.
+  analisis-v2:
+    name: Analisis LLM v2 (deteksi dan verifikasi)
+    needs: rencana
+    if: github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: analisis-v2-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Tolak tanpa konfirmasi eksplisit
+        if: inputs.konfirmasi_v2 != 'JALANKAN'
+        run: |
+          echo "Jalur v2 memanggil API berbayar. Isi input konfirmasi_v2 dengan JALANKAN untuk melanjutkan." >&2
+          exit 1
+
+      # Branch objek uji dikunci supaya data eksperimen tidak tertimpa run baru.
+      - name: Tolak branch objek uji eksperimen
+        if: github.ref_name == 'eksperimen/seeded'
+        run: |
+          echo "Branch eksperimen/seeded adalah arsip objek uji dan tidak boleh dipicu, demi integritas data eksperimen." >&2
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependency
+        run: npm ci
+
+      # Daftar model hidup di dashboard/models.json; input vendor divalidasi terhadap berkas itu.
+      - name: Validasi vendor terhadap dashboard/models.json
+        env:
+          VENDOR: ${{ inputs.vendor_v2 }}
+        run: |
+          node -e '
+            const m = require("./dashboard/models.json").models.filter((x) => x.jalur === "v2");
+            const v = process.env.VENDOR;
+            const cocok = m.find((x) => x.vendor === v);
+            if (!cocok) { console.error(`Vendor ${v} tidak terdaftar untuk jalur v2 di dashboard/models.json`); process.exit(1); }
+            console.log(`Vendor ${v}, model ${cocok.id}, secret ${cocok.secret}, perkiraan biaya US$${cocok.biaya_perkiraan_usd}`);
+          '
+
+      # Satu run, kondisi utama. Secret vendor lain belum dibuat di repo ini.
+      - name: Jalankan llm-scan (1 run, kondisi utama)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_BRANCH: ${{ github.ref_name }}
+        run: node scripts/llm-scan.js --vendor=${{ inputs.vendor_v2 }} --kondisi=utama --runs=1 --objek=.
+
+      - name: Susun results.json skema 2
+        run: |
+          folder=$(ls -dt llm-output/v2/*-${{ inputs.vendor_v2 }}-utama | head -1)
+          node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
+
+      - name: Unggah output v2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-v2-${{ github.run_id }}
+          path: |
+            llm-output/v2/
+            results.json
           retention-days: 14
           if-no-files-found: warn
 

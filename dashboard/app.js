@@ -124,6 +124,7 @@
   // ---------- State ----------
   const state = {
     demo: false,
+    models: [],
     nav: 'ringkasan',
     tab: 'operasional',
     eksLabel: 'utama',
@@ -494,6 +495,35 @@
   };
 
   const ingatPilihan = () => !state.demo && store.set('localStorage', KUNCI.terakhir, JSON.stringify({ repo: `${state.proyek.owner}/${state.proyek.repo}`, branch: state.branch.name }));
+
+  // ---------- Daftar model ----------
+  // dashboard/models.json adalah satu-satunya sumber daftar model, dipakai bersama workflow.
+  // Jalur v2 sengaja dinonaktifkan di UI sampai pemilik repo menjalankan uji cobanya sendiri.
+  const muatModels = async () => {
+    try {
+      const d = await jsonLokal('models.json');
+      state.models = Array.isArray(d?.models) ? d.models : [];
+    } catch {
+      state.models = [];
+    }
+  };
+  const modelJalur = () => state.models.filter((m) => m.jalur === ($('f-jalur')?.value ?? 'v1'));
+  const renderModels = () => {
+    const daftar = modelJalur();
+    const sel = $('f-model');
+    const sebelum = sel.value;
+    isi(sel, daftar.map((m) => el('option', { value: m.id, selected: m.bawaan ? true : null }, m.label)));
+    if (daftar.some((m) => m.id === sebelum)) sel.value = sebelum;
+    renderBiaya();
+  };
+  const renderBiaya = () => {
+    const m = modelJalur().find((x) => x.id === $('f-model').value);
+    const n = $('biaya-perkiraan');
+    if (!m) { n.textContent = ''; return; }
+    n.textContent = typeof m.biaya_perkiraan_usd === 'number'
+      ? `Perkiraan biaya satu run: US$${m.biaya_perkiraan_usd.toFixed(4).replace('.', ',')}. Rata-rata dari eksperimen 19 Okt 2026, bukan tarif pasti.`
+      : 'Perkiraan biaya belum diukur untuk model ini.';
+  };
 
   // ---------- Form jalankan ----------
   const renderFormBranch = () => {
@@ -1287,6 +1317,8 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
+    $('f-jalur').addEventListener('change', renderModels);
+    $('f-model').addEventListener('change', renderBiaya);
     $('buka-drawer').addEventListener('click', bukaDrawer);
     $('drawer-tutup').addEventListener('click', tutupDrawer);
     $('drawer-tirai').addEventListener('click', tutupDrawer);
@@ -1315,11 +1347,13 @@
     window.addEventListener('online', () => tutupBanner('error'));
   };
 
-  const mulai = () => {
+  const mulai = async () => {
     terapkanTema();
     terapkanKepadatan();
     muatToken();
     ikat();
+    await muatModels();
+    renderModels();
     renderAkses(state.token ? 'ok' : 'none', state.token ? teksTokenAktif() : 'Belum ada token');
     $('token-remember').checked = state.tokenDiingat;
     if (location.protocol === 'file:') {
