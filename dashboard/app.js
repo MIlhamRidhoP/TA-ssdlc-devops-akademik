@@ -12,11 +12,24 @@
   const BATAS_CARI_RUN = 30;
   const BATAS_TUNGGU_HASIL = 24;
   const SEVERITY = ['kritis', 'tinggi', 'sedang', 'rendah'];
-  const NAMA_SUMBER = { sonar: 'Sonar', gemini: 'Gemini', both: 'Sonar + Gemini' };
+  const NAMA_SUMBER = { sonar: 'Sonar', gemini: 'LLM', both: 'Sonar + LLM' };
+  // Kegagalan yang memang diharapkan, bukan tanda pipeline rusak. Satu-satunya tempat daftar ini hidup.
+  // Dicocokkan per branch dan per job; ditampilkan amber dengan sebabnya, berbeda dari kegagalan sungguhan.
+  const GAGAL_DIHARAPKAN = [
+    {
+      branch: 'eksperimen/seeded', job: 'build',
+      sebab: 'gagal sesuai ekspektasi: objek uji berisi kerentanan tertanam',
+    },
+  ];
+  const ekspektasiGagal = (keyNode) => {
+    const branch = state.hasil?.run?.objek_uji?.branch ?? state.branch?.name ?? null;
+    return GAGAL_DIHARAPKAN.find((x) => x.branch === branch && x.job === keyNode) ?? null;
+  };
+
   const NODE = [
     { key: 'build', nama: 'Build dan uji', job: 'Build dan uji API', hasil: 'build_test' },
     { key: 'sonar', nama: 'SonarCloud', job: 'Analisis SonarCloud', hasil: 'sonarcloud' },
-    { key: 'analisis', nama: 'Analisis Gemini', job: 'Analisis temuan (Sonar dan Gemini)', hasil: 'analisis' },
+    { key: 'analisis', nama: 'Analisis LLM', job: 'Analisis temuan (Sonar dan Gemini)', hasil: 'analisis' },
     { key: 'hasil', nama: 'Gabung hasil', job: 'Gabung dan terbitkan hasil', hasil: null },
   ];
   const TEKS_STATUS = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati' };
@@ -76,6 +89,7 @@
     terang: ['M8 5.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z', 'M8 1v1.5', 'M8 13.5V15', 'M1 8h1.5', 'M13.5 8H15',
       'M3 3l1 1', 'M12 12l1 1', 'M3 13l1-1', 'M12 4l1-1'],
     gelap: 'M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z',
+    seru: ['M8 3.5v5.5', 'M8 12h.01'],
     // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
     padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
     nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
@@ -286,8 +300,11 @@
         const run = data.runs?.[String(runId)];
         if (!run) return null;
         return Object.fromEntries(NODE.map((n) => {
-          const [, lama] = run[n.key] ?? [];
-          return [n.key, lama ? { s: 'done', durasi: lama } : { s: 'skip', durasi: null }];
+          const v = run[n.key];
+          // Bentuk [offset, durasi] berarti selesai; bentuk objek boleh menyebut status lain (mis. gagal).
+          if (Array.isArray(v)) return [n.key, v[1] ? { s: 'done', durasi: v[1] } : { s: 'skip', durasi: null }];
+          if (v && typeof v === 'object') return [n.key, { s: v.s ?? 'done', durasi: v.durasi ?? null }];
+          return [n.key, { s: 'skip', durasi: null }];
         }));
       } catch {
         return null;
@@ -327,7 +344,7 @@
   };
   const bannerDemo = () => tampilBanner('demo', state.demoV2
     ? 'Mode demo v2. Data nyata dari eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing. Alert Sonar diverifikasi model satu per satu. Run dijalankan dari CLI, bukan lewat pipeline.'
-    : 'Mode demo. Data diambil dari arsip eksperimen 10 Okt 2026 (eksperimen/seeded, commit 5cbf05c). Run #1 adalah contoh sintetis untuk state Gemini gagal, dan durasi job juga contoh.',
+    : 'Mode demo. Data diambil dari arsip eksperimen 10 Okt 2026 (eksperimen/seeded, commit 5cbf05c). Run #1 adalah contoh sintetis untuk state analisis LLM gagal, dan durasi job juga contoh.',
     { label: 'Keluar dari mode demo', fn: () => keluarDemo() });
 
   // ---------- Token ----------
@@ -529,7 +546,7 @@
     const hint = $('run-hint');
     hint.dataset.kind = jenis || '';
     if (pesan instanceof Node) isi(hint, pesan);
-    else hint.textContent = pesan ?? alasan ?? (state.demo ? 'Mode demo: run disimulasikan, GitHub tidak dipanggil.' : `Memicu ${state.proyek.workflow} lewat GitHub API. API key Gemini dan Sonar tetap di GitHub Secrets.`);
+    else hint.textContent = pesan ?? alasan ?? (state.demo ? 'Mode demo: run disimulasikan, GitHub tidak dipanggil.' : `Memicu ${state.proyek.workflow} lewat GitHub API. API key model dan Sonar tetap di GitHub Secrets.`);
   };
 
   // ---------- Index dan run ----------
@@ -605,7 +622,7 @@
     const g = state.hasil?.run?.gemini;
     if (g?.status !== 'gagal') return null;
     const sibuk = /high demand|overloaded|503|UNAVAILABLE/i.test(g.galat ?? '');
-    return `Analisis Gemini gagal${g.galat ? `: ${g.galat}` : '.'}${sibuk ? ' Server Gemini sedang sibuk; jalankan lagi beberapa menit kemudian.' : ''}`;
+    return `Analisis LLM gagal${g.galat ? `: ${g.galat}` : '.'}${sibuk ? ' Server model sedang sibuk; jalankan lagi beberapa menit kemudian.' : ''}`;
   };
   const sidikSebelumnya = () => (state.sebelumnya ? new Set(state.sebelumnya.findings.map((f) => f.fingerprint)) : null);
   const temuanBaru = (f, sidik) => Boolean(sidik && !sidik.has(f.fingerprint));
@@ -693,18 +710,20 @@
   const renderPipeline = (live) => {
     const mode = live?.mode ?? state.hasil?.run?.mode ?? modeTerpilih();
     const status = live?.jobs ?? state.jobs ?? statusNodeDariHasil() ?? {};
-    const geminiGagal = !live && state.hasil?.run?.gemini?.status === 'gagal';
+    const llmGagal = !live && state.hasil?.run?.gemini?.status === 'gagal';
     $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Pipeline run #${state.hasil.run.nomor}` : 'Status pipeline');
     const total = Object.values(status).reduce((s, j) => s + (Number.isFinite(j?.durasi) ? j.durasi : 0), 0);
     $('pipeline-total').textContent = total ? `total ${durasi(total)}` : '';
     isi($('nodes'), NODE.map((n) => {
       let st = status[n.key] ?? { s: 'wait', durasi: null };
       let teks = TEKS_STATUS[st.s];
-      if (n.key === 'analisis' && geminiGagal && st.s === 'done') { st = { ...st, s: 'fail' }; teks = 'Gemini gagal'; }
+      if (n.key === 'analisis' && llmGagal && st.s === 'done') { st = { ...st, s: 'fail' }; teks = 'Analisis LLM gagal'; }
+      const diharapkan = st.s === 'fail' ? ekspektasiGagal(n.key) : null;
+      if (diharapkan) { st = { ...st, s: 'fail-diharapkan' }; teks = diharapkan.sebab; }
       const nama = n.key === 'analisis' && mode === 'sast' ? 'Ambil temuan Sonar' : n.nama;
       return el('li', { class: 'node', dataset: { s: st.s } },
         el('span', { class: 'seg-line', 'aria-hidden': 'true' }),
-        el('span', { class: 'node-mark', 'aria-hidden': 'true' }, ikon(st.s === 'fail' ? IKON.silang : IKON.cek)),
+        el('span', { class: 'node-mark', 'aria-hidden': 'true' }, ikon(st.s === 'fail' ? IKON.silang : (st.s === 'fail-diharapkan' ? IKON.seru : IKON.cek))),
         el('span', { class: 'node-name', text: nama }),
         el('span', { class: 'node-state', text: teks }),
         el('span', { class: 'node-dim', 'aria-label': `durasi ${durasi(st.durasi)}`, text: durasi(st.durasi) }));
@@ -729,14 +748,14 @@
     // Tanpa satu pun sumber yang berhasil, angka nol tidak bermakna: tampilkan tanda kosong.
     const tanpaSumber = sastTidakTersedia() && h.run.gemini?.status !== 'ok';
     const cell = (cls, label, num, note) => el('div', { class: `cell ${cls}` }, el('span', { class: 'cell-label', text: label }), el('span', { class: 'cell-num', 'aria-label': tanpaSumber ? 'tidak diketahui' : null }, tanpaSumber ? '—' : num), tanpaSumber ? el('span', { class: 'cell-note', text: 'sumber analisis tidak tersedia' }) : note);
-    const bar = el('div', { class: 'srcbar', role: 'img', 'aria-label': `${per.both} dari keduanya, ${per.gemini} hanya Gemini, ${per.sonar} hanya Sonar` },
+    const bar = el('div', { class: 'srcbar', role: 'img', 'aria-label': `${per.both} dari keduanya, ${per.gemini} hanya LLM, ${per.sonar} hanya Sonar` },
       ['both', 'gemini', 'sonar'].map((k) => { const i = el('i', { class: `sw-${k}` }); i.style.setProperty('width', `${f.length ? (per[k] / f.length) * 100 : 0}%`); return i; }));
     isi(box,
       cell('crit', 'Kritis, perlu tindakan', String(tindakan('kritis')),
         sidik ? el('span', { class: `cell-note${baruKritis ? ' rev' : ''}` }, baruKritis ? [segitigaRevisiKecil(), `${baruKritis} baru sejak run #${state.sebelumnya.run.nomor}`] : `tidak ada yang baru sejak run #${state.sebelumnya.run.nomor}`) : el('span', { class: 'cell-note', text: 'run pertama di branch ini' })),
       cell('high', 'Tinggi, perlu tindakan', String(tindakan('tinggi')), null),
       cell('', 'Sedang dan rendah', String(tindakan(['sedang', 'rendah'])), null),
-      cell('', 'Ditolak AI', String(f.filter((x) => x.status_ai === 'rejected').length), el('span', { class: 'cell-note', text: h.run.gemini?.status === 'ok' ? `dari ${sonarTotal} temuan Sonar` : 'Gemini tidak menilai run ini' })),
+      cell('', 'Ditolak AI', String(f.filter((x) => x.status_ai === 'rejected').length), el('span', { class: 'cell-note', text: h.run.gemini?.status === 'ok' ? `dari ${sonarTotal} temuan Sonar` : 'Model tidak menilai run ini' })),
       cell('', 'Diverifikasi developer', [String(diputuskan), el('small', { text: ` / ${f.length}` })], el('span', { class: 'cell-note', text: 'tersimpan di browser ini' })),
       el('div', { class: 'cell' }, el('span', { class: 'cell-label', text: 'Per sumber' }), bar,
         el('div', { class: 'legend' }, ['both', 'gemini', 'sonar'].map((k) => el('span', {}, el('i', { class: `sw sw-${k}`, 'aria-hidden': 'true' }), `${NAMA_SUMBER[k]} ${per[k]}`)))));
@@ -746,8 +765,8 @@
 
   const FILTER = [
     { key: 'semua', label: 'Semua', cocok: () => true },
-    { key: 'both', label: 'Sonar + Gemini', cocok: (f) => f.sumber === 'both' },
-    { key: 'gemini', label: 'Gemini', cocok: (f) => f.sumber === 'gemini' },
+    { key: 'both', label: 'Sonar + LLM', cocok: (f) => f.sumber === 'both' },
+    { key: 'gemini', label: 'LLM', cocok: (f) => f.sumber === 'gemini' },
     { key: 'sonar', label: 'Sonar', cocok: (f) => f.sumber === 'sonar' },
     { key: 'baru', label: 'Baru', cocok: (f, sidik) => temuanBaru(f, sidik), butuhSebelumnya: true },
   ];
@@ -764,10 +783,10 @@
   };
 
   const teksStatusAi = (f, run) => {
-    if (f.status_ai === 'confirmed') return 'Gemini juga melaporkan temuan ini.';
-    if (f.status_ai === 'rejected') return 'Gemini tidak melaporkan ulang temuan Sonar ini.';
-    if (f.status_ai === 'new') return 'Hanya ditemukan Gemini, tidak ada di laporan Sonar.';
-    return run.mode === 'sast' ? 'Gemini tidak berjalan pada mode SAST saja.' : 'Gemini gagal pada run ini, jadi temuan Sonar belum diperiksa ulang.';
+    if (f.status_ai === 'confirmed') return 'Model juga melaporkan temuan ini.';
+    if (f.status_ai === 'rejected') return 'Model tidak melaporkan ulang temuan Sonar ini.';
+    if (f.status_ai === 'new') return 'Hanya ditemukan model, tidak ada di laporan Sonar.';
+    return run.mode === 'sast' ? 'Analisis LLM tidak berjalan pada mode SAST saja.' : 'Analisis LLM gagal pada run ini, jadi temuan Sonar belum diperiksa ulang.';
   };
 
   const renderDetail = (f) => {
@@ -784,7 +803,7 @@
     const fakta = [
       f.cwe?.length ? ['CWE', f.cwe.join(', ')] : null,
       f.kategori_owasp ? ['OWASP', f.kategori_owasp] : null,
-      f.keyakinan_gemini ? ['Keyakinan Gemini', f.keyakinan_gemini] : null,
+      f.keyakinan_gemini ? ['Keyakinan model', f.keyakinan_gemini] : null,
       f.sonar_rule ? ['Aturan Sonar', f.sonar_rule] : null,
     ].filter(Boolean);
     return el('div', { class: 'fdetail', id: `d-${f.id}`, role: 'region', 'aria-label': `Detail ${f.id}` },
@@ -799,7 +818,7 @@
       el('p', { class: 'facts' }, fakta.map(([l, v]) => el('span', {}, `${l} `, el('b', { class: 'data', text: v })))),
       el('p', { class: 'derived' }, teksStatusAi(f, run),
         f.status_ai_asal ? ' Status diturunkan dari pencocokan file, baris, dan CWE.' : '',
-        f.severity_asal === 'turunan-cwe' ? ' Severity diturunkan dari CWE karena Gemini tidak memberi severity.' : ''),
+        f.severity_asal === 'turunan-cwe' ? ' Severity diturunkan dari CWE karena model tidak memberi severity.' : ''),
       el('div', { class: 'decide' },
         el('button', { class: 'btn btn-sm', type: 'button', id: `${f.id}-ok`, 'aria-pressed': k?.v === 'ok' ? 'true' : 'false', onclick: () => putuskan(f, 'ok') }, 'Konfirmasi rentan'),
         el('button', { class: 'btn btn-sm', type: 'button', id: `${f.id}-fp`, 'aria-pressed': k?.v === 'fp' ? 'true' : 'false', onclick: () => putuskan(f, 'fp') }, 'Tandai false positive'),
@@ -816,12 +835,12 @@
     if (!h.findings.length && sastTidakTersedia()) {
       isi(body, el('div', { class: 'state' }, el('h3', { text: 'Belum bisa dipastikan bebas temuan' }),
         el('p', { text: teksSastTidakTersedia() }),
-        el('p', { text: h.run.gemini?.status === 'ok' ? 'Gemini tidak melaporkan temuan.' : (teksGeminiGagal() ?? 'Gemini tidak berjalan pada run ini, jadi tidak ada sumber temuan lain.') })));
+        el('p', { text: h.run.gemini?.status === 'ok' ? 'Model tidak melaporkan temuan.' : (teksGeminiGagal() ?? 'Analisis LLM tidak berjalan pada run ini, jadi tidak ada sumber temuan lain.') })));
       return;
     }
     if (!h.findings.length) {
       isi(body, el('div', { class: 'state' }, el('h3', { text: 'Tidak ada temuan pada run ini' }),
-        el('p', { text: h.run.gemini?.status === 'gagal' ? `SonarCloud tidak melaporkan apa pun. ${teksGeminiGagal()}` : 'SonarCloud dan Gemini tidak melaporkan kerentanan.' })));
+        el('p', { text: h.run.gemini?.status === 'gagal' ? `SonarCloud tidak melaporkan apa pun. ${teksGeminiGagal()}` : 'SonarCloud dan model tidak melaporkan kerentanan.' })));
       return;
     }
     if (!daftar.length) {
@@ -864,10 +883,10 @@
     const v = h?.sonar_verification;
     isi($('verif'), v
       ? [
-        el('div', { class: 'kv' }, el('span', { text: 'Dikonfirmasi Gemini' }), el('b', { text: String(v.dikonfirmasi) })),
+        el('div', { class: 'kv' }, el('span', { text: 'Dikonfirmasi model' }), el('b', { text: String(v.dikonfirmasi) })),
         el('div', { class: 'kv' }, el('span', { text: 'Tidak dilaporkan ulang' }), el('b', { text: String(v.ditolak) })),
         el('div', { class: 'kv' }, el('span', { text: 'Perlu review manual' }), el('b', { text: String(v.perlu_review) })),
-        el('p', { class: 'note', text: sastTidakTersedia() ? teksSastTidakTersedia() : (h.run.gemini?.status === 'ok' ? 'Diturunkan dari pencocokan file, baris, dan CWE; bukan putusan eksplisit Gemini.' : 'Gemini tidak menilai run ini, jadi semua temuan Sonar perlu review manual.') }),
+        el('p', { class: 'note', text: sastTidakTersedia() ? teksSastTidakTersedia() : (h.run.gemini?.status === 'ok' ? 'Diturunkan dari pencocokan file, baris, dan CWE; bukan putusan eksplisit model.' : 'Model tidak menilai run ini, jadi semua temuan Sonar perlu review manual.') }),
       ]
       : el('p', { class: 'note', text: 'Belum ada run.' }));
 
@@ -881,7 +900,7 @@
           i.style.setProperty('background', warna);
           return i;
         }));
-        const gagal = e.gemini === 'gagal' ? ' · Gemini gagal' : '';
+        const gagal = e.gemini === 'gagal' ? ' · analisis LLM gagal' : '';
         return el('button', {
           class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
           'aria-label': `Run ${e.nomor}, ${e.mode}, ${tot} temuan${gagal}`, onclick: () => muatRun(e),
@@ -1509,7 +1528,7 @@
         state.sibuk = false;
         state.pantau = null;
         await muatIndex(run.id);
-        perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.${state.hasil?.run?.gemini?.status === 'gagal' ? ' Analisis Gemini gagal, lihat catatan di daftar temuan.' : ''}`));
+        perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.${state.hasil?.run?.gemini?.status === 'gagal' ? ' Analisis LLM gagal, lihat catatan di daftar temuan.' : ''}`));
         return;
       }
       await tunggu(JEDA_HASIL);

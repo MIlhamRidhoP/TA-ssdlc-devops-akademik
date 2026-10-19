@@ -1,8 +1,59 @@
 {
-  "catatan": "Durasi job contoh untuk mode demo (sintetis). Run sungguhan membaca durasi dari GitHub API.",
+  "catatan": "Durasi job contoh untuk mode demo (sintetis). Run sungguhan membaca durasi dari GitHub API. Run 1 memperagakan build-test gagal pada eksperimen/seeded (kegagalan yang diharapkan).",
   "runs": {
-    "1": { "build": [0, 112], "sonar": [118, 54], "analisis": [176, 205], "hasil": [385, 24] },
-    "2": { "build": [0, 104], "sonar": [110, 49], "analisis": [163, 9], "hasil": [176, 20] },
-    "3": { "build": [0, 108], "sonar": [114, 51], "analisis": [170, 292], "hasil": [466, 24] }
+    "1": {
+      "build": {
+        "s": "fail",
+        "durasi": 96
+      },
+      "sonar": [
+        118,
+        54
+      ],
+      "analisis": [
+        176,
+        205
+      ],
+      "hasil": [
+        385,
+        24
+      ]
+    },
+    "2": {
+      "build": [
+        0,
+        104
+      ],
+      "sonar": [
+        110,
+        49
+      ],
+      "analisis": [
+        163,
+        9
+      ],
+      "hasil": [
+        176,
+        20
+      ]
+    },
+    "3": {
+      "build": [
+        0,
+        108
+      ],
+      "sonar": [
+        114,
+        51
+      ],
+      "analisis": [
+        170,
+        292
+      ],
+      "hasil": [
+        466,
+        24
+      ]
+    }
   }
 }

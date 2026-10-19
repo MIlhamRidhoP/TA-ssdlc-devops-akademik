@@ -647,3 +647,7 @@ table.eks tr:last-child td { border-bottom: 0; }
 .hist-legenda span { display: inline-flex; align-items: center; gap: var(--s-1); }
 .hist-legenda i { width: 0.625rem; height: 0.625rem; border-radius: 2px; display: inline-block; }
 .hgagal { font-weight: 700; color: var(--crit); margin-left: var(--s-1); }
+
+/* Kegagalan yang diharapkan: amber, berbeda dari kegagalan sungguhan, dan selalu disertai sebabnya. */
+.node[data-s="fail-diharapkan"] .node-mark { background: var(--on-graphite-warn); border-color: var(--on-graphite-warn); }
+.node[data-s="fail-diharapkan"] .node-state { color: var(--on-graphite-warn); }

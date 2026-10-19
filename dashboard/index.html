@@ -19,7 +19,7 @@
     <aside class="rail" aria-label="Project dan akses">
       <div class="brand">
         <strong>Security Dashboard</strong>
-        <span>SSDLC DevOps dengan Gemini</span>
+        <span>SSDLC DevOps dengan LLM</span>
       </div>
 
       <nav aria-labelledby="nav-h" id="railnav-box" hidden>
@@ -71,7 +71,7 @@
       <section class="start" id="start" hidden aria-labelledby="start-h">
         <div>
           <h1 id="start-h">Jalankan analisis keamanan dan baca hasilnya di satu halaman</h1>
-          <p>Dashboard ini memicu pipeline DevSecOps di GitHub Actions (build, SonarCloud, Gemini), memantau setiap job, lalu menampilkan temuan sampai ke file dan baris. Gemini hanya memberi saran; keputusan tetap di tangan developer.</p>
+          <p>Dashboard ini memicu pipeline DevSecOps di GitHub Actions (build, SonarCloud, analisis LLM), memantau setiap job, lalu menampilkan temuan sampai ke file dan baris. Model hanya memberi saran; keputusan tetap di tangan developer.</p>
           <div class="actions">
             <button class="btn btn-line" type="button" id="start-token">Masukkan token GitHub</button>
             <button class="btn" type="button" id="start-demo">Lihat mode demo</button>
@@ -125,7 +125,7 @@
                 <legend>Mode</legend>
                 <div class="seg">
                   <label><input type="radio" name="mode" value="sast"><span>SAST saja</span></label>
-                  <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + Gemini</span></label>
+                  <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span></label>
                   <label><input type="radio" name="mode" value="dast" disabled><span>DAST</span><small>di luar batasan TA</small></label>
                 </div>
               </fieldset>
@@ -159,7 +159,7 @@
           <section class="findings" id="temuan" aria-labelledby="temuan-h" tabindex="-1">
             <div class="findings-head">
               <h2 id="temuan-h">Temuan</h2>
-              <p>Temuan Gemini adalah saran AI yang belum diverifikasi. Sistem tidak pernah mengubah kode.</p>
+              <p>Temuan model adalah saran AI yang belum diverifikasi. Sistem tidak pernah mengubah kode.</p>
             </div>
             <div class="filters" id="filters" role="group" aria-label="Saring temuan"></div>
             <div class="catatan-alat" id="catatan-alat" hidden>
@@ -189,7 +189,7 @@
       </div>
 
       <footer class="foot">
-        <span>Framework SSDLC DevOps dengan Gemini · Tugas Akhir Telkom University</span>
+        <span>Framework SSDLC DevOps dengan LLM · Tugas Akhir Telkom University</span>
         <span>Keluaran AI hanya rekomendasi. Kode tidak diubah.</span>
         <span>Keputusan developer tersimpan di browser ini saja.</span>
       </footer>
