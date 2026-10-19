@@ -1,5 +1,5 @@
 {
-  "catatan": "Usulan triase manual untuk temuan LLM berstatus \"di luar ground truth\" dan \"perlu cek manual\". Kategori: tp_di_luar_seeded, fp, teoretis, informasional, duplikat. Dibuat 2026-10-19, objek uji eksperimen/seeded 97cfb00 (tree src ef5ff34). Menunggu persetujuan sebelum dipakai di scoring FP setelah triase.",
+  "catatan": "Triase manual temuan LLM berstatus \"di luar ground truth\" dan \"perlu cek manual\". Kategori final disetujui 2026-10-19. Objek uji eksperimen/seeded 97cfb00 (tree src ef5ff34). Dipakai scoring FP setelah triase via llm-score.js --triase. Recall tetap terhadap 9 item seeded; tidak ada kategori yang menambah TP.",
   "entri": {
     "google": {
       "run-2.json": {
@@ -8,7 +8,7 @@
           "lokasi": "src/controllers/krsController.js:110",
           "cwe": "CWE-367",
           "jenis": "Race Condition (TOCTOU)",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15).",
           "catatan": null
         }
       }
@@ -20,7 +20,7 @@
           "lokasi": "src/controllers/cutiController.js:84",
           "cwe": "CWE-20",
           "jenis": "Query bypass listQuery",
-          "dasar": "PoC s2-sqli-order-cuti.sh (sort/order ditolak 400 oleh listQuery sebelum ORDER BY; tidak dapat dieksploitasi)",
+          "dasar": "PoC scripts/poc/s2-sqli-order-cuti.sh: sort/order ditolak 400 oleh listQuery (allowlist) sebelum ORDER BY; tidak dapat dieksploitasi.",
           "catatan": null
         }
       },
@@ -30,15 +30,15 @@
           "lokasi": "src/profilModel.js:38",
           "cwe": "CWE-639",
           "jenis": "Insecure Direct Object Reference",
-          "dasar": "kesalahan path: src/profilModel.js tidak ada (seharusnya src/models/profilModel.js). Tetap FP ketat karena lokasi tidak cocok ground truth",
-          "catatan": "Substansi temuan benar = S8 (IDOR removeEmail, terbukti), tetapi path salah sehingga tidak dipetakan."
+          "dasar": "Kesalahan path: src/profilModel.js tidak ada (seharusnya src/models/profilModel.js), tidak dipetakan ke ground truth. Tetap FP ketat.",
+          "catatan": "Substansi temuan benar = S8 (IDOR removeEmail, terbukti), hanya path yang salah."
         },
         "10": {
           "kategori": "fp",
           "lokasi": "src/controllers/cutiController.js:84",
           "cwe": "CWE-89",
           "jenis": "Missing Input Validation on Sort",
-          "dasar": "PoC s2-sqli-order-cuti.sh (sort/order ditolak 400 oleh listQuery sebelum ORDER BY; tidak dapat dieksploitasi)",
+          "dasar": "PoC scripts/poc/s2-sqli-order-cuti.sh: sort/order ditolak 400 oleh listQuery (allowlist) sebelum ORDER BY; tidak dapat dieksploitasi.",
           "catatan": null
         }
       }
@@ -50,41 +50,41 @@
           "lokasi": "src/controllers/krsController.js:110",
           "cwe": "CWE-367",
           "jenis": "Race Condition Validasi Kuota KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15).",
           "catatan": null
         },
         "6": {
-          "kategori": "tp_di_luar_seeded",
+          "kategori": "teoretis",
           "lokasi": "src/models/krsModel.js:46",
           "cwe": "CWE-367",
           "jenis": "Race Condition Penambahan Item KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "Akar masalah sama dengan TOCTOU submit (krsController.js:110), tetapi efek yang diklaim (item masuk ke KRS yang sudah submitted) tidak terjadi dalam 30 percobaan PoC toctou-krs.sh.",
           "catatan": null
         },
         "7": {
-          "kategori": "tp_di_luar_seeded",
+          "kategori": "teoretis",
           "lokasi": "src/models/krsModel.js:65",
           "cwe": "CWE-367",
           "jenis": "Race Condition Penghapusan Item KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "Jalur removeItem tidak diuji di PoC toctou-krs.sh.",
           "catatan": null
         }
       },
       "run-2.json": {
         "2": {
-          "kategori": "tp_di_luar_seeded",
+          "kategori": "teoretis",
           "lokasi": "src/controllers/krsController.js:70",
           "cwe": "CWE-367",
           "jenis": "TOCTOU Penambahan Item KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "Akar masalah sama dengan TOCTOU submit (krsController.js:110), tetapi efek yang diklaim (item masuk ke KRS yang sudah submitted) tidak terjadi dalam 30 percobaan PoC toctou-krs.sh.",
           "catatan": null
         },
         "3": {
-          "kategori": "tp_di_luar_seeded",
+          "kategori": "teoretis",
           "lokasi": "src/controllers/krsController.js:87",
           "cwe": "CWE-367",
           "jenis": "TOCTOU Penghapusan Item KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "Jalur removeItem tidak diuji di PoC toctou-krs.sh.",
           "catatan": null
         },
         "4": {
@@ -92,7 +92,7 @@
           "lokasi": "src/controllers/krsController.js:110",
           "cwe": "CWE-367",
           "jenis": "Race Condition Validasi Kuota SKS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15).",
           "catatan": null
         }
       },
@@ -102,23 +102,23 @@
           "lokasi": "src/controllers/krsController.js:110",
           "cwe": "CWE-367",
           "jenis": "Race Condition Pemeriksaan Kuota SKS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15).",
           "catatan": null
         },
         "5": {
-          "kategori": "tp_di_luar_seeded",
+          "kategori": "teoretis",
           "lokasi": "src/models/krsModel.js:46",
           "cwe": "CWE-367",
           "jenis": "Race Condition Penambahan Item KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "Akar masalah sama dengan TOCTOU submit (krsController.js:110), tetapi efek yang diklaim (item masuk ke KRS yang sudah submitted) tidak terjadi dalam 30 percobaan PoC toctou-krs.sh.",
           "catatan": null
         },
         "6": {
-          "kategori": "tp_di_luar_seeded",
+          "kategori": "teoretis",
           "lokasi": "src/models/krsModel.js:65",
           "cwe": "CWE-367",
           "jenis": "Race Condition Penghapusan Item KRS",
-          "dasar": "PoC toctou-krs.sh (race addItem vs submit menang >=1 dari 30; KRS submitted total SKS > kuota)",
+          "dasar": "Jalur removeItem tidak diuji di PoC toctou-krs.sh.",
           "catatan": null
         }
       }

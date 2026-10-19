@@ -35,3 +35,11 @@ N=30 percobaan race (addItem IF1004 || submit). Kuota=15, baseline=13, menang ji
   #30 (baseline 13) -> status=draft total=16
 
 KESIMPULAN: 1 dari 30 percobaan menghasilkan KRS submitted dengan total SKS melebihi kuota (TOCTOU).
+
+CATATAN NON-DETERMINISME:
+Laju menang race ini non-deterministik, bergantung penjadwalan proses dan beban mesin
+saat itu. Ada run sebelumnya pada objek dan container yang sama yang menghasilkan 5 dari 30
+percobaan menang; output run tersebut tidak disimpan. Run yang tercatat di atas (1 dari 30)
+dan run 5 dari 30 sama-sama membuktikan kerawanan TOCTOU dapat dipicu (KRS submitted dengan
+total SKS melebihi kuota); yang berbeda hanya frekuensinya. Angka laju menang tidak boleh
+dibaca sebagai probabilitas tetap.
