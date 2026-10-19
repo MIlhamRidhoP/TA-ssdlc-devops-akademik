@@ -1,29 +1,26 @@
 {
-  "schema_version": 2,
-  "diperbarui": "2026-10-19T23:48:22.777Z",
+  "schema_version": 1,
+  "diperbarui": "2026-10-19T23:48:42.714Z",
   "runs": [
     {
-      "id": 1,
-      "nomor": 1,
+      "id": 39343292014,
+      "nomor": 46,
       "branch": "feat/prompt-v2",
       "commit": "97a3f47e568340fa3109bd661c4fb0eb3635e349",
-      "vendor": "google",
-      "model_diminta": "gemini-3.1-pro-preview",
-      "model_menjawab": "gemini-3.1-pro-preview",
-      "kondisi": "utama",
-      "mulai": "2026-10-19T23:44:44.040Z",
-      "selesai": "2026-10-19T23:48:22.777Z",
-      "durasi_detik": 219,
-      "biaya_usd": 0.508244,
-      "path": "feat/prompt-v2/1.json",
-      "status": "ok",
+      "label": null,
+      "mode": "sast-llm",
+      "model": "gemini-3.1-pro-preview",
+      "mulai": "2026-10-19T23:43:11Z",
+      "selesai": "2026-10-19T23:48:42.714Z",
+      "durasi_detik": 332,
+      "path": "feat/prompt-v2/46.json",
+      "gemini": "gagal",
       "jumlah": {
-        "alert": 1,
-        "temuan": 2,
-        "true_positive": 1,
-        "false_positive": 0,
-        "uncertain": 0,
-        "tanpa_putusan": 0
+        "total": 0,
+        "kritis": 0,
+        "tinggi": 0,
+        "sedang": 0,
+        "rendah": 0
       }
     }
   ]

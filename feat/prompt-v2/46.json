@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": 39343292014,
+    "nomor": 46,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "commit": "97a3f47e568340fa3109bd661c4fb0eb3635e349",
+    "branch": "feat/prompt-v2",
+    "label": null,
+    "mulai": "2026-10-19T23:43:11Z",
+    "selesai": "2026-10-19T23:48:42.714Z",
+    "durasi_detik": 332,
+    "mode": "sast-llm",
+    "model": "gemini-3.1-pro-preview",
+    "prompt_sha256": null,
+    "sast": {
+      "alat": "SonarCloud",
+      "status": "tidak-tersedia",
+      "galat": "Output temuan Sonar tidak ditemukan",
+      "revisi_analisis": null,
+      "sesuai_commit": null
+    },
+    "gemini": {
+      "status": "gagal",
+      "parse_ok": false,
+      "jumlah_temuan": null,
+      "galat": "Output Gemini tidak tersedia"
+    },
+    "jobs": {
+      "build_test": "success",
+      "sonarcloud": "success",
+      "analisis": "skipped"
+    }
+  },
+  "findings": [],
+  "sonar_verification": {
+    "dikonfirmasi": 0,
+    "ditolak": 0,
+    "perlu_review": 0,
+    "asal": "turunan-pencocokan"
+  }
+}
