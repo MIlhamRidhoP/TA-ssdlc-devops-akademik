@@ -1,0 +1,38 @@
+TASK: SECURITY REVIEW
+
+Review the source code above and report the security vulnerabilities you find. It is acceptable to report none.
+
+How to analyze:
+- Follow data flow across files, for example from routes to middleware, controllers, models, and utilities.
+- Identify where external input enters (request parameters, query string, body, headers, uploaded files), how it is validated or transformed, and where it reaches a sensitive operation: a database query, HTML output, the file system, an authorization decision, an update of stored objects, or a response that returns sensitive data.
+- Code comments are not evidence. Judge only what the code does.
+
+Reporting rules:
+1. Report only issues that exist in the provided code. Do not speculate about code that is not shown.
+2. Report one entry per distinct issue per location. If the same flaw appears in several functions, report each location as a separate entry. Do not report the same issue at the same location twice.
+3. "file": the path exactly as written in the FILE header.
+4. "baris": the line number, taken from the listing, of the line most directly responsible for the issue (usually the sink). Use 0 only if no single line applies.
+5. "fungsi": the name of the enclosing function exactly as written in the code. For an issue in a route definition, write the HTTP method and path, for example "PUT /:id/status". Use an empty string if neither applies.
+6. "jenis": a short name for the issue type, for example "SQL Injection".
+7. "cwe": the single most specific CWE identifier, in the form "CWE-89".
+8. "kategori_owasp": one code from the OWASP Top 10:2025 list below. Use "Other" if none fits.
+9. "penjelasan": two to four sentences in Bahasa Indonesia. State where the input comes from, what reaches the sensitive operation, and what protection is missing. Keep code identifiers, file paths, and CWE identifiers unchanged. Give a concise explanation, not a step-by-step account of your reasoning.
+10. "sifat": "vulnerability" if a party without the corresponding right can concretely exploit it in the current code and configuration; "hardening" if it is a missing best practice with no direct exploitation path in the current code (for example a missing security header or missing rate limiting).
+11. "keyakinan":
+    - "high": the full path from input to the sensitive operation is visible in the provided code and no effective protection exists along it.
+    - "medium": the path is only partly visible, or the conclusion depends on an assumption about behavior that is not fully shown.
+    - "low": the code matches a suspicious pattern, but no clear exploitation path is visible.
+12. If you find no issues, return {"temuan": []}.
+
+OWASP Top 10:2025 codes:
+A01 = Broken Access Control
+A02 = Security Misconfiguration
+A03 = Software Supply Chain Failures
+A04 = Cryptographic Failures
+A05 = Injection
+A06 = Insecure Design
+A07 = Authentication Failures
+A08 = Software or Data Integrity Failures
+A09 = Security Logging and Alerting Failures
+A10 = Mishandling of Exceptional Conditions
+Other = none of the above

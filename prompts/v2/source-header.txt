@@ -1,0 +1,5 @@
+SOURCE CODE
+
+The files below are listed in alphabetical order by path. Each line is prefixed with its line number followed by " | ". The line numbers are not part of the code.
+
+{{SOURCE_CODE}}

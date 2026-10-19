@@ -1,0 +1,25 @@
+TASK: VERIFY ONE STATIC ANALYSIS ALERT
+
+Below is one alert reported by SonarCloud for the source code above. Decide whether this alert, as reported, describes a real vulnerability in the current code.
+
+How to analyze:
+- Judge only the weakness described by this alert: its rule, message, CWE, and location. Other issues in the code are outside the scope of this task. Do not report or judge them.
+- Trace the data flow into and out of the reported location across files. Take into account validation, allowlists, type conversion, encoding or escaping, parameterized queries, authorization checks, and how callers use the reported function.
+- Code comments are not evidence. Judge only what the code does.
+
+Decision rules:
+- "putusan" = "true_positive" if the reported weakness is present and can be reached through input or actions available to a user of the application in the current code.
+- "putusan" = "false_positive" if existing code prevents the weakness (for example validation or an allowlist before the sink, output escaping, or a parameterized query), or if the alert misreads what the code does.
+- "putusan" = "uncertain" if the provided code is not sufficient to decide.
+- "keyakinan":
+  - "high": the deciding code is fully visible and leaves no reasonable doubt.
+  - "medium": the decision depends on an assumption about behavior that is not fully shown.
+  - "low": the evidence is weak or conflicting.
+
+Output fields:
+- "id_alert": copy the Alert ID exactly.
+- "alasan": two to four sentences in Bahasa Indonesia that name the specific code element (function, variable, or file) that determines the decision. Keep code identifiers, file paths, and CWE identifiers unchanged. Give a concise explanation, not a step-by-step account of your reasoning.
+
+ALERT
+
+{{ALERT}}

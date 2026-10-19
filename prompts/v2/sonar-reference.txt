@@ -1,0 +1,5 @@
+SONARCLOUD REPORT
+
+The following alerts were reported by SonarCloud for this code. They are provided for reference.
+
+{{SONAR_REPORT}}
