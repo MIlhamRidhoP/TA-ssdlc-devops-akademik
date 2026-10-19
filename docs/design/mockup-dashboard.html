@@ -1,0 +1,537 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Security Dashboard SSDLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench (app shell) · theme: Cobalt · enrichment: none · nav: project rail · footer: Ft2 inline
+ * Hallmark · pre-emit critique: P4 H5 E4 S5 R5 V4
+ * DESIGN thesis: alat kerja developer yang tenang dan presisi; setiap temuan bisa ditelusuri ke file, baris, CWE, dan sumbernya.
+ * Experience thesis: dari "ada push" ke "tahu apa yang harus diperbaiki" tanpa keluar dari satu halaman.
+ * AI authority: Gemini hanya merekomendasikan. Temuan AI selalu berlabel, punya alasan, dan bisa dikonfirmasi atau ditandai false positive oleh developer. Kode tidak pernah diubah.
+ * Layout: rail project kiri → kepala run → panel jalankan analisis (pita graphite) → ringkasan → temuan | samping (verifikasi, riwayat, metrik riset).
+ */
+:root{
+  --color-paper:oklch(98.5% 0.004 250); --color-paper-2:oklch(96.5% 0.005 252); --color-paper-3:oklch(94% 0.006 254);
+  --color-rule:oklch(91% 0.008 255); --color-rule-2:oklch(83% 0.011 255);
+  --color-muted:oklch(52% 0.013 255); --color-ink-2:oklch(34% 0.018 257); --color-ink:oklch(24% 0.020 258);
+  --color-accent:oklch(54% 0.20 256); --color-accent-soft:oklch(94% 0.03 256); --color-accent-ink:oklch(99% 0.004 256);
+  --color-focus:oklch(54% 0.20 256);
+  --color-graphite:oklch(24% 0.018 260); --color-graphite-2:oklch(30% 0.018 260); --color-graphite-rule:oklch(38% 0.018 260);
+  --color-on-graphite:oklch(95% 0.006 255); --color-on-graphite-muted:oklch(74% 0.012 255); --color-on-graphite-accent:oklch(76% 0.13 256);
+  --color-crit:oklch(52% 0.19 27); --color-crit-soft:oklch(95% 0.03 27);
+  --color-high:oklch(55% 0.14 60); --color-high-soft:oklch(95% 0.04 70);
+  --color-ok:oklch(52% 0.12 155); --color-ok-soft:oklch(95% 0.03 155);
+  --color-sonar:oklch(52% 0.14 300); --color-gemini:oklch(54% 0.20 256); --color-both:oklch(52% 0.10 195);
+
+  --font-display:"Space Grotesk","Inter Tight",ui-sans-serif,system-ui,sans-serif;
+  --font-body:"Inter",ui-sans-serif,system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+
+  --text-xs:0.75rem; --text-sm:0.875rem; --text-base:1rem; --text-lg:1.375rem; --text-xl:1.75rem; --text-2xl:2.25rem;
+  --space-3xs:0.125rem; --space-2xs:0.25rem; --space-xs:0.5rem; --space-sm:0.75rem; --space-md:1rem; --space-lg:1.5rem; --space-xl:2.5rem; --space-2xl:4rem;
+  --radius-card:10px; --radius-ctl:6px;
+  --ease-out:cubic-bezier(0.16,1,0.3,1); --dur-micro:120ms; --dur-short:220ms;
+  --tracking-label:0.06em;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --color-paper:oklch(18% 0.014 260); --color-paper-2:oklch(21% 0.015 260); --color-paper-3:oklch(25% 0.016 260);
+  --color-rule:oklch(30% 0.016 258); --color-rule-2:oklch(40% 0.016 258);
+  --color-muted:oklch(70% 0.014 255); --color-ink-2:oklch(84% 0.01 255); --color-ink:oklch(95% 0.006 255);
+  --color-accent:oklch(72% 0.15 256); --color-accent-soft:oklch(30% 0.06 256); --color-accent-ink:oklch(18% 0.02 260);
+  --color-focus:oklch(76% 0.14 256);
+  --color-graphite:oklch(13% 0.012 260); --color-graphite-2:oklch(19% 0.014 260); --color-graphite-rule:oklch(30% 0.016 258);
+  --color-crit:oklch(74% 0.15 27); --color-crit-soft:oklch(28% 0.06 27);
+  --color-high:oklch(80% 0.12 70); --color-high-soft:oklch(29% 0.05 70);
+  --color-ok:oklch(78% 0.12 155); --color-ok-soft:oklch(27% 0.05 155);
+  --color-sonar:oklch(76% 0.11 300); --color-gemini:oklch(72% 0.15 256); --color-both:oklch(78% 0.09 195);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --color-paper:oklch(18% 0.014 260); --color-paper-2:oklch(21% 0.015 260); --color-paper-3:oklch(25% 0.016 260);
+  --color-rule:oklch(30% 0.016 258); --color-rule-2:oklch(40% 0.016 258);
+  --color-muted:oklch(70% 0.014 255); --color-ink-2:oklch(84% 0.01 255); --color-ink:oklch(95% 0.006 255);
+  --color-accent:oklch(72% 0.15 256); --color-accent-soft:oklch(30% 0.06 256); --color-accent-ink:oklch(18% 0.02 260);
+  --color-focus:oklch(76% 0.14 256);
+  --color-graphite:oklch(13% 0.012 260); --color-graphite-2:oklch(19% 0.014 260); --color-graphite-rule:oklch(30% 0.016 258);
+  --color-crit:oklch(74% 0.15 27); --color-crit-soft:oklch(28% 0.06 27);
+  --color-high:oklch(80% 0.12 70); --color-high-soft:oklch(29% 0.05 70);
+  --color-ok:oklch(78% 0.12 155); --color-ok-soft:oklch(27% 0.05 155);
+  --color-sonar:oklch(76% 0.11 300); --color-gemini:oklch(72% 0.15 256); --color-both:oklch(78% 0.09 195);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{overflow-x:clip}
+body{background:var(--color-paper);color:var(--color-ink-2);font-family:var(--font-body);font-size:var(--text-sm);line-height:1.55}
+.mono{font-family:var(--font-mono);font-size:var(--text-xs)}
+.label{font-family:var(--font-mono);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--color-muted);font-weight:500}
+h1,h2,h3{font-family:var(--font-display);color:var(--color-ink);font-weight:600;margin:0;letter-spacing:-0.015em;text-wrap:balance;overflow-wrap:anywhere;min-width:0}
+h1{font-size:var(--text-xl);line-height:1.1}
+h2{font-size:var(--text-base);line-height:1.25}
+p{margin:0}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:15rem minmax(0,1fr);min-height:100%}
+@media (max-width:56rem){.shell{grid-template-columns:minmax(0,1fr)}}
+
+/* rail project */
+.rail{border-right:1px solid var(--color-rule);background:var(--color-paper-2);padding-block:var(--space-lg);padding-inline:var(--space-md);display:flex;flex-direction:column;gap:var(--space-lg)}
+@media (max-width:56rem){.rail{border-right:0;border-bottom:1px solid var(--color-rule)}}
+.brand{display:flex;flex-direction:column;gap:var(--space-2xs)}
+.brand b{font-family:var(--font-display);font-size:var(--text-base);color:var(--color-ink);font-weight:600}
+.projects{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-2xs)}
+@media (max-width:56rem){.projects{flex-direction:row;flex-wrap:wrap}}
+.proj{display:flex;flex-direction:column;gap:var(--space-3xs);padding-block:var(--space-xs);padding-inline:var(--space-sm);border-radius:var(--radius-ctl);border:1px solid transparent;color:var(--color-ink-2);text-decoration:none;min-width:0}
+.proj b{font-weight:500;color:var(--color-ink);overflow-wrap:anywhere}
+.proj[aria-current="page"]{background:var(--color-paper);border-color:var(--color-rule)}
+.proj[aria-current="page"] b::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--color-accent);margin-right:var(--space-xs);vertical-align:2px}
+@media (hover:hover){.proj:hover{border-color:var(--color-rule-2)}}
+.proj.is-off{color:var(--color-muted)}
+.token{border-top:1px solid var(--color-rule);padding-top:var(--space-md);display:flex;flex-direction:column;gap:var(--space-xs);margin-top:auto}
+@media (max-width:56rem){.token{margin-top:0}}
+
+/* main */
+.main{padding-block:var(--space-lg) var(--space-2xl);padding-inline:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-lg);min-width:0;max-width:78rem}
+@media (max-width:30rem){.main{padding-inline:var(--space-md)}}
+.notice{border:1px dashed var(--color-rule-2);border-radius:var(--radius-ctl);padding-block:var(--space-xs);padding-inline:var(--space-sm);color:var(--color-muted);font-size:var(--text-xs)}
+.runhead{display:flex;flex-wrap:wrap;gap:var(--space-md);align-items:flex-end;justify-content:space-between}
+.runhead .t{display:flex;flex-direction:column;gap:var(--space-2xs);min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:var(--space-xs) var(--space-lg);margin:0;padding-top:var(--space-sm);border-top:1px solid var(--color-rule)}
+.meta div{display:flex;gap:var(--space-xs);align-items:baseline;min-width:0}
+.meta dt{margin:0}
+.meta dd{margin:0;color:var(--color-ink);overflow-wrap:anywhere}
+
+/* status chips */
+.chip{display:inline-flex;align-items:center;gap:var(--space-2xs);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:500;letter-spacing:0.02em;padding-block:var(--space-3xs);padding-inline:var(--space-xs);border-radius:4px;white-space:nowrap;line-height:1.4}
+.c-crit{background:var(--color-crit-soft);color:var(--color-crit)}
+.c-high{background:var(--color-high-soft);color:var(--color-high)}
+.c-ok{background:var(--color-ok-soft);color:var(--color-ok)}
+.c-neutral{background:var(--color-paper-3);color:var(--color-ink-2)}
+.c-ai{background:var(--color-accent-soft);color:var(--color-accent)}
+.src{display:inline-flex;align-items:center;gap:var(--space-2xs);font-size:var(--text-xs);color:var(--color-ink-2);white-space:nowrap}
+.src i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.dot-both{background:var(--color-both)} .dot-gem{background:var(--color-gemini)} .dot-son{background:var(--color-sonar)}
+
+/* buttons */
+.btn{font:inherit;font-weight:500;font-size:var(--text-sm);line-height:1;display:inline-flex;align-items:center;gap:var(--space-xs);padding-block:var(--space-sm);padding-inline:var(--space-md);border-radius:var(--radius-ctl);border:1px solid var(--color-rule-2);background:var(--color-paper);color:var(--color-ink);cursor:pointer;white-space:nowrap;text-decoration:none;transition:background-color var(--dur-micro) var(--ease-out),border-color var(--dur-micro) var(--ease-out),transform var(--dur-micro) var(--ease-out)}
+@media (hover:hover){.btn:hover{border-color:var(--color-accent)}}
+.btn:active{transform:translateY(1px)}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;transform:none}
+.btn-sm{padding-block:var(--space-xs);padding-inline:var(--space-sm);font-size:var(--text-xs)}
+.btn[aria-pressed="true"]{background:var(--color-accent-soft);border-color:var(--color-accent);color:var(--color-accent)}
+
+/* panel jalankan analisis: satu-satunya pita graphite */
+.runner{background:var(--color-graphite);color:var(--color-on-graphite);border-radius:var(--radius-card);padding:var(--space-lg);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:var(--space-xl)}
+@media (max-width:62rem){.runner{grid-template-columns:minmax(0,1fr);gap:var(--space-lg)}}
+.runner h2{color:var(--color-on-graphite)}
+.runner .label{color:var(--color-on-graphite-muted)}
+.runner form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-md)}
+@media (max-width:30rem){.runner form{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:var(--space-2xs);min-width:0}
+.field.wide{grid-column:1/-1}
+.field label,.field legend{font-family:var(--font-mono);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--color-on-graphite-muted);padding:0}
+select,.seg{font:inherit;font-size:var(--text-sm)}
+select{appearance:none;background:var(--color-graphite-2);color:var(--color-on-graphite);border:1px solid var(--color-graphite-rule);border-radius:var(--radius-ctl);padding-block:var(--space-xs);padding-inline:var(--space-sm);width:100%}
+@media (hover:hover){select:hover{border-color:var(--color-on-graphite-muted)}}
+select:disabled{opacity:.5;cursor:not-allowed}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.seg{display:flex;flex-wrap:wrap;gap:var(--space-2xs)}
+.seg label{display:inline-flex;align-items:center;gap:var(--space-xs);padding-block:var(--space-xs);padding-inline:var(--space-sm);border:1px solid var(--color-graphite-rule);border-radius:var(--radius-ctl);cursor:pointer;color:var(--color-on-graphite);font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--text-sm)}
+.seg input{accent-color:var(--color-on-graphite-accent);margin:0}
+.seg label:has(input:checked){border-color:var(--color-on-graphite-accent)}
+.seg label:has(input:disabled){opacity:.5;cursor:not-allowed}
+.seg label:has(input:focus-visible){outline:2px solid var(--color-focus);outline-offset:2px}
+.hint{font-size:var(--text-xs);color:var(--color-on-graphite-muted)}
+.go{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}
+.btn-primary{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-accent-ink)}
+.runner .btn-primary{background:var(--color-on-graphite-accent);border-color:var(--color-on-graphite-accent);color:var(--color-graphite)}
+@media (hover:hover){.runner .btn-primary:hover{border-color:var(--color-on-graphite)}}
+.btn-primary[data-state="loading"]{opacity:.8;cursor:progress}
+.spin{width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:none}
+.btn-primary[data-state="loading"] .spin{display:inline-block}
+@media (prefers-reduced-motion:no-preference){.btn-primary[data-state="loading"] .spin{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}}
+
+/* langkah pipeline */
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--color-graphite-rule)}
+.step{display:grid;grid-template-columns:1.25rem minmax(0,1fr) auto;gap:var(--space-sm);align-items:center;padding-block:var(--space-sm);border-bottom:1px solid var(--color-graphite-rule)}
+.step .m{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-graphite-rule)}
+.step[data-s="done"] .m{background:var(--color-ok);border-color:var(--color-ok)}
+.step[data-s="run"] .m{border-color:var(--color-on-graphite-accent);background:var(--color-graphite)}
+.step[data-s="skip"]{opacity:.55}
+.step b{font-weight:500;color:var(--color-on-graphite)}
+.step span.d{display:block;font-size:var(--text-xs);color:var(--color-on-graphite-muted)}
+.step .r{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-on-graphite-muted);white-space:nowrap}
+
+/* ringkasan */
+.summary{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));border:1px solid var(--color-rule);border-radius:var(--radius-card);background:var(--color-paper)}
+@media (max-width:56rem){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sum{padding:var(--space-md);display:flex;flex-direction:column;gap:var(--space-2xs);border-right:1px solid var(--color-rule);min-width:0}
+.sum:last-child{border-right:0}
+@media (max-width:56rem){.sum:nth-child(2n){border-right:0}.sum:nth-child(-n+2){border-bottom:1px solid var(--color-rule)}}
+.sum .n{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:600;color:var(--color-ink);line-height:1;font-variant-numeric:tabular-nums}
+.sum.lead .n{color:var(--color-crit)}
+.sum p{font-size:var(--text-xs);color:var(--color-muted)}
+.bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--color-paper-3);margin-top:var(--space-2xs)}
+.bar span{display:block;height:100%}
+
+/* isi */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 20rem;gap:var(--space-lg);align-items:start}
+@media (max-width:68rem){.cols{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--color-rule);border-radius:var(--radius-card);background:var(--color-paper);padding:var(--space-md);display:flex;flex-direction:column;gap:var(--space-sm);min-width:0}
+.panel-head{display:flex;flex-direction:column;gap:var(--space-2xs)}
+.panel-head p{font-size:var(--text-xs);color:var(--color-muted)}
+.filters{display:flex;flex-wrap:wrap;gap:var(--space-2xs)}
+
+/* daftar temuan */
+.flist{list-style:none;margin:0;padding:0;border-top:1px solid var(--color-rule)}
+.fi{border-bottom:1px solid var(--color-rule)}
+.fi summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-2xs) var(--space-sm);align-items:center;padding-block:var(--space-sm);padding-inline:var(--space-2xs)}
+.fi summary::-webkit-details-marker{display:none}
+@media (hover:hover){.fi summary:hover{background:var(--color-paper-2)}}
+.fi .ttl{font-weight:500;color:var(--color-ink);overflow-wrap:anywhere}
+.fi .loc{grid-column:2/-1;color:var(--color-muted);overflow-wrap:anywhere}
+.fi .caret{font-family:var(--font-mono);color:var(--color-muted);transition:transform var(--dur-short) var(--ease-out)}
+.fi[open] .caret{transform:rotate(90deg)}
+.fbody{padding-block:0 var(--space-md);padding-inline:var(--space-2xs);display:flex;flex-direction:column;gap:var(--space-sm)}
+.fbody p{max-width:68ch}
+.fbody .sub{display:flex;flex-direction:column;gap:var(--space-3xs)}
+.code{margin:0;border-top:1px solid var(--color-rule);border-bottom:1px solid var(--color-rule);background:var(--color-paper-2);padding-block:var(--space-sm);padding-inline:var(--space-sm);overflow-x:auto;font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.7;color:var(--color-ink)}
+.code .ln{color:var(--color-muted);user-select:none;display:inline-block;width:2.5ch;margin-right:var(--space-sm)}
+.code .hit{background:var(--color-crit-soft);display:block}
+.ai-note{display:flex;flex-wrap:wrap;gap:var(--space-xs);align-items:center;padding-top:var(--space-xs);border-top:1px dashed var(--color-rule)}
+.ai-note .done{font-size:var(--text-xs);color:var(--color-ok)}
+.empty{padding:var(--space-lg);text-align:center;color:var(--color-muted)}
+
+/* samping */
+.side{display:flex;flex-direction:column;gap:var(--space-lg);min-width:0}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;justify-content:space-between;gap:var(--space-sm);align-items:center;padding-block:var(--space-xs);border-bottom:1px solid var(--color-rule)}
+.row:last-child{border-bottom:0}
+.hist{display:flex;flex-direction:column}
+.hrow{display:grid;grid-template-columns:3rem minmax(0,1fr) 2rem;gap:var(--space-sm);align-items:center;padding-block:var(--space-2xs)}
+.hrow .stack{display:flex;height:8px;border-radius:2px;overflow:hidden;background:var(--color-paper-3)}
+.hrow .stack span{display:block;height:100%}
+.hrow .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--color-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:var(--space-sm)}
+.metric{display:grid;grid-template-columns:5.5rem minmax(0,1fr);gap:var(--space-xs) var(--space-sm);align-items:center}
+.metric .nm{font-weight:500;color:var(--color-ink);font-size:var(--text-xs)}
+.mb{display:grid;grid-template-columns:1rem minmax(0,1fr) 2.75rem;gap:var(--space-xs);align-items:center}
+.track{height:6px;border-radius:3px;background:var(--color-paper-3);overflow:hidden}
+.track span{display:block;height:100%}
+.mb .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--color-ink)}
+.missed{font-size:var(--text-xs);padding:var(--space-sm);border-radius:var(--radius-ctl);background:var(--color-crit-soft);color:var(--color-ink)}
+
+.foot{border-top:1px solid var(--color-rule);padding-top:var(--space-md);display:flex;flex-wrap:wrap;gap:var(--space-xs) var(--space-lg);color:var(--color-muted);font-size:var(--text-xs)}
+</style>
+
+<div class="shell">
+  <nav class="rail" aria-label="Project">
+    <div class="brand">
+      <span class="label">Security Dashboard</span>
+      <b>SSDLC + Gemini</b>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-xs)">
+      <span class="label">Project</span>
+      <ul class="projects">
+        <li><a class="proj" href="#run" aria-current="page"><b>TA-ssdlc-devops-akademik</b><span class="mono">2 branch · workflow aktif</span></a></li>
+        <li><a class="proj is-off" href="#run"><b>contoh-aplikasi-lain</b><span class="mono">workflow belum dipasang</span></a></li>
+      </ul>
+    </div>
+    <div class="token">
+      <span class="label">Akses GitHub</span>
+      <span class="chip c-ok">Token tersimpan di browser ini</span>
+      <span class="mono">Izin: Actions RW · Contents R</span>
+      <button class="btn btn-sm" type="button" aria-disabled="true" title="Tidak aktif di mockup">Ganti token</button>
+    </div>
+  </nav>
+
+  <main class="main" id="run">
+    <p class="notice">Mockup. Metrik riset diambil dari eksperimen 10 Okt 2026. Nama file, nomor baris, potongan kode, dan riwayat run hanya contoh. Tombol Jalankan analisis menjalankan simulasi, tidak memanggil GitHub.</p>
+
+    <header class="runhead">
+      <div class="t">
+        <span class="label">MIlhamRidhoP / TA-ssdlc-devops-akademik</span>
+        <h1>Run terakhir di eksperimen/seeded</h1>
+      </div>
+      <span class="chip c-crit">7 temuan menunggu tindakan</span>
+    </header>
+    <dl class="meta">
+      <div><dt class="label">Commit</dt><dd class="mono">5cbf05c</dd></div>
+      <div><dt class="label">Model</dt><dd class="mono">gemini-3.8-flash</dd></div>
+      <div><dt class="label">Prompt</dt><dd class="mono">de8f35e0…</dd></div>
+      <div><dt class="label">SAST</dt><dd>SonarCloud, project _seeded</dd></div>
+      <div><dt class="label">Durasi</dt><dd>—</dd></div>
+    </dl>
+
+    <!-- PANEL JALANKAN -->
+    <section class="runner" aria-labelledby="runner-h">
+      <div style="display:flex;flex-direction:column;gap:var(--space-md);min-width:0">
+        <div class="panel-head">
+          <span class="label">Jalankan analisis</span>
+          <h2 id="runner-h">Pilih target, lalu jalankan pipeline</h2>
+        </div>
+        <form id="runform">
+          <div class="field">
+            <label for="f-branch">Branch</label>
+            <select id="f-branch">
+              <option>eksperimen/seeded</option>
+              <option>main</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-model">Model LLM</label>
+            <select id="f-model">
+              <option>gemini-3.8-flash</option>
+              <option disabled>gemini-3.1-pro (manual)</option>
+              <option disabled>gpt-5.3-codex (belum)</option>
+              <option disabled>grok-4.7 (belum)</option>
+            </select>
+          </div>
+          <fieldset class="field wide">
+            <legend>Mode</legend>
+            <div class="seg">
+              <label><input type="radio" name="mode" id="m-sast" value="sast"> SAST saja</label>
+              <label><input type="radio" name="mode" id="m-llm" value="llm" checked> SAST + LLM</label>
+              <label><input type="radio" name="mode" id="m-dast" value="dast" disabled> + DAST (di luar batasan)</label>
+            </div>
+          </fieldset>
+          <div class="go">
+            <button class="btn btn-primary" id="go" type="submit"><span class="spin" aria-hidden="true"></span><span id="go-l">Jalankan analisis</span></button>
+            <span class="hint" id="go-hint">Memicu workflow devsecops.yml. API key Gemini dan Sonar tetap di GitHub Secrets.</span>
+          </div>
+        </form>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-sm);min-width:0">
+        <span class="label" id="steps-h">Status pipeline</span>
+        <ol class="steps" aria-labelledby="steps-h" aria-live="polite">
+          <li class="step" data-s="done"><span class="m"></span><span><b>Build dan uji API</b><span class="d">npm test di container</span></span><span class="r">selesai</span></li>
+          <li class="step" data-s="done"><span class="m"></span><span><b>SonarCloud</b><span class="d">26 issue, 5 terkait keamanan</span></span><span class="r">selesai</span></li>
+          <li class="step" data-s="done"><span class="m"></span><span><b>Analisis Gemini</b><span class="d">kode src/ + temuan Sonar</span></span><span class="r">selesai</span></li>
+          <li class="step" data-s="done"><span class="m"></span><span><b>Publikasi hasil</b><span class="d">SARIF, ringkasan, riwayat</span></span><span class="r">selesai</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- RINGKASAN -->
+    <section class="summary" aria-label="Ringkasan run">
+      <div class="sum lead">
+        <span class="label">Perlu tindakan</span>
+        <span class="n">7</span>
+        <p>3 kritis (A03 Injection), 4 tinggi (A01 Broken Access Control)</p>
+      </div>
+      <div class="sum">
+        <span class="label">Total temuan</span>
+        <span class="n">9</span>
+        <div class="bar" role="img" aria-label="1 dari keduanya, 6 Gemini saja, 2 Sonar ditolak"><span style="width:11%;background:var(--color-both)"></span><span style="width:67%;background:var(--color-gemini)"></span><span style="width:22%;background:var(--color-sonar)"></span></div>
+      </div>
+      <div class="sum">
+        <span class="label">Ditolak AI</span>
+        <span class="n">2</span>
+        <p>temuan Sonar dinilai bukan exploitable</p>
+      </div>
+      <div class="sum">
+        <span class="label">Diverifikasi dev</span>
+        <span class="n" id="verified">0</span>
+        <p>dari 9 temuan</p>
+      </div>
+    </section>
+
+    <div class="cols">
+      <!-- TEMUAN -->
+      <section class="panel" aria-labelledby="f-h">
+        <div class="panel-head">
+          <h2 id="f-h">Temuan keamanan</h2>
+          <p>Label AI berarti rekomendasi Gemini yang belum diverifikasi. Sistem tidak mengubah kode.</p>
+        </div>
+        <div class="filters" role="group" aria-label="Saring menurut sumber">
+          <button class="btn btn-sm" type="button" data-f="all" aria-pressed="true">Semua 9</button>
+          <button class="btn btn-sm" type="button" data-f="both" aria-pressed="false">Sonar + Gemini 1</button>
+          <button class="btn btn-sm" type="button" data-f="gem" aria-pressed="false">Gemini saja 6</button>
+          <button class="btn btn-sm" type="button" data-f="rej" aria-pressed="false">Ditolak 2</button>
+        </div>
+
+        <ul class="flist" id="flist">
+          <li class="fi-wrap" data-src="both"><details class="fi" open>
+            <summary><span class="chip c-crit">Kritis</span><span class="ttl">SQL Injection pada pencarian mahasiswa</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/controllers/mahasiswa.controller.js:48 · CWE-89 · <span class="src"><i class="dot-both"></i>Sonar + Gemini</span></span></summary>
+            <div class="fbody">
+              <pre class="code"><span class="ln">47</span>const { nama } = req.query;
+<span class="hit"><span class="ln">48</span>const sql = `SELECT * FROM mahasiswa WHERE nama LIKE '%${nama}%'`;</span><span class="ln">49</span>const rows = await db.query(sql);</pre>
+              <div class="sub"><span class="label">Kenapa rentan</span><p>Nilai <span class="mono">nama</span> dari query string disisipkan langsung ke string SQL, sehingga penyerang bisa menambah klausa sendiri.</p></div>
+              <div class="sub"><span class="label">Rekomendasi</span><p>Pakai parameterized query, misalnya <span class="mono">db.query("… LIKE ?", [`%${nama}%`])</span>, dan batasi panjang input.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="gem"><details class="fi">
+            <summary><span class="chip c-crit">Kritis</span><span class="ttl">SQL Injection pada parameter sorting admin</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/controllers/admin.controller.js:112 · CWE-89 · <span class="src"><i class="dot-gem"></i>Gemini</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Kenapa rentan</span><p>Nama kolom untuk ORDER BY diambil dari input tanpa whitelist. Parameterized query tidak melindungi nama kolom.</p></div>
+              <div class="sub"><span class="label">Rekomendasi</span><p>Cocokkan input dengan daftar kolom yang diizinkan sebelum disusun ke query.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="gem"><details class="fi">
+            <summary><span class="chip c-crit">Kritis</span><span class="ttl">SQL Injection pada filter cetak KHS</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/services/khs.service.js:37 · CWE-89 · <span class="src"><i class="dot-gem"></i>Gemini</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Rekomendasi</span><p>Kirim nilai semester sebagai parameter query dan pastikan bertipe angka.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="gem"><details class="fi">
+            <summary><span class="chip c-high">Tinggi</span><span class="ttl">IDOR pada data rekening di profil</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/routes/profil.routes.js:21 · CWE-639 · <span class="src"><i class="dot-gem"></i>Gemini</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Kenapa rentan</span><p>Endpoint menerima <span class="mono">:id</span> dari URL tanpa mencocokkan dengan pengguna yang login, jadi mahasiswa bisa membaca rekening mahasiswa lain.</p></div>
+              <div class="sub"><span class="label">Rekomendasi</span><p>Ambil id dari sesi, atau tolak permintaan bila <span class="mono">req.params.id</span> berbeda dengan <span class="mono">req.user.id</span>.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="gem"><details class="fi">
+            <summary><span class="chip c-high">Tinggi</span><span class="ttl">Dokumen mahasiswa bisa diunduh tanpa cek pemilik</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/controllers/dokumen.controller.js:64 · CWE-639 · <span class="src"><i class="dot-gem"></i>Gemini</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Rekomendasi</span><p>Periksa pemilik dokumen di database sebelum file dikirim.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="gem"><details class="fi">
+            <summary><span class="chip c-high">Tinggi</span><span class="ttl">Persetujuan cuti tanpa pengecekan peran</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/routes/cuti.routes.js:30 · CWE-862 · <span class="src"><i class="dot-gem"></i>Gemini</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Rekomendasi</span><p>Tambahkan middleware otorisasi yang hanya mengizinkan peran admin.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="gem"><details class="fi">
+            <summary><span class="chip c-high">Tinggi</span><span class="ttl">Mahasiswa bisa mengubah peran sendiri</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/controllers/profil.controller.js:88 · CWE-269 · <span class="src"><i class="dot-gem"></i>Gemini</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Rekomendasi</span><p>Batasi field yang boleh diperbarui dengan whitelist, jangan teruskan seluruh <span class="mono">req.body</span> ke query update.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Rekomendasi AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Konfirmasi rentan</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tandai false positive</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="rej"><details class="fi">
+            <summary><span class="chip c-ok">Ditolak</span><span class="ttl">Sonar: query dinamis pada laporan nilai</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/services/nilai.service.js:52 · CWE-89 · <span class="src"><i class="dot-son"></i>Sonar</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Alasan Gemini menolak</span><p>Nilai yang disisipkan berasal dari konstanta internal, bukan input pengguna, sehingga tidak bisa dieksploitasi.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Penilaian AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Setuju ditolak</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tetap rentan</button></div>
+            </div>
+          </details></li>
+
+          <li class="fi-wrap" data-src="rej"><details class="fi">
+            <summary><span class="chip c-ok">Ditolak</span><span class="ttl">Sonar: potensi XSS pada pesan error</span><span class="caret" aria-hidden="true">›</span>
+              <span class="loc mono">src/middleware/error.js:19 · CWE-79 · <span class="src"><i class="dot-son"></i>Sonar</span></span></summary>
+            <div class="fbody">
+              <div class="sub"><span class="label">Alasan Gemini menolak</span><p>Respons dikirim sebagai JSON dengan Content-Type application/json, jadi tidak dirender sebagai HTML.</p></div>
+              <div class="ai-note"><span class="chip c-ai">Penilaian AI</span><button class="btn btn-sm vbtn" type="button" data-v="ok" aria-pressed="false">Setuju ditolak</button><button class="btn btn-sm vbtn" type="button" data-v="fp" aria-pressed="false">Tetap rentan</button></div>
+            </div>
+          </details></li>
+        </ul>
+        <p class="empty" id="empty" hidden>Tidak ada temuan untuk filter ini.</p>
+      </section>
+
+      <!-- SAMPING -->
+      <aside class="side">
+        <section class="panel" aria-labelledby="v-h">
+          <div class="panel-head"><h2 id="v-h">Verifikasi temuan Sonar</h2><p>5 issue keamanan SonarCloud diperiksa ulang Gemini.</p></div>
+          <div class="rows">
+            <div class="row"><span>Dikonfirmasi rentan</span><span class="chip c-crit">1</span></div>
+            <div class="row"><span>Ditolak, bukan exploitable</span><span class="chip c-ok">2</span></div>
+            <div class="row"><span>Hotspot, perlu review manual</span><span class="chip c-neutral">2</span></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-h">
+          <div class="panel-head"><h2 id="h-h">Riwayat run</h2><p>Contoh 5 run terakhir, jumlah temuan per sumber.</p></div>
+          <div class="hist" role="img" aria-label="Run 44: 2 temuan, 45: 4, 46 sampai 48: 9">
+            <div class="hrow"><span class="mono">#44</span><span class="stack"><span style="width:22%;background:var(--color-sonar)"></span></span><span class="v mono">2</span></div>
+            <div class="hrow"><span class="mono">#45</span><span class="stack"><span style="width:22%;background:var(--color-sonar)"></span><span style="width:22%;background:var(--color-gemini)"></span></span><span class="v mono">4</span></div>
+            <div class="hrow"><span class="mono">#46</span><span class="stack"><span style="width:11%;background:var(--color-both)"></span><span style="width:67%;background:var(--color-gemini)"></span><span style="width:22%;background:var(--color-sonar)"></span></span><span class="v mono">9</span></div>
+            <div class="hrow"><span class="mono">#47</span><span class="stack"><span style="width:11%;background:var(--color-both)"></span><span style="width:67%;background:var(--color-gemini)"></span><span style="width:22%;background:var(--color-sonar)"></span></span><span class="v mono">9</span></div>
+            <div class="hrow"><span class="mono">#48</span><span class="stack"><span style="width:11%;background:var(--color-both)"></span><span style="width:67%;background:var(--color-gemini)"></span><span style="width:22%;background:var(--color-sonar)"></span></span><span class="v mono">9</span></div>
+          </div>
+          <div class="legend"><span class="src"><i class="dot-both"></i>Keduanya</span><span class="src"><i class="dot-gem"></i>Gemini</span><span class="src"><i class="dot-son"></i>Sonar</span></div>
+        </section>
+
+        <section class="panel" aria-labelledby="r-h">
+          <div class="panel-head"><span class="label">Hanya di branch seeded</span><h2 id="r-h">Metrik terhadap ground truth</h2><p>9 kerentanan terbukti PoC, rata-rata 3 run.</p></div>
+          <div class="metric">
+            <span class="nm">SonarCloud</span>
+            <div><div class="mb"><span class="mono">P</span><span class="track"><span style="width:33.3%;background:var(--color-sonar)"></span></span><span class="v mono">0,333</span></div>
+                 <div class="mb"><span class="mono">R</span><span class="track"><span style="width:11.1%;background:var(--color-sonar)"></span></span><span class="v mono">0,111</span></div></div>
+            <span class="nm">Gemini Flash</span>
+            <div><div class="mb"><span class="mono">P</span><span class="track"><span style="width:95.2%;background:var(--color-gemini)"></span></span><span class="v mono">0,952</span></div>
+                 <div class="mb"><span class="mono">R</span><span class="track"><span style="width:70.4%;background:var(--color-gemini)"></span></span><span class="v mono">0,704</span></div></div>
+            <span class="nm">Gemini Pro</span>
+            <div><div class="mb"><span class="mono">P</span><span class="track"><span style="width:66.7%;background:var(--color-muted)"></span></span><span class="v mono">0,667</span></div>
+                 <div class="mb"><span class="mono">R</span><span class="track"><span style="width:25.9%;background:var(--color-muted)"></span></span><span class="v mono">0,259</span></div></div>
+          </div>
+          <p class="mono">P precision · R recall · Pro dijalankan manual</p>
+          <p class="missed">Tidak terdeteksi siapa pun: S8 (IDOR hapus email) dan S12 (paparan data massal di daftar cuti).</p>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="foot">
+      <span>Framework SSDLC DevOps + Gemini · Tugas Akhir Telkom University</span>
+      <span>Output hanya rekomendasi, kode tidak diubah</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  // filter sumber
+  var fbtns=document.querySelectorAll('[data-f]'), items=document.querySelectorAll('.fi-wrap'), empty=document.getElementById('empty');
+  fbtns.forEach(function(b){b.addEventListener('click',function(){
+    var f=b.getAttribute('data-f'),n=0;
+    fbtns.forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+    items.forEach(function(it){var ok=f==='all'||it.getAttribute('data-src')===f;it.hidden=!ok;if(ok)n++});
+    empty.hidden=n>0;
+  })});
+
+  // verifikasi developer
+  var counter=document.getElementById('verified');
+  function count(){var n=0;items.forEach(function(it){if(it.querySelector('.vbtn[aria-pressed="true"]'))n++});counter.textContent=n}
+  document.querySelectorAll('.vbtn').forEach(function(b){b.addEventListener('click',function(){
+    var on=b.getAttribute('aria-pressed')==='true';
+    b.parentNode.querySelectorAll('.vbtn').forEach(function(x){x.setAttribute('aria-pressed','false')});
+    b.setAttribute('aria-pressed',on?'false':'true');count();
+  })});
+
+  // simulasi menjalankan pipeline
+  var form=document.getElementById('runform'),go=document.getElementById('go'),lbl=document.getElementById('go-l'),hint=document.getElementById('go-hint');
+  var steps=document.querySelectorAll('.step');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(go.getAttribute('data-state')==='loading')return;
+    var llm=document.getElementById('m-llm').checked;
+    go.setAttribute('data-state','loading');go.setAttribute('aria-disabled','true');lbl.textContent='Menjalankan…';
+    hint.textContent='Simulasi: workflow dipicu di branch '+document.getElementById('f-branch').value+'.';
+    steps.forEach(function(s){s.setAttribute('data-s','wait');s.querySelector('.r').textContent='menunggu'});
+    var i=0;
+    function next(){
+      if(i>0){steps[i-1].setAttribute('data-s','done');steps[i-1].querySelector('.r').textContent='selesai'}
+      if(i===2&&!llm){steps[2].setAttribute('data-s','skip');steps[2].querySelector('.r').textContent='dilewati';i++}
+      if(i>=steps.length){go.removeAttribute('data-state');go.removeAttribute('aria-disabled');lbl.textContent='Jalankan analisis';hint.textContent='Selesai. Hasil di bawah diperbarui dari run ini (simulasi).';return}
+      steps[i].setAttribute('data-s','run');steps[i].querySelector('.r').textContent='berjalan';i++;
+      setTimeout(next,900);
+    }
+    next();
+  });
+})();
+</script>
+
+</body></html>
