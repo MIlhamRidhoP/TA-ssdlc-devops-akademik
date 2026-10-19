@@ -7,6 +7,12 @@
 //
 //   node scripts/llm-scan.js ... --sonar-beku=<file>     alert Sonar dari file beku (wajib untuk data eksperimen)
 //   node scripts/llm-scan.js ... --kering                rakit prompt dan tampilkan hash tanpa memanggil API LLM
+//   node scripts/llm-scan.js ... --runs=3 --jalankan=1   buat folder dengan target 3 run, jalankan run-1 saja
+//   node scripts/llm-scan.js ... --lanjut=<folder>       tambah run berikutnya ke folder itu (bawaan 1 run);
+//                                                        ditolak kalau sidik run berbeda atau target sudah tercapai
+//                                                        (--lewati-target untuk sengaja melewati target)
+//
+// Setiap run mencatat commit_kode (HEAD repo alat); run ditolak kalau file dalam lingkup repo alat belum bersih.
 //   node scripts/llm-scan.js --bekukan-sonar --objek=<worktree> [--keluar=<file>]
 //                                                        ambil laporan Sonar dari API sekali dan tulis file beku
 //
@@ -23,6 +29,9 @@ const { panggilDenganUlang, ADAPTER } = require('./llm/panggil');
 const { VENDOR, BATAS_OUTPUT, TINGKAT_THINKING, versiSdk, hitungBiaya } = require('./llm/vendor');
 const { pengaturanKoneksi } = require('./llm/http');
 const { buatIsiBeku, tulisBeku, bacaBeku } = require('./llm/sonar-beku');
+const {
+  infoKodeAlat, periksaKodeAlat, hashFilePrompt, bentukSidik, rencanaNomorRun, periksaLanjut,
+} = require('./llm/lanjut');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUTPUT_DIR = path.join(ROOT, 'llm-output', 'v2');
@@ -127,6 +136,7 @@ const metadata = ({ konteks, tugas, run, idAlert, prompt, hasil, parseOk }) => (
   revisi_analisis_sonar: konteks.revisiSonar,
   sumber_sonar: konteks.sumberSonar,
   sonar_beku: konteks.infoBeku,
+  commit_kode: { head: konteks.kodeAlat.head, bersih: konteks.kodeAlat.bersih },
   status: hasil.status,
   detail_status: hasil.detail_status ?? '',
   parse_ok: parseOk,
@@ -162,6 +172,7 @@ const jalankanSatuRun = async (konteks, n) => {
     commit_objek_uji: konteks.objek.commit, branch_objek_uji: konteks.objek.branch, tree_src_objek_uji: konteks.objek.tree_src,
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     sumber_sonar: konteks.sumberSonar, sonar_beku: konteks.infoBeku,
+    commit_kode: { head: konteks.kodeAlat.head, bersih: konteks.kodeAlat.bersih },
     parse_ok: validDeteksi.parse_ok,
     temuan: validDeteksi.temuan,
     deteksi: metadata({ konteks, tugas: 'deteksi', run: n, idAlert: null, prompt: promptDeteksi, hasil: hasilDeteksi, parseOk: validDeteksi.parse_ok }),
@@ -209,6 +220,9 @@ const ringkasRun = (c) => {
   const hitung = (pred) => semua.filter(pred).length;
   return {
     run: c.run, file: `run-${c.run}.json`, file_raw: `run-${c.run}.raw.json`,
+    // Waktu mulai dan selesai run (panggilan pertama dan terakhir), bukti urutan run berselang-seling antar vendor.
+    waktu_mulai: c.deteksi.waktu_mulai, waktu_selesai: (c.verifikasi.at(-1)?.metadata ?? c.deteksi).waktu_selesai,
+    commit_kode: c.commit_kode.head,
     deteksi: { status: c.deteksi.status, parse_ok: c.deteksi.parse_ok, jumlah_temuan: c.temuan.length },
     verifikasi: c.verifikasi.map((v) => ({ id_alert: v.id_alert, status: v.metadata.status, parse_ok: v.metadata.parse_ok, putusan: v.putusan })),
     panggilan: {
@@ -308,35 +322,90 @@ const main = async () => {
     for (const h of runKering({ template, kondisi, kode, alert, sonarTeks })) {
       console.log(`  ${(h.id_alert ?? h.tugas).padEnd(9)} prompt_user_kanonik ${h.prompt_user_kanonik}`);
     }
+    const kodeKering = infoKodeAlat(ROOT);
+    console.log(`  kode alat ${kodeKering.head} (${kodeKering.branch}), file dalam lingkup ${kodeKering.bersih ? 'bersih' : `BELUM BERSIH: ${kodeKering.berubah.join('; ')}`}`);
     console.log('Tidak ada panggilan API LLM dan tidak ada file yang ditulis.');
     return;
   }
 
   const model = VENDOR[vendor].model;
-  const folder = path.join(OUTPUT_DIR, `${capWaktu()}-${vendor}-${kondisi}`);
-  fs.mkdirSync(folder, { recursive: true });
-  if (sonar) {
-    tulisJson(path.join(folder, 'sonar-issues.json'), sonar.laporan.issues);
-    tulisJson(path.join(folder, 'sonar-hotspots.json'), sonar.laporan.hotspots);
-    tulisJson(path.join(folder, 'sonar-ringkasan.json'), sonar.ringkasan);
-    tulisJson(path.join(folder, 'sonar-alert.json'), alert.map((a) => ({ ...a, hash: render.sha256(a.teks) })));
+  const kodeAlat = periksaKodeAlat(infoKodeAlat(ROOT));
+  const pengaturan = {
+    sampling: 'bawaan', tingkat_thinking: TINGKAT_THINKING, batas_output: BATAS_OUTPUT, tools: 'none', fallback: 'none',
+    parameter_vendor: ADAPTER[vendor].parameter, koneksi: pengaturanKoneksi(),
+  };
+  const sdk = versiSdk();
+  const hashLaporanSonar = sonarTeks === null ? null : render.sha256(sonarTeks);
+  const sidik = bentukSidik({
+    versiPrompt: render.VERSI_PROMPT, vendor, model, kondisi, objek, sumberSonar, infoBeku,
+    hashKodeSumber: render.sha256(kode.teks), hashLaporanSonar, hashPrompt: hashFilePrompt(render.PROMPT_DIR),
+    hashKering: runKering({ template, kondisi, kode, alert, sonarTeks }), pengaturan, sdk, kodeAlat,
+  });
+
+  // Folder baru, atau folder lama untuk run berselang-seling (--lanjut). Folder lama hanya diterima kalau sidiknya
+  // sama persis, dan run yang sudah ada tidak pernah ditimpa.
+  const folderLanjut = ambilArg('lanjut');
+  let folder;
+  let summaryLama = null;
+  if (folderLanjut) {
+    folder = path.resolve(folderLanjut);
+    summaryLama = JSON.parse(fs.readFileSync(path.join(folder, 'summary.json'), 'utf8'));
+    periksaLanjut(summaryLama, sidik);
+    if (ambilArg('runs') !== null && jumlahRun !== summaryLama.total_run_diminta) {
+      throw new Error(`--runs=${jumlahRun} berbeda dengan target folder (${summaryLama.total_run_diminta})`);
+    }
+  } else {
+    folder = path.join(OUTPUT_DIR, `${capWaktu()}-${vendor}-${kondisi}`);
+    fs.mkdirSync(folder, { recursive: true });
+  }
+  const target = summaryLama ? summaryLama.total_run_diminta : jumlahRun;
+  const nomor = rencanaNomorRun({
+    folder, target, jalankan: Number(ambilArg('jalankan') ?? (summaryLama ? 1 : target)), lewatiTarget: process.argv.includes('--lewati-target'),
+  });
+
+  if (!summaryLama) {
+    if (sonar) {
+      tulisJson(path.join(folder, 'sonar-issues.json'), sonar.laporan.issues);
+      tulisJson(path.join(folder, 'sonar-hotspots.json'), sonar.laporan.hotspots);
+      tulisJson(path.join(folder, 'sonar-ringkasan.json'), sonar.ringkasan);
+      tulisJson(path.join(folder, 'sonar-alert.json'), alert.map((a) => ({ ...a, hash: render.sha256(a.teks) })));
+    }
+    const contoh = render.rakitPrompt({ template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks });
+    fs.writeFileSync(path.join(folder, 'prompt-system.txt'), contoh.system, 'utf8');
+    fs.writeFileSync(path.join(folder, 'prompt-user-deteksi.txt'), contoh.user, 'utf8');
   }
   const konteks = {
-    vendor, model, kondisi, objek, kode, template, alert, sonarTeks, folder, sdk: versiSdk(),
+    vendor, model, kondisi, objek, kode, template, alert, sonarTeks, folder, sdk,
     analisisSonar: sonar ? sonar.laporan.analisis.tanggal : null,
     revisiSonar: sonar ? sonar.laporan.analisis.revisi : null,
-    sumberSonar, infoBeku,
+    sumberSonar, infoBeku, kodeAlat,
   };
-  const contoh = render.rakitPrompt({ template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks });
-  fs.writeFileSync(path.join(folder, 'prompt-system.txt'), contoh.system, 'utf8');
-  fs.writeFileSync(path.join(folder, 'prompt-user-deteksi.txt'), contoh.user, 'utf8');
-  console.log(`Vendor ${vendor} (${model}), kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, ${kode.file.length} file, ${alert.length} alert`);
+  console.log(`Vendor ${vendor} (${model}), kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, kode ${kodeAlat.head.slice(0, 7)}, `
+    + `${kode.file.length} file, ${alert.length} alert, run ${nomor.join(', ')} dari ${target}${summaryLama ? ' (lanjut)' : ''}`);
 
-  const ringkasan = [];
-  let galat = null;
-  for (let n = 1; n <= jumlahRun; n++) {
+  const ringkasan = [...(summaryLama?.runs ?? [])];
+  let galat = summaryLama?.galat ?? null;
+  const tulisSummary = () => tulisJson(path.join(folder, 'summary.json'), {
+    dibuat: summaryLama?.dibuat ?? new Date().toISOString(), diperbarui: new Date().toISOString(),
+    versi_prompt: render.VERSI_PROMPT, vendor, model_diminta: model, kondisi,
+    objek_uji: { commit: objek.commit, branch: objek.branch, tree_src: objek.tree_src },
+    analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
+    tree_src_analisis_sonar: sonar ? sonar.tree_src_analisis : null,
+    sumber_sonar: sumberSonar, sonar_beku: infoBeku,
+    sonar: sonar ? { project: sonar.laporan.project, branch: sonar.laporan.branch, jumlah_issue: sonar.laporan.issues.length, jumlah_hotspot: sonar.laporan.hotspots.length, jumlah_alert: alert.length } : null,
+    hash_laporan_sonar: hashLaporanSonar,
+    hash_kode_sumber: render.sha256(kode.teks), jumlah_file: kode.file.length,
+    commit_kode: kodeAlat,
+    pengaturan,
+    tarif: VENDOR[vendor].tarif, sdk, total_run_diminta: target, galat,
+    sidik_run: sidik,
+    biaya_total_usd: Number(ringkasan.reduce((s, r) => s + r.biaya_usd, 0).toFixed(6)),
+    runs: ringkasan,
+  });
+  for (const n of nomor) {
     try {
       ringkasan.push(ringkasRun(await jalankanSatuRun(konteks, n)));
+      tulisSummary(); // diperbarui setelah setiap run
     } catch (err) {
       if (!(err instanceof RunDibuang)) throw err;
       galat = `${err.message}. Run dibuang: perbaiki kode, lalu ulang seluruh run (README bagian 8)`;
@@ -344,23 +413,7 @@ const main = async () => {
       break;
     }
   }
-  tulisJson(path.join(folder, 'summary.json'), {
-    dibuat: new Date().toISOString(), versi_prompt: render.VERSI_PROMPT, vendor, model_diminta: model, kondisi,
-    objek_uji: { commit: objek.commit, branch: objek.branch, tree_src: objek.tree_src },
-    analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
-    tree_src_analisis_sonar: sonar ? sonar.tree_src_analisis : null,
-    sumber_sonar: sumberSonar, sonar_beku: infoBeku,
-    sonar: sonar ? { project: sonar.laporan.project, branch: sonar.laporan.branch, jumlah_issue: sonar.laporan.issues.length, jumlah_hotspot: sonar.laporan.hotspots.length, jumlah_alert: alert.length } : null,
-    hash_laporan_sonar: sonarTeks === null ? null : render.sha256(sonarTeks),
-    hash_kode_sumber: render.sha256(kode.teks), jumlah_file: kode.file.length,
-    pengaturan: {
-      sampling: 'bawaan', tingkat_thinking: TINGKAT_THINKING, batas_output: BATAS_OUTPUT, tools: 'none', fallback: 'none',
-      parameter_vendor: ADAPTER[vendor].parameter, koneksi: pengaturanKoneksi(),
-    },
-    tarif: VENDOR[vendor].tarif, sdk: konteks.sdk, total_run_diminta: jumlahRun, galat,
-    biaya_total_usd: Number(ringkasan.reduce((s, r) => s + r.biaya_usd, 0).toFixed(6)),
-    runs: ringkasan,
-  });
+  tulisSummary();
   console.log(`Selesai. Hasil di ${path.relative(ROOT, folder).split(path.sep).join('/')}/`);
   if (galat) process.exitCode = 1;
 };
@@ -372,4 +425,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, treeSrc, percobaanGagal, biayaPercobaanGagal };
+module.exports = { main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, treeSrc, percobaanGagal, biayaPercobaanGagal };
