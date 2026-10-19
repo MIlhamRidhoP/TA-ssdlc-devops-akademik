@@ -4,6 +4,8 @@
 //   node scripts/llm-score.js --objek=<worktree objek uji> --sonar-beku=<file> [--label-alert=<file>] [--out=<file>] <folder> [<folder> ...]
 // --sonar-beku wajib kalau ada folder kondisi utama. --ground-truth-revisi mengizinkan SEEDED.md yang berbeda dengan
 // commit objek uji folder; laporan lalu ditandai ground_truth_seeded.revisi = true.
+// --label-alert-paksa=<file> menimpa label alert untuk analisis sensitivitas (tanpa mengubah SEEDED.md); laporan
+// ditandai sensitivitas = true. Label alert hanya memengaruhi metrik verifikasi empat kategori, bukan Skenario A/B/C.
 //
 // Semua folder harus berasal dari satu commit objek uji yang hash tree src/-nya sama dengan worktree --objek.
 // Satu folder per vendor per kondisi. Folder kondisi utama dinilai dengan Skenario A, B, C, dan verifikasi. Folder ablasi dinilai deteksinya saja.
@@ -140,7 +142,14 @@ const main = () => {
     if (new Set(utama.map((d) => d.summary.hash_laporan_sonar)).size > 1) throw new Error('Alert Sonar berbeda antar folder utama');
     const { alert } = beku;
     const fileLabel = ambilArg('label-alert');
-    const label = score.labelAlert(alert, gt, fileLabel ? bacaJson(path.resolve(fileLabel)) : {});
+    const filePaksa = ambilArg('label-alert-paksa');
+    const paksa = filePaksa ? bacaJson(path.resolve(filePaksa)) : {};
+    const label = score.labelAlert(alert, gt, fileLabel ? bacaJson(path.resolve(fileLabel)) : {}, paksa);
+    laporan.sensitivitas = Object.values(label).some((l) => l.sumber === 'paksa');
+    if (laporan.sensitivitas) {
+      laporan.label_alert_paksa = { path: path.relative(objek.dir, path.resolve(filePaksa)).split(path.sep).join('/') };
+      console.warn(`Peringatan: analisis sensitivitas, label alert dipaksa: ${Object.entries(label).filter(([, l]) => l.sumber === 'paksa').map(([k, l]) => `${k}=${l.label} (awal ${l.label_awal})`).join(', ')}`);
+    }
     const skorA = score.skenarioA(alert, gt);
     const perModel = utama.map((d) => {
       const skorRun = d.runs.map((run) => score.skorRunUtama({ run, alert, gt, label, triase: d.triase }));

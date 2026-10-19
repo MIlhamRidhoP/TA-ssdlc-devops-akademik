@@ -203,3 +203,24 @@ test('aturan hardening spesifikasi: hardening cocok jebakan tidak dihitung FP ke
   const campur = score.nilaiHimpunan(entriLlm([tmn({ sifat: 'hardening', keyakinan: 'low' }), tmn({ sifat: 'vulnerability', baris: 5 })]), gt);
   assert.equal(campur.metrik.rincian_fp.jebakan_terdeteksi, 1);
 });
+
+test('labelAlert paksa: menimpa label otomatis untuk sensitivitas, dengan validasi lokasi dan label awal', () => {
+  // SONAR-02 di m.js:5 cocok S2 (jebakan) -> otomatis fp. Paksa jadi nyata.
+  const paksa = { 'SONAR-02': { label: 'nyata', lokasi: 'src/models/m.js:5', alasan: 'uji sensitivitas' } };
+  const l = score.labelAlert(alert, gt, {}, paksa);
+  assert.equal(l['SONAR-02'].label, 'nyata');
+  assert.equal(l['SONAR-02'].sumber, 'paksa');
+  assert.equal(l['SONAR-02'].label_awal, 'fp');
+  assert.equal(l['SONAR-02'].alasan_paksa, 'uji sensitivitas');
+  // Alert lain tetap otomatis.
+  assert.equal(l['SONAR-01'].sumber, 'otomatis');
+  assert.equal(l['SONAR-01'].label_awal, l['SONAR-01'].label);
+  // Validasi: lokasi salah dan label tidak dikenal ditolak.
+  assert.throws(() => score.labelAlert(alert, gt, {}, { 'SONAR-02': { label: 'nyata', lokasi: 'src/models/m.js:9' } }), /Lokasi label paksa/);
+  assert.throws(() => score.labelAlert(alert, gt, {}, { 'SONAR-02': { label: 'maybe', lokasi: 'src/models/m.js:5' } }), /Label paksa .* tidak dikenal/);
+  // Paksa memengaruhi verifikasi empat kategori: alert fp->nyata membuat putusan false_positive jadi misidentified.
+  const kA = score.kategoriVerifikasi([ver('SONAR-02', 'false_positive')], score.labelAlert(alert, gt));
+  const kP = score.kategoriVerifikasi([ver('SONAR-02', 'false_positive')], l);
+  assert.equal(kA.jumlah.identified_fp, 1);
+  assert.equal(kP.jumlah.misidentified_fp, 1);
+});

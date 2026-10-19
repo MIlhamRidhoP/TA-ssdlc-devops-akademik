@@ -97,8 +97,10 @@ const metrikSetelahTriase = (hasil, triase) => {
 
 // ---------- Label ground truth untuk alert ----------
 
-// manual: { "SONAR-01": { label, lokasi } } untuk alert yang tidak bisa dipetakan otomatis.
-const labelAlert = (alert, gt, manual = {}) => {
+// manual: { "SONAR-01": { label, lokasi } } untuk alert yang tidak bisa dipetakan otomatis (menolak kalau bertentangan
+// dengan label otomatis). paksa: { "SONAR-03": { label, lokasi, alasan } } untuk analisis sensitivitas: menimpa label
+// otomatis dengan sengaja, dicatat sumber 'paksa' dan alasan. SEEDED.md tidak diubah.
+const labelAlert = (alert, gt, manual = {}, paksa = {}) => {
   const { nilaiTemuan } = gs();
   const hasil = {};
   for (const a of alert) {
@@ -121,9 +123,16 @@ const labelAlert = (alert, gt, manual = {}) => {
       if (m.lokasi !== lokasi(a.file, a.baris)) throw new Error(`Lokasi label manual ${a.id} (${m.lokasi}) tidak sama dengan alert (${lokasi(a.file, a.baris)})`);
       if (otomatis && otomatis !== m.label) throw new Error(`Label manual ${a.id} (${m.label}) bertentangan dengan label otomatis (${otomatis})`);
     }
+    const f = paksa[a.id];
+    if (f) {
+      if (!LABEL_ALERT.includes(f.label)) throw new Error(`Label paksa ${a.id} tidak dikenal: ${f.label}`);
+      if (f.lokasi !== lokasi(a.file, a.baris)) throw new Error(`Lokasi label paksa ${a.id} (${f.lokasi}) tidak sama dengan alert (${lokasi(a.file, a.baris)})`);
+    }
     hasil[a.id] = {
-      label: otomatis ?? m?.label ?? null,
-      sumber: otomatis ? 'otomatis' : m ? 'manual' : null,
+      label: f?.label ?? otomatis ?? m?.label ?? null,
+      sumber: f ? 'paksa' : otomatis ? 'otomatis' : m ? 'manual' : null,
+      label_awal: otomatis ?? m?.label ?? null,
+      alasan_paksa: f?.alasan ?? null,
       id_gt: p.id,
       status_cocok: p.status,
     };
