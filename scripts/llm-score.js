@@ -14,6 +14,8 @@
 // Sub-pohon per vendor menimpa triase per folder. Kategori tp_di_luar_seeded/teoretis/informasional/duplikat tidak dihitung FP
 // setelah triase; hanya kategori "fp" dan temuan "di luar ground truth" yang belum ditriase yang tetap FP. Tidak ada kategori yang
 // menambah TP, jadi recall tetap. FP ketat (tanpa triase) tetap dilaporkan berdampingan di setiap run.
+// --triase-konservatif memakai varian konservatif: kategori "teoretis" ikut dihitung FP (tp_di_luar_seeded, informasional,
+// duplikat tetap keluar). Laporan mencatat triase_varian: "utama" (default) atau "konservatif".
 const fs = require('fs');
 const path = require('path');
 const { periksaObjek } = require('./llm-scan');
@@ -139,6 +141,8 @@ const main = () => {
     const peta = petakanTriaseGabungan(bacaJson(path.resolve(fileTriaseGabungan)), data.map((d) => d.summary.vendor));
     for (const d of data) d.triase = peta[d.summary.vendor] ?? null;
   }
+  // Varian triase: utama (default) atau konservatif (--triase-konservatif), yang ikut menghitung kategori "teoretis" sebagai FP.
+  const opsiTriase = { konservatif: process.argv.includes('--triase-konservatif') };
   const objekFolder = periksaObjekFolder(data, objek);
   const groundTruthSeeded = periksaGroundTruth(objek, objekFolder, { revisi: process.argv.includes('--ground-truth-revisi') });
   if (groundTruthSeeded.revisi) console.warn(`Peringatan: scoring memakai ground truth revisi (SEEDED.md blob ${groundTruthSeeded.blob})`);
@@ -159,6 +163,7 @@ const main = () => {
     folder: data.map((d) => ({ folder: path.relative(process.cwd(), d.folder).split(path.sep).join('/'), vendor: d.summary.vendor, kondisi: d.summary.kondisi, jumlah_run: d.runs.length })),
   };
   if (fileTriaseGabungan) laporan.triase_gabungan = { path: path.relative(process.cwd(), path.resolve(fileTriaseGabungan)).split(path.sep).join('/') };
+  laporan.triase_varian = opsiTriase.konservatif ? 'konservatif' : 'utama';
 
   const fileBeku = ambilArg('sonar-beku');
   const beku = fileBeku ? bacaBeku(path.resolve(fileBeku), objek) : null;
@@ -179,7 +184,7 @@ const main = () => {
     }
     const skorA = score.skenarioA(alert, gt);
     const perModel = utama.map((d) => {
-      const skorRun = d.runs.map((run) => score.skorRunUtama({ run, alert, gt, label, triase: d.triase }));
+      const skorRun = d.runs.map((run) => score.skorRunUtama({ run, alert, gt, label, triase: d.triase, opsiTriase }));
       score.validasiTriase(d.triase, d.runs, Object.fromEntries(skorRun.map((s) => [s.run, s.penilaian_c])));
       return {
         vendor: d.summary.vendor, model: d.summary.model_diminta, runs: d.runs, skorRun,
@@ -206,7 +211,7 @@ const main = () => {
   }
   if (ablasi.length) {
     laporan.ablasi = ablasi.map((d) => {
-      const skorRun = d.runs.map((run) => score.skorRunDeteksi({ run, gt, triase: d.triase }));
+      const skorRun = d.runs.map((run) => score.skorRunDeteksi({ run, gt, triase: d.triase, opsiTriase }));
       score.validasiTriase(d.triase, d.runs, Object.fromEntries(skorRun.map((s) => [s.run, s.penilaian])));
       return {
         vendor: d.summary.vendor, model: d.summary.model_diminta, kondisi: d.summary.kondisi,

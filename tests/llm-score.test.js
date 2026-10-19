@@ -174,6 +174,27 @@ test('triase gabungan: hanya kategori fp dan belum-ditriase yang tetap FP; tp_di
   }
 });
 
+test('triase konservatif: teoretis ikut FP; tp_di_luar_seeded/informasional/duplikat tetap keluar; varian dicatat', () => {
+  const label = score.labelAlert(alert, gt, { 'SONAR-05': { label: 'fp', lokasi: 'src/lain.js:2' } });
+  const kasus = [
+    ['teoretis', 1], ['tp_di_luar_seeded', 0], ['informasional', 0], ['duplikat', 0], ['fp', 1],
+  ];
+  for (const [kategori, fpKonservatif] of kasus) {
+    const triase = { 'run-1.json': { 2: { kategori, lokasi: 'src/lain.js:2' } } };
+    const u = score.skorRunUtama({ run, alert, gt, label, triase }); // default utama
+    const k = score.skorRunUtama({ run, alert, gt, label, triase, opsiTriase: { konservatif: true } });
+    assert.equal(u.skenario_c.setelah_triase.varian, 'utama');
+    assert.equal(k.skenario_c.setelah_triase.varian, 'konservatif');
+    assert.equal(k.skenario_c.setelah_triase.fp, fpKonservatif, `konservatif ${kategori}: FP`);
+    // Utama: hanya fp yang tetap FP; teoretis keluar.
+    assert.equal(u.skenario_c.setelah_triase.fp, kategori === 'fp' ? 1 : 0, `utama ${kategori}: FP`);
+    // TP & recall sama di kedua varian (tak ada kategori yang menambah TP).
+    assert.equal(k.skenario_c.ketat.tp, 1);
+    assert.equal(k.skenario_c.setelah_triase.recall, k.skenario_c.ketat.recall);
+    assert.equal(k.skenario_c.ketat.fp, 1); // FP ketat tetap berdampingan
+  }
+});
+
 test('petakanTriaseGabungan: sub-pohon per vendor, tolak vendor asing dan bentuk salah', () => {
   const { petakanTriaseGabungan } = require('../scripts/llm-score');
   const gabungan = { entri: { google: { 'run-1.json': { 2: { kategori: 'teoretis', lokasi: 'src/lain.js:2' } } }, openai: {} } };

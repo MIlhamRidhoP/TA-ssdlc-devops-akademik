@@ -74,7 +74,10 @@ const nilaiHimpunan = (entri, gt) => {
 
 // FP setelah triase: di luar ground truth atau perlu cek manual yang ditriase "fp" dihitung FP; di luar ground truth
 // yang belum ditriase tetap dihitung FP (konservatif); kategori lain tidak dihitung FP.
-const metrikSetelahTriase = (hasil, triase) => {
+// opsi.konservatif: temuan kategori "teoretis" ikut dihitung FP (varian konservatif). Varian utama (default) hanya menghitung
+// kategori "fp" dan temuan "di luar ground truth" yang belum ditriase. tp_di_luar_seeded, informasional, duplikat selalu keluar.
+const metrikSetelahTriase = (hasil, triase, opsi = {}) => {
+  const konservatif = opsi.konservatif === true;
   const m = hasil.metrik;
   const kandidat = hasil.penilaian.filter((p) => p.asal === 'llm' && STATUS_TRIASE.includes(p.status));
   const rincian = Object.fromEntries(KATEGORI_TRIASE.map((k) => [k, 0]));
@@ -84,7 +87,7 @@ const metrikSetelahTriase = (hasil, triase) => {
     const k = triase?.[p.rujukan]?.kategori;
     if (k) rincian[k] += 1;
     else if (p.status === 'di luar ground truth') belum += 1;
-    if (k === 'fp' || (!k && p.status === 'di luar ground truth')) fpLuar += 1;
+    if (k === 'fp' || (konservatif && k === 'teoretis') || (!k && p.status === 'di luar ground truth')) fpLuar += 1;
   }
   const fpSonarLuar = hasil.penilaian.filter((p) => p.asal === 'sonar' && p.status === 'di luar ground truth').length;
   const fp = m.rincian_fp.n1 + m.rincian_fp.jebakan_terdeteksi + fpLuar + fpSonarLuar;
@@ -92,7 +95,7 @@ const metrikSetelahTriase = (hasil, triase) => {
   const precision = tp + fp === 0 ? null : tp / (tp + fp);
   const recall = m.ketat.recall;
   const f1 = precision && recall ? (2 * precision * recall) / (precision + recall) : 0;
-  return { fp, precision, recall, f1, rincian_triase: rincian, belum_ditriase: belum };
+  return { varian: konservatif ? 'konservatif' : 'utama', fp, precision, recall, f1, rincian_triase: rincian, belum_ditriase: belum };
 };
 
 // ---------- Label ground truth untuk alert ----------
@@ -196,7 +199,7 @@ const alertTanpaPutusan = (run, alert) => {
 
 const ringkasMetrik = (h) => ({ ...h.metrik, hardening_di_luar_ground_truth: h.hardening_di_luar_ground_truth, hardening_cocok_seeded: h.hardening_cocok_seeded });
 
-const skorRunUtama = ({ run, alert, gt, label, triase }) => {
+const skorRunUtama = ({ run, alert, gt, label, triase, opsiTriase = {} }) => {
   const setelah = alertDipertahankan(run, alert);
   const c = nilaiHimpunan(entriLlm(run), gt);
   const sv = nilaiHimpunan(entriSonar(setelah), gt);
@@ -205,9 +208,9 @@ const skorRunUtama = ({ run, alert, gt, label, triase }) => {
   return {
     run: run.run,
     deteksi_parse_ok: run.parse_ok,
-    skenario_c: { ...ringkasMetrik(c), setelah_triase: metrikSetelahTriase(c, triaseRun), status_gt: c.status_gt },
+    skenario_c: { ...ringkasMetrik(c), setelah_triase: metrikSetelahTriase(c, triaseRun, opsiTriase), status_gt: c.status_gt },
     skenario_b: {
-      ...ringkasMetrik(b), setelah_triase: metrikSetelahTriase(b, triaseRun), status_gt: b.status_gt,
+      ...ringkasMetrik(b), setelah_triase: metrikSetelahTriase(b, triaseRun, opsiTriase), status_gt: b.status_gt,
       alert_tanpa_putusan: alertTanpaPutusan(run, alert),
     },
     sonar_setelah_verifikasi: { alert: setelah.map((a) => a.id), ...ringkasMetrik(sv), status_gt: sv.status_gt },
@@ -216,11 +219,11 @@ const skorRunUtama = ({ run, alert, gt, label, triase }) => {
   };
 };
 
-const skorRunDeteksi = ({ run, gt, triase }) => {
+const skorRunDeteksi = ({ run, gt, triase, opsiTriase = {} }) => {
   const c = nilaiHimpunan(entriLlm(run), gt);
   return {
     run: run.run, deteksi_parse_ok: run.parse_ok,
-    deteksi: { ...ringkasMetrik(c), setelah_triase: metrikSetelahTriase(c, triase?.[`run-${run.run}.json`]), status_gt: c.status_gt },
+    deteksi: { ...ringkasMetrik(c), setelah_triase: metrikSetelahTriase(c, triase?.[`run-${run.run}.json`], opsiTriase), status_gt: c.status_gt },
     penilaian: c.penilaian,
   };
 };
