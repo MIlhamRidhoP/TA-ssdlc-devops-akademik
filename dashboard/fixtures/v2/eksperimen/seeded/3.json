@@ -155,7 +155,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "101413e08dd3ad1c",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 17,
+        "baris": [
+          "exports.register = async (req, res) => {",
+          "  const { email, password } = readCredentials(req.body);",
+          "",
+          "  if (!EMAIL_RE.test(email) || email.length > 255) {",
+          "    throw new AppError(400, 'VALIDATION_ERROR', 'Format email tidak valid');",
+          "  }",
+          "  // bcrypt hanya membaca 72 byte pertama"
+        ]
+      }
     },
     {
       "id": "T-02",
@@ -171,7 +183,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "f22bd9f6d515a8ce",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 47,
+        "baris": [
+          "    data.dokumen_id = dokumenId;",
+          "  }",
+          "",
+          "  if (req.body?.status) data.status = req.body.status;",
+          "  const id = await model.create({ ...data, mahasiswa_id: mahasiswaId });",
+          "  ",
+          "  const row = await model.findById(id);"
+        ]
+      }
     },
     {
       "id": "T-03",
@@ -187,7 +211,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "39c16d0724520e10",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 107,
+        "baris": [
+          "      { kuota, diajukan: total });",
+          "  }",
+          "",
+          "  const updated = await model.transition(header.id, 'draft', 'submitted');",
+          "  if (!updated) throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');",
+          "",
+          "  res.json({ success: true, data: updated });"
+        ]
+      }
     },
     {
       "id": "T-04",
@@ -203,7 +239,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "f1b953e50447b7a3",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 93,
+        "baris": [
+          "};",
+          "",
+          "exports.updateMe = async (req, res) => {",
+          "  const data = { ...req.body };",
+          "  delete data.rekening;",
+          "",
+          "  const rekeningBody = req.body?.rekening;"
+        ]
+      }
     },
     {
       "id": "T-05",
@@ -219,7 +267,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "eb00929b7a02acc4",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 117,
+        "baris": [
+          "  const baris = items.map((i) => `",
+          "      <tr>",
+          "        <td>${escapeHtml(i.kode)}</td>",
+          "        <td>${i.nama}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.sks)}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.nilai_huruf)}</td>",
+          "      </tr>`).join('');"
+        ]
+      }
     },
     {
       "id": "T-06",
@@ -235,7 +295,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "f8039fdb4f671e02",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 50,
+        "baris": [
+          "",
+          "exports.findOwned = async (id, mahasiswaId) => {",
+          "  const { rows } = await pool.query(",
+          "    `${DETAIL_SELECT} WHERE c.id = $2`,",
+          "    [KEY, id]",
+          "  );",
+          "  return rows[0] || null;"
+        ]
+      }
     },
     {
       "id": "T-07",
@@ -251,7 +323,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "4aeb4f99c39c1ee3",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 43,
+        "baris": [
+          "",
+          "exports.addItem = async (headerId, mataKuliahId) => {",
+          "  const { rows } = await pool.query(",
+          "    'INSERT INTO krs (krs_semester_id, mata_kuliah_id) VALUES ($1, $2) RETURNING id',",
+          "    [headerId, mataKuliahId]",
+          "  );",
+          "  return rows[0].id;"
+        ]
+      }
     },
     {
       "id": "T-08",
@@ -267,7 +351,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "fff54d617caa9aa2",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 62,
+        "baris": [
+          "};",
+          "",
+          "exports.removeItem = async (itemId) => {",
+          "  await pool.query('DELETE FROM krs WHERE id = $1', [itemId]);",
+          "};",
+          "",
+          "// Update hanya berhasil kalau status saat ini sama dengan `from`"
+        ]
+      }
     },
     {
       "id": "T-09",
@@ -283,7 +379,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "000d7157e043d8f9",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 51,
+        "baris": [
+          "const listFrom = (pola) => `",
+          "  FROM mahasiswa m",
+          "  JOIN users u ON u.id = m.user_id",
+          "  WHERE ('${pola}' IS NULL",
+          "    OR m.nim ILIKE '${pola}' OR m.nama ILIKE '${pola}' OR u.email ILIKE '${pola}')`;",
+          "",
+          "exports.list = async ({ pola, orderBy, limit, offset }) => {"
+        ]
+      }
     },
     {
       "id": "T-10",
@@ -299,7 +407,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "359f6fca82a6a41b",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 142,
+        "baris": [
+          "    const kolom = Object.keys(d);",
+          "    const set = kolom.map((k, i) => `${k} = $${i + 2}`).join(', ');",
+          "    const { rows } = await client.query(",
+          "      `UPDATE mahasiswa SET ${set}, updated_at = now()",
+          "       WHERE user_id = $1",
+          "       RETURNING id`,",
+          "      [userId, ...kolom.map((k) => d[k])]"
+        ]
+      }
     },
     {
       "id": "T-11",
@@ -315,7 +435,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "d9fa5fdb7e08aca0",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 130,
+        "baris": [
+          "     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id",
+          "     WHERE ks.mahasiswa_id = $1",
+          "       AND n.status = 'published'",
+          "       AND ks.semester = '${semester}'",
+          "     ORDER BY mk.kode`,",
+          "    [mahasiswaId]",
+          "  );"
+        ]
+      }
     },
     {
       "id": "T-12",
@@ -331,7 +463,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "ac52cfe26c7e9a71",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 35,
+        "baris": [
+          "",
+          "exports.removeEmail = async (id, mahasiswaId) => {",
+          "  const { rowCount } = await pool.query(",
+          "    'DELETE FROM email_mahasiswa WHERE id = $1',",
+          "    [id]",
+          "  );",
+          "  return rowCount > 0;"
+        ]
+      }
     },
     {
       "id": "T-13",
@@ -347,7 +491,19 @@
       "sifat": "hardening",
       "keyakinan": "high",
       "fingerprint": "37e379393a0e6760",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
     },
     {
       "id": "T-14",
@@ -363,7 +519,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "6689af50e68b1fc3",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 14,
+        "baris": [
+          "",
+          "router.get('/', authorize('admin'), c.listAdmin);",
+          "router.get('/:id', authorize('admin'), c.getById);",
+          "router.put('/:id/status', c.updateStatus);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
     }
   ],
   "eksperimen": {

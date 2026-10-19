@@ -127,7 +127,16 @@
           "sifat": { "enum": ["vulnerability", "hardening"] },
           "keyakinan": { "enum": ["high", "medium", "low"] },
           "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{16}$", "description": "sha256 16 heksa dari file:baris|cwe|jenis" },
-          "tanda": { "type": "array", "items": { "type": "string" } }
+          "tanda": { "type": "array", "items": { "type": "string" } },
+          "potongan_kode": {
+            "type": ["object", "null"],
+            "description": "Jendela baris di sekitar temuan, dihitung dari worktree objek uji saat produksi. null bila worktree tidak tersedia.",
+            "additionalProperties": false,
+            "properties": {
+              "mulai": { "type": "integer", "minimum": 1 },
+              "baris": { "type": "array", "items": { "type": "string" }, "maxItems": 7 }
+            }
+          }
         }
       }
     },

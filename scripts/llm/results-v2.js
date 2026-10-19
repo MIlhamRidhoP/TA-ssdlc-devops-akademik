@@ -24,7 +24,7 @@ const putusanSah = (v) => Boolean(v && v.putusan && PUTUSAN.includes(v.putusan)
   && !(v.tanda ?? []).includes('nilai_tidak_valid')
   && v.metadata?.status === 'ok' && v.metadata?.parse_ok !== false);
 
-const petakanTemuan = (temuan, parseCwe) => temuan.map((t, i) => {
+const petakanTemuan = (temuan, parseCwe, potongan = null) => temuan.map((t, i) => {
   const cwe = parseCwe(t.cwe);
   return {
     id: `T-${nomorDua(i + 1)}`,
@@ -39,6 +39,7 @@ const petakanTemuan = (temuan, parseCwe) => temuan.map((t, i) => {
     keyakinan: ['high', 'medium', 'low'].includes(t.keyakinan) ? t.keyakinan : 'low',
     fingerprint: sidikJariTemuan(t, cwe),
     tanda: [...(t.tanda ?? [])],
+    ...(potongan ? { potongan_kode: potongan(t.file, t.baris) } : {}),
   };
 });
 
@@ -208,11 +209,11 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sumber }) => {
   };
 };
 
-const susunHasilV2 = ({ summary, run, nomor, alert, parseCwe, repo = null, pipeline = null, eksperimen = null }) => ({
+const susunHasilV2 = ({ summary, run, nomor, alert, parseCwe, repo = null, pipeline = null, eksperimen = null, potongan = null }) => ({
   schema_version: SCHEMA_VERSION,
   run: susunRun({ summary, run, nomor, repo, pipeline }),
   alerts: petakanAlert(alert, run.verifikasi),
-  findings: petakanTemuan(run.temuan ?? [], parseCwe),
+  findings: petakanTemuan(run.temuan ?? [], parseCwe, potongan),
   ...(eksperimen ? { eksperimen } : {}),
 });
 

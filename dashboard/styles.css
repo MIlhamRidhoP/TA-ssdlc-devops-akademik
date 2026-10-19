@@ -571,3 +571,15 @@ nav:has(.projects:empty) { display: none; }
   .arow .chip-sev, .arow .putusan, .arow .akey { grid-column: 2; justify-self: start; }
   .adetail { padding-left: var(--s-1); }
 }
+
+/* Chip temuan v2 */
+.chip {
+  display: inline-flex; align-items: center; font-family: var(--font-data); font-size: 0.6875rem;
+  padding: 0.05rem 0.4rem; border-radius: 999px; white-space: nowrap; font-weight: 500;
+}
+.chip-cwe { background: var(--paper-3); color: var(--ink-2); }
+.chip-owasp { background: var(--accent-soft); color: var(--accent); }
+.chip-vuln { background: var(--crit-soft); color: var(--crit); }
+.chip-hardening { background: var(--paper-3); color: var(--ink-2); }
+.chip-keyakinan { border: 1px solid var(--rule-2); color: var(--muted); }
+.catatan-alat { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: 0 var(--s-1) var(--s-3); }

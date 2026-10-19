@@ -20,7 +20,7 @@
     { key: 'hasil', nama: 'Gabung hasil', job: 'Gabung dan terbitkan hasil', hasil: null },
   ];
   const TEKS_STATUS = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati' };
-  const KUNCI = { token: 'sd.token', tema: 'sd.tema', padat: 'sd.kepadatan', terakhir: 'sd.terakhir', keputusan: 'sd.keputusan.' };
+  const KUNCI = { token: 'sd.token', tema: 'sd.tema', padat: 'sd.kepadatan', terakhir: 'sd.terakhir', keputusan: 'sd.keputusan.', keputusanV2: 'sd.keputusan.v2.' };
 
   const $ = (id) => document.getElementById(id);
   const tunggu = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -571,7 +571,9 @@
       try { state.sebelumnya = await sumber().hasil(state.proyek, lebihLama); } catch { state.sebelumnya = null; }
     }
     state.jobs = await sumber().jobs(state.proyek, entri.id);
-    state.keputusan = bacaJsonLokal(kunciKeputusan(), {});
+    state.keputusan = state.hasil?.schema_version === 2
+      ? bacaJsonLokal(kunciKeputusanV2(), {})
+      : bacaJsonLokal(kunciKeputusan(), {});
     renderSemua();
   };
 
@@ -850,6 +852,7 @@
     // Jalur v1 memakai blok verifikasi di sidebar, bukan tabel alert kolom utama.
     $('alerts-box').hidden = true;
     $('verif-box').hidden = false;
+    $('catatan-alat').hidden = true;
     $('verif-h').textContent = 'Verifikasi temuan Sonar';
     const v = h?.sonar_verification;
     isi($('verif'), v
@@ -984,17 +987,114 @@
       : el('div', { class: 'state' }, el('p', { text: 'Tidak ada alert Sonar pada run ini.' })));
   };
 
-  const renderTemuanV2 = () => {
+  // Keputusan developer v2 disimpan per project dan dikunci sidik jari temuan, bukan per run id.
+  // Dengan begitu keputusan terbawa ke run berikutnya selama temuannya sama (file, baris, cwe, jenis).
+  // Tetap hanya di browser ini: tidak tersinkron antar perangkat maupun antar developer.
+  const kunciKeputusanV2 = () => `${KUNCI.keputusanV2}${state.proyek.owner}/${state.proyek.repo}`;
+  const putuskanV2 = (t, v) => {
+    const kini = state.keputusan[t.fingerprint]?.v === v ? null : v;
+    if (kini) state.keputusan[t.fingerprint] = { v: kini, t: new Date().toISOString() };
+    else delete state.keputusan[t.fingerprint];
+    if (!store.set('localStorage', kunciKeputusanV2(), JSON.stringify(state.keputusan))) {
+      tampilBanner('info', 'Browser menolak penyimpanan. Catatan hanya bertahan sampai halaman dimuat ulang.');
+    }
+    renderRingkasanV2();
+    renderTemuanV2(t.fingerprint);
+  };
+
+  const FILTER_V2 = [
+    { key: 'semua', label: 'Semua', cocok: () => true },
+    { key: 'vulnerability', label: 'Vulnerability', cocok: (t) => t.sifat === 'vulnerability' },
+    { key: 'hardening', label: 'Hardening', cocok: (t) => t.sifat === 'hardening' },
+    { key: 'high', label: 'Keyakinan high', cocok: (t) => t.keyakinan === 'high' },
+    { key: 'medium', label: 'Keyakinan medium', cocok: (t) => t.keyakinan === 'medium' },
+    { key: 'low', label: 'Keyakinan low', cocok: (t) => t.keyakinan === 'low' },
+  ];
+  const filterV2Aktif = () => FILTER_V2.find((x) => x.key === state.filter) ?? FILTER_V2[0];
+
+  const renderFilterV2 = () => {
     const f = state.hasil.findings;
-    isi($('filters'));
+    isi($('filters'), FILTER_V2.map((x) => el('button', {
+      class: 'btn btn-sm', type: 'button', 'aria-pressed': state.filter === x.key ? 'true' : 'false',
+      onclick: () => { state.filter = x.key; state.terbuka = null; renderFilterV2(); renderTemuanV2(); },
+    }, x.label, ' ', el('span', { class: 'count', text: String(f.filter(x.cocok).length) }))));
+  };
+
+  const tautanGithub = (t) => {
+    const p = state.proyek;
+    const r = state.hasil.run;
+    if (!t.file || p.demo_tanpa_workflow || !r.repo) return null;
+    const url = `${urlGithub(p.owner, p.repo, 'blob', r.objek_uji.commit, ...t.file.split('/'))}${t.baris ? `#L${t.baris}` : ''}`;
+    return el('a', {
+      class: 'btn-text', href: url, target: '_blank', rel: 'noopener noreferrer',
+      text: `Buka ${t.file}${t.baris ? `:${t.baris}` : ''} di GitHub`,
+    });
+  };
+
+  const detailTemuanV2 = (t) => {
+    const pk = t.potongan_kode;
+    const kode = pk && pk.baris?.length
+      ? el('pre', { class: 'code' }, pk.baris.map((b, i) => el('span', {
+        class: pk.mulai + i === t.baris ? 'hit' : null, 'data-ln': String(pk.mulai + i), text: `${b}\n`,
+      })))
+      : el('p', { class: 'note', text: 'Potongan kode tidak tersedia untuk temuan ini. Hasil ini dibuat tanpa akses ke worktree objek uji.' });
+    const fakta = [
+      t.cwe.length ? ['CWE', t.cwe.join(', ')] : null,
+      t.kategori_owasp ? ['OWASP', t.kategori_owasp] : null,
+      ['Sifat', t.sifat], ['Keyakinan', t.keyakinan],
+      t.fungsi ? ['Fungsi', t.fungsi] : null,
+      t.tanda.length ? ['Tanda', t.tanda.join(', ')] : null,
+    ].filter(Boolean);
+    const putusan = state.keputusan[t.fingerprint]?.v ?? null;
+    const tombol = (v, label) => el('button', {
+      class: 'btn btn-sm', type: 'button', id: `${t.fingerprint}-${v}`,
+      'aria-pressed': putusan === v ? 'true' : 'false', onclick: () => putuskanV2(t, v),
+    }, label);
+    return el('div', { class: 'fdetail', id: `d-${t.fingerprint}` },
+      el('div', { class: 'fdetail-grid' },
+        el('div', {},
+          el('p', { class: 'block-h', text: 'Penjelasan model' }),
+          el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan.' }),
+          el('p', { class: 'block-h', text: 'Kode di sekitar baris' }), kode,
+          tautanGithub(t)),
+        el('div', {},
+          el('p', { class: 'block-h', text: 'Fakta' }),
+          el('dl', { class: 'facts' }, fakta.map(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+          el('p', { class: 'block-h', text: 'Catatan lokal' }),
+          el('div', { class: 'decide' }, tombol('ok', 'Konfirmasi rentan'), tombol('fp', 'Tandai false positive')),
+          el('p', { class: 'note', text: 'Catatan lokal, hanya di browser ini, tidak tersinkron.' }))));
+  };
+
+  const renderTemuanV2 = (fokusFp) => {
+    const semua = state.hasil.findings;
+    const f = semua.filter(filterV2Aktif().cocok);
+    const chip = (teks, kelas) => el('span', { class: `chip ${kelas}`, text: teks });
     isi($('findings-body'), f.length
-      ? el('ul', { class: 'flist' }, f.map((t) => el('li', {},
-        el('div', { class: 'frow frow-v2' },
-          el('span', { class: 'fid', text: t.id }),
-          el('span', { class: 'ftitle', text: t.jenis }),
-          el('span', { class: 'floc', text: t.file ? `${t.file}:${t.baris ?? '?'}` : '—' }),
-          el('span', { class: 'fsrc', text: `${t.sifat} · ${t.keyakinan}` })))))
-      : el('div', { class: 'state' }, el('p', { text: 'Panggilan deteksi tidak melaporkan temuan.' })));
+      ? el('ul', { class: 'flist' }, f.map((t) => {
+        const terbuka = state.terbuka === t.fingerprint;
+        const putusan = state.keputusan[t.fingerprint]?.v ?? null;
+        const baris = el('button', {
+          class: 'frow frow-v2', type: 'button', 'aria-expanded': terbuka ? 'true' : 'false',
+          'aria-controls': `d-${t.fingerprint}`,
+          onclick: () => { state.terbuka = terbuka ? null : t.fingerprint; renderTemuanV2(t.fingerprint); },
+        },
+        el('span', { class: 'fid', text: t.id }),
+        el('span', { class: 'ftitle' }, t.jenis,
+          t.cwe.length ? chip(t.cwe[0], 'chip-cwe') : null,
+          t.kategori_owasp ? chip(t.kategori_owasp, 'chip-owasp') : null,
+          chip(t.sifat, t.sifat === 'hardening' ? 'chip-hardening' : 'chip-vuln'),
+          chip(t.keyakinan, 'chip-keyakinan')),
+        el('span', { class: 'floc', text: t.file ? `${t.file}:${t.baris ?? '?'}` : '—' }),
+        putusan
+          ? el('span', { class: 'fdec', text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai FP' })
+          : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }));
+        return el('li', {}, baris, terbuka ? detailTemuanV2(t) : null);
+      }))
+      : el('div', { class: 'state' }, el('p', { text: semua.length ? 'Tidak ada temuan yang cocok dengan saringan ini.' : 'Panggilan deteksi tidak melaporkan temuan.' })));
+    if (fokusFp) {
+      const n = $(`d-${fokusFp}`) ? document.querySelector(`[aria-controls="d-${fokusFp}"]`) : null;
+      if (n) n.focus();
+    }
   };
 
   const renderSampingV2 = () => {
@@ -1010,13 +1110,52 @@
     $('metrics-box').hidden = true; // Blok riset pindah ke tab Eksperimen (S5)
   };
 
+  // Ekspor dan impor catatan lokal. Satu-satunya jalan memindahkan catatan antar browser atau perangkat,
+  // karena catatan sengaja tidak dikirim ke mana pun.
+  const eksporCatatan = () => {
+    const isiFile = JSON.stringify({
+      versi: 1, project: `${state.proyek.owner}/${state.proyek.repo}`,
+      diekspor: new Date().toISOString(), keputusan: state.keputusan,
+    }, null, 2);
+    const url = URL.createObjectURL(new Blob([isiFile], { type: 'application/json' }));
+    const a = el('a', { href: url, download: `catatan-${state.proyek.repo}.json` });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const imporCatatan = async (file) => {
+    try {
+      const data = JSON.parse(await file.text());
+      const masuk = data?.keputusan;
+      if (!masuk || typeof masuk !== 'object' || Array.isArray(masuk)) throw new Error('bentuk tidak dikenali');
+      let n = 0;
+      for (const [fp, nilai] of Object.entries(masuk)) {
+        // Hanya terima bentuk yang kita tulis sendiri; isi berkas dari luar tidak dipercaya.
+        if (!/^[0-9a-f]{16}$/.test(fp) || !['ok', 'fp'].includes(nilai?.v)) continue;
+        state.keputusan[fp] = { v: nilai.v, t: typeof nilai.t === 'string' ? nilai.t : new Date().toISOString() };
+        n += 1;
+      }
+      store.set('localStorage', kunciKeputusanV2(), JSON.stringify(state.keputusan));
+      $('catatan-info').textContent = `${n} catatan diimpor. Hanya di browser ini, tidak tersinkron.`;
+      renderRingkasanV2();
+      renderTemuanV2();
+    } catch (err) {
+      $('catatan-info').textContent = `Berkas catatan tidak bisa dibaca (${err.message}).`;
+    }
+  };
+
   const renderSemuaV2 = () => {
+    $('catatan-alat').hidden = false;
     renderKepalaV2();
     // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions.
     $('pipeline-title').textContent = 'Dijalankan dari CLI, tidak lewat pipeline';
     $('pipeline-total').textContent = '—';
     isi($('nodes'));
     renderRingkasanV2();
+    if (!FILTER_V2.some((x) => x.key === state.filter)) state.filter = 'semua';
+    renderFilterV2();
     renderTemuanV2();
     renderAlertV2();
     renderSampingV2();
@@ -1025,6 +1164,7 @@
 
   const renderSemua = () => {
     if (state.hasil?.schema_version === 2) return renderSemuaV2();
+    if (!FILTER.some((x) => x.key === state.filter)) state.filter = 'semua';
     renderKepala();
     renderPipeline();
     renderRingkasan();
@@ -1153,6 +1293,13 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
+    $('catatan-ekspor').addEventListener('click', eksporCatatan);
+    $('catatan-impor-btn').addEventListener('click', () => $('catatan-impor').click());
+    $('catatan-impor').addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      if (f) imporCatatan(f);
+      e.target.value = '';
+    });
     $('start-demo').addEventListener('click', () => masukDemo());
     $('start-token').addEventListener('click', () => { $('access').open = true; $('token-input').focus(); });
     $('f-branch').addEventListener('change', (e) => {

@@ -155,7 +155,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "000d7157e043d8f9",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 51,
+        "baris": [
+          "const listFrom = (pola) => `",
+          "  FROM mahasiswa m",
+          "  JOIN users u ON u.id = m.user_id",
+          "  WHERE ('${pola}' IS NULL",
+          "    OR m.nim ILIKE '${pola}' OR m.nama ILIKE '${pola}' OR u.email ILIKE '${pola}')`;",
+          "",
+          "exports.list = async ({ pola, orderBy, limit, offset }) => {"
+        ]
+      }
     },
     {
       "id": "T-02",
@@ -171,7 +183,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "d9fa5fdb7e08aca0",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 130,
+        "baris": [
+          "     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id",
+          "     WHERE ks.mahasiswa_id = $1",
+          "       AND n.status = 'published'",
+          "       AND ks.semester = '${semester}'",
+          "     ORDER BY mk.kode`,",
+          "    [mahasiswaId]",
+          "  );"
+        ]
+      }
     },
     {
       "id": "T-03",
@@ -187,7 +211,19 @@
       "sifat": "hardening",
       "keyakinan": "low",
       "fingerprint": "f14a169dc52d7e18",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 157,
+        "baris": [
+          "exports.khs = async (req, res) => {",
+          "  const semester = typeof req.query.semester === 'string' ? req.query.semester : '';",
+          "  if (!semester) {",
+          "    res.status(400).type('html').send(`<p>Semester \"${semester}\" tidak dikenali</p>`);",
+          "    return;",
+          "  }",
+          "  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);"
+        ]
+      }
     },
     {
       "id": "T-04",
@@ -203,7 +239,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "0d3dad70aaf9e52d",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 117,
+        "baris": [
+          "  const baris = items.map((i) => `",
+          "      <tr>",
+          "        <td>${escapeHtml(i.kode)}</td>",
+          "        <td>${i.nama}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.sks)}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.nilai_huruf)}</td>",
+          "      </tr>`).join('');"
+        ]
+      }
     },
     {
       "id": "T-05",
@@ -219,7 +267,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "ce818c254abf542e",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 35,
+        "baris": [
+          "",
+          "exports.removeEmail = async (id, mahasiswaId) => {",
+          "  const { rowCount } = await pool.query(",
+          "    'DELETE FROM email_mahasiswa WHERE id = $1',",
+          "    [id]",
+          "  );",
+          "  return rowCount > 0;"
+        ]
+      }
     },
     {
       "id": "T-06",
@@ -235,7 +295,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "2a46fea46b705bd0",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 48,
+        "baris": [
+          "  return rows[0] || null;",
+          "};",
+          "",
+          "exports.findOwned = async (id, mahasiswaId) => {",
+          "  const { rows } = await pool.query(",
+          "    `${DETAIL_SELECT} WHERE c.id = $2`,",
+          "    [KEY, id]"
+        ]
+      }
     },
     {
       "id": "T-07",
@@ -251,7 +323,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "f403e7fe68dbcff4",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 14,
+        "baris": [
+          "",
+          "router.get('/', authorize('admin'), c.listAdmin);",
+          "router.get('/:id', authorize('admin'), c.getById);",
+          "router.put('/:id/status', c.updateStatus);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
     },
     {
       "id": "T-08",
@@ -267,7 +351,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "c2fde845763b07d1",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 47,
+        "baris": [
+          "    data.dokumen_id = dokumenId;",
+          "  }",
+          "",
+          "  if (req.body?.status) data.status = req.body.status;",
+          "  const id = await model.create({ ...data, mahasiswa_id: mahasiswaId });",
+          "  ",
+          "  const row = await model.findById(id);"
+        ]
+      }
     },
     {
       "id": "T-09",
@@ -283,7 +379,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "de7be8f49c393545",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 93,
+        "baris": [
+          "};",
+          "",
+          "exports.updateMe = async (req, res) => {",
+          "  const data = { ...req.body };",
+          "  delete data.rekening;",
+          "",
+          "  const rekeningBody = req.body?.rekening;"
+        ]
+      }
     },
     {
       "id": "T-10",
@@ -299,7 +407,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "453e1825277fc91e",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 140,
+        "baris": [
+          "exports.updateByUserId = (userId, d, rekening) =>",
+          "  withTransaction(async (client) => {",
+          "    const kolom = Object.keys(d);",
+          "    const set = kolom.map((k, i) => `${k} = $${i + 2}`).join(', ');",
+          "    const { rows } = await client.query(",
+          "      `UPDATE mahasiswa SET ${set}, updated_at = now()",
+          "       WHERE user_id = $1"
+        ]
+      }
     },
     {
       "id": "T-11",
@@ -315,7 +435,19 @@
       "sifat": "hardening",
       "keyakinan": "low",
       "fingerprint": "f4a5c73c5a91ebf5",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 95,
+        "baris": [
+          "              pgp_sym_decrypt(c.alamat_cuti, $4) AS alamat_cuti,",
+          "              pgp_sym_decrypt(c.nomor_telepon, $4) AS nomor_telepon",
+          "       ${ADMIN_FROM}",
+          "       ORDER BY ${sort} ${order}, c.id",
+          "       LIMIT $2 OFFSET $3`,",
+          "      [pola, limit, offset, KEY]",
+          "    );"
+        ]
+      }
     },
     {
       "id": "T-12",
@@ -331,7 +463,19 @@
       "sifat": "vulnerability",
       "keyakinan": "high",
       "fingerprint": "44783172c4d0de5e",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 81,
+        "baris": [
+          "};",
+          "",
+          "exports.listAdmin = async (req, res) => {",
+          "  const paging = listQuery(req.query, { sortMap: model.SORT, defaultSort: 'created_at', defaultOrder: 'desc' });",
+          "  const { rows, total } = await model.listAdmin({",
+          "    ...paging,",
+          "    sort: req.query.sort || 'created_at',"
+        ]
+      }
     },
     {
       "id": "T-13",
@@ -347,7 +491,19 @@
       "sifat": "hardening",
       "keyakinan": "low",
       "fingerprint": "feb3b73c732e62d9",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 7,
+        "baris": [
+          "const app = express();",
+          "",
+          "app.use(helmet());",
+          "app.use(cors());",
+          "app.use(express.json());",
+          "",
+          "app.get('/health', (req, res) => {"
+        ]
+      }
     },
     {
       "id": "T-14",
@@ -363,7 +519,19 @@
       "sifat": "hardening",
       "keyakinan": "medium",
       "fingerprint": "7aeb70d86d293354",
-      "tanda": []
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
     }
   ],
   "eksperimen": {

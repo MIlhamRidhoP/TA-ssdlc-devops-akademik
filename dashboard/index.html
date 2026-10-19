@@ -140,7 +140,13 @@
               <h2 id="temuan-h">Temuan</h2>
               <p>Temuan Gemini adalah saran AI yang belum diverifikasi. Sistem tidak pernah mengubah kode.</p>
             </div>
-            <div class="filters" id="filters" role="group" aria-label="Saring menurut sumber"></div>
+            <div class="filters" id="filters" role="group" aria-label="Saring temuan"></div>
+            <div class="catatan-alat" id="catatan-alat" hidden>
+              <button class="btn btn-sm" type="button" id="catatan-ekspor">Ekspor catatan</button>
+              <button class="btn btn-sm" type="button" id="catatan-impor-btn">Impor catatan</button>
+              <input type="file" id="catatan-impor" accept="application/json,.json" hidden>
+              <span class="note" id="catatan-info">Catatan lokal, hanya di browser ini, tidak tersinkron.</span>
+            </div>
             <div id="findings-body" aria-live="polite"></div>
           </section>
 

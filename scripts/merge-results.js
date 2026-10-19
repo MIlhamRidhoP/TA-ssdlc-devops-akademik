@@ -9,6 +9,7 @@
 // Jalur v2 (prompt v2, docs/design/results-v2.schema.json), tanpa panggilan API:
 //   node scripts/merge-results.js merge --v2 --folder=<folder llm-scan> --run=N --out=<file>
 //     [--skor=<skor-utama.json> --skor-triase=<...> --skor-triase-konservatif=<...>] [--repo=owner/repo]
+//     [--objek=<worktree objek uji>]  (untuk potongan kode di sekitar baris temuan)
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -319,7 +320,11 @@ const mergeV2 = () => {
     });
   }
 
-  const hasil = susunHasilV2({ summary, run, nomor, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen });
+  // --objek menunjuk worktree objek uji; dipakai hanya untuk mengambil potongan kode di sekitar baris temuan.
+  const objek = ambilArg('objek') ? path.resolve(ambilArg('objek')) : null;
+  if (objek && !fs.existsSync(objek)) throw new Error(`--objek ${objek} tidak ada`);
+  const potongan = objek ? ((file, baris) => potonganKode(objek, file, baris)) : null;
+  const hasil = susunHasilV2({ summary, run, nomor, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen, potongan });
   tulisJson(ambilArg('out') || 'results-v2.json', hasil);
   console.log(`results v2: ${hasil.findings.length} temuan, ${hasil.alerts.length} alert, vendor ${hasil.run.vendor}, eksperimen ${eksperimen ? 'ada' : 'tidak'}`);
 };
