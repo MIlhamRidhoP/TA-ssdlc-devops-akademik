@@ -1,5 +1,23 @@
 {
-  "dinilai_pada": "2026-10-19T14:10:33.035Z",
+  "dinilai_pada": "2026-10-19T15:14:27.442Z",
+  "commit_kode_scoring": {
+    "head": "10be9aac06e22e7d3e81d80322fa9bf924df402c",
+    "branch": "feat/prompt-v2",
+    "bersih": true,
+    "berubah": [],
+    "lingkup": [
+      "scripts",
+      "prompts",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      ".github/workflows",
+      ".gitignore",
+      "src",
+      "docker-compose.yml",
+      "Dockerfile"
+    ]
+  },
   "aturan_hardening": "spesifikasi",
   "objek_uji": {
     "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
@@ -109,24 +127,25 @@
   ],
   "folder": [
     {
-      "folder": "llm-output/v2/20261019-200241-google-utama",
+      "folder": "hasil-eksperimen/20261019/utama/google",
       "vendor": "google",
       "kondisi": "utama",
       "jumlah_run": 3
     },
     {
-      "folder": "llm-output/v2/20261019-195328-anthropic-utama",
+      "folder": "hasil-eksperimen/20261019/utama/anthropic",
       "vendor": "anthropic",
       "kondisi": "utama",
       "jumlah_run": 3
     },
     {
-      "folder": "llm-output/v2/20261019-195437-openai-utama",
+      "folder": "hasil-eksperimen/20261019/utama/openai",
       "vendor": "openai",
       "kondisi": "utama",
       "jumlah_run": 3
     }
   ],
+  "triase_varian": "utama",
   "sonar_beku": {
     "path": "hasil-eksperimen/20261019/sonar-beku.json",
     "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
@@ -134,11 +153,14 @@
     "revisi": "467775e44fae16317a8c7c0098245153625978b8",
     "dibuat": "2026-10-19T11:58:38.644Z"
   },
+  "sensitivitas": false,
   "utama": {
     "label_alert": {
       "SONAR-01": {
         "label": "nyata",
         "sumber": "otomatis",
+        "label_awal": "nyata",
+        "alasan_paksa": null,
         "id_gt": [
           "B1"
         ],
@@ -147,6 +169,8 @@
       "SONAR-02": {
         "label": "fp",
         "sumber": "otomatis",
+        "label_awal": "fp",
+        "alasan_paksa": null,
         "id_gt": [
           "S5"
         ],
@@ -155,6 +179,8 @@
       "SONAR-03": {
         "label": "fp",
         "sumber": "otomatis",
+        "label_awal": "fp",
+        "alasan_paksa": null,
         "id_gt": [
           "S5"
         ],
@@ -163,6 +189,8 @@
       "SONAR-04": {
         "label": "fp",
         "sumber": "otomatis",
+        "label_awal": "fp",
+        "alasan_paksa": null,
         "id_gt": [
           "S2"
         ],
@@ -171,6 +199,8 @@
       "SONAR-05": {
         "label": "nyata",
         "sumber": "otomatis",
+        "label_awal": "nyata",
+        "alasan_paksa": null,
         "id_gt": [
           "S3"
         ],
@@ -357,6 +387,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8,
                 "recall": 0.4444444444444444,
@@ -418,6 +449,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8,
                 "recall": 0.4444444444444444,
@@ -565,6 +597,7 @@
               "hardening_di_luar_ground_truth": 1,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8,
                 "recall": 0.4444444444444444,
@@ -626,6 +659,7 @@
               "hardening_di_luar_ground_truth": 1,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8,
                 "recall": 0.4444444444444444,
@@ -773,6 +807,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8,
                 "recall": 0.4444444444444444,
@@ -834,6 +869,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8,
                 "recall": 0.4444444444444444,
@@ -1443,6 +1479,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 2,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8888888888888888,
                 "recall": 0.8888888888888888,
@@ -1504,6 +1541,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 2,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 2,
                 "precision": 0.8,
                 "recall": 0.8888888888888888,
@@ -1654,6 +1692,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7,
                 "recall": 0.7777777777777778,
@@ -1715,6 +1754,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7,
                 "recall": 0.7777777777777778,
@@ -1865,6 +1905,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 2,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 0,
                 "precision": 1,
                 "recall": 0.8888888888888888,
@@ -1926,6 +1967,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 2,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 1,
                 "precision": 0.8888888888888888,
                 "recall": 0.8888888888888888,
@@ -2537,6 +2579,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7272727272727273,
                 "recall": 0.8888888888888888,
@@ -2598,6 +2641,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7272727272727273,
                 "recall": 0.8888888888888888,
@@ -2745,6 +2789,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7272727272727273,
                 "recall": 0.8888888888888888,
@@ -2806,6 +2851,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7272727272727273,
                 "recall": 0.8888888888888888,
@@ -2953,6 +2999,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7272727272727273,
                 "recall": 0.8888888888888888,
@@ -3014,6 +3061,7 @@
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 0,
               "setelah_triase": {
+                "varian": "utama",
                 "fp": 3,
                 "precision": 0.7272727272727273,
                 "recall": 0.8888888888888888,

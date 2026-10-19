@@ -1,5 +1,23 @@
 {
-  "dinilai_pada": "2026-10-19T14:59:29.672Z",
+  "dinilai_pada": "2026-10-19T15:14:30.334Z",
+  "commit_kode_scoring": {
+    "head": "10be9aac06e22e7d3e81d80322fa9bf924df402c",
+    "branch": "feat/prompt-v2",
+    "bersih": true,
+    "berubah": [],
+    "lingkup": [
+      "scripts",
+      "prompts",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      ".github/workflows",
+      ".gitignore",
+      "src",
+      "docker-compose.yml",
+      "Dockerfile"
+    ]
+  },
   "aturan_hardening": "spesifikasi",
   "objek_uji": {
     "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
