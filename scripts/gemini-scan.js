@@ -13,9 +13,12 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const SRC_DIR = path.join(ROOT, 'src');
+// Kode objek uji (src dan SEEDED.md) bisa berada di worktree lain, dipakai prompt v2 (scripts/llm-scan.js).
+// Tanpa OBJEK_UJI_DIR, perilaku v1 tidak berubah.
+const OBJEK_ROOT = process.env.OBJEK_UJI_DIR ? path.resolve(process.env.OBJEK_UJI_DIR) : ROOT;
+const SRC_DIR = path.join(OBJEK_ROOT, 'src');
 const OUTPUT_DIR = path.join(ROOT, 'gemini-output');
-const SEEDED_FILE = path.join(ROOT, 'SEEDED.md');
+const SEEDED_FILE = path.join(OBJEK_ROOT, 'SEEDED.md');
 const SONAR_PROJECT = process.env.SONAR_PROJECT || 'MIlhamRidhoP_TA-ssdlc-devops-akademik';
 const SONAR_ORG = 'milhamridhop';
 const SONAR_BASE = 'https://sonarcloud.io';
@@ -495,7 +498,7 @@ const normalFile = (f) => {
 const cacheBaris = {};
 const barisFile = (file) => {
   if (!(file in cacheBaris)) {
-    const penuh = path.join(ROOT, file);
+    const penuh = path.join(OBJEK_ROOT, file);
     cacheBaris[file] = fs.existsSync(penuh) ? fs.readFileSync(penuh, 'utf8').split(/\r?\n/) : null;
   }
   return cacheBaris[file];
@@ -774,7 +777,15 @@ const main = async () => {
   return jalankanRun(bacaJumlahRun());
 };
 
-main().catch((err) => {
-  console.error(err.message);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err.message);
+    process.exitCode = 1;
+  });
+}
+
+// Dipakai ulang oleh prompt v2 (scripts/llm-scan.js dan scripts/llm/score.js).
+module.exports = {
+  ambilLaporanSonar, ringkasSonar, sonarKeFormatTemuan, bacaGroundTruth, nilaiTemuan, hitungMetrik,
+  URUTAN_STATUS, TERDETEKSI_KETAT, TERDETEKSI_LONGGAR, KELUARGA_CWE,
+};
