@@ -4,8 +4,8 @@
 //   node scripts/llm-score.js --objek=<worktree objek uji> --sonar-beku=<file> [--label-alert=<file>] [--out=<file>] <folder> [<folder> ...]
 // --sonar-beku wajib kalau ada folder kondisi utama.
 //
-// Semua folder harus berasal dari commit objek uji yang sama dengan HEAD --objek. Satu folder per vendor per
-// kondisi. Folder kondisi utama dinilai dengan Skenario A, B, C, dan verifikasi. Folder ablasi dinilai deteksinya saja.
+// Semua folder harus berasal dari satu commit objek uji yang hash tree src/-nya sama dengan worktree --objek.
+// Satu folder per vendor per kondisi. Folder kondisi utama dinilai dengan Skenario A, B, C, dan verifikasi. Folder ablasi dinilai deteksinya saja.
 // triase-manual.json (opsional) dibaca dari masing-masing folder.
 const fs = require('fs');
 const path = require('path');
@@ -42,6 +42,24 @@ const periksaSumberSonar = (utama, beku) => {
   }
 };
 
+// Objek uji dicocokkan lewat hash tree src/ (git rev-parse <commit>:src), seperti scripts/llm-scan.js, sehingga
+// scoring tetap sah dari commit objek uji mana pun yang src/-nya sama, misalnya setelah hasil eksperimen di-commit.
+// Semua folder harus dari commit objek uji yang sama. Laporan mencatat commit objek uji dari folder, bukan HEAD
+// worktree tempat scoring dijalankan.
+const periksaObjekFolder = (data, objek) => {
+  for (const d of data) {
+    const tree = d.summary.objek_uji?.tree_src;
+    if (!tree) throw new Error(`${d.folder} tidak mencatat hash tree src/ objek uji`);
+    if (tree !== objek.tree_src) {
+      throw new Error(`${d.folder}: hash tree src/ objek uji ${tree} berbeda dengan worktree --objek ${objek.commit} (${objek.tree_src})`);
+    }
+  }
+  const commit = [...new Set(data.map((d) => d.summary.objek_uji.commit))];
+  const branch = [...new Set(data.map((d) => d.summary.objek_uji.branch))];
+  if (commit.length > 1) throw new Error(`Folder berasal dari commit objek uji berbeda: ${commit.join(', ')}`);
+  return { commit: commit[0], branch: branch.length === 1 ? branch[0] : branch };
+};
+
 const bacaFolder = (folder) => {
   const summary = bacaJson(path.join(folder, 'summary.json'));
   const runs = fs.readdirSync(folder).filter((f) => /^run-\d+\.json$/.test(f))
@@ -66,10 +84,8 @@ const main = () => {
   const data = folder.map(bacaFolder);
   for (const d of data) {
     if (d.summary.versi_prompt !== 'v2') throw new Error(`${d.folder} bukan hasil prompt v2`);
-    if (d.summary.objek_uji.commit !== objek.commit) {
-      throw new Error(`${d.folder} dari commit ${d.summary.objek_uji.commit}, objek uji ${objek.commit}`);
-    }
   }
+  const objekFolder = periksaObjekFolder(data, objek);
   const kunci = data.map((d) => `${d.summary.vendor}/${d.summary.kondisi}`);
   const ganda = kunci.filter((k, i) => kunci.indexOf(k) !== i);
   if (ganda.length) throw new Error(`Lebih dari satu folder untuk ${[...new Set(ganda)].join(', ')}`);
@@ -80,7 +96,7 @@ const main = () => {
   const ablasi = data.filter((d) => d.summary.kondisi !== 'utama');
   const laporan = {
     dinilai_pada: new Date().toISOString(),
-    objek_uji: { commit: objek.commit, branch: objek.branch },
+    objek_uji: objekFolder,
     ground_truth: gt.map((g) => ({ id: g.id, kelas: g.kelas, klasifikasi: g.status })),
     folder: data.map((d) => ({ folder: path.relative(process.cwd(), d.folder).split(path.sep).join('/'), vendor: d.summary.vendor, kondisi: d.summary.kondisi, jumlah_run: d.runs.length })),
   };
@@ -159,4 +175,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { periksaSumberSonar };
+module.exports = { periksaSumberSonar, periksaObjekFolder };

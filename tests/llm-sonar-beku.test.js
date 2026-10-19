@@ -8,7 +8,7 @@ const { execFileSync } = require('child_process');
 const render = require('../scripts/llm/render');
 const beku = require('../scripts/llm/sonar-beku');
 const { periksaObjek, siapkanSonar, runKering } = require('../scripts/llm-scan');
-const { periksaSumberSonar } = require('../scripts/llm-score');
+const { periksaSumberSonar, periksaObjekFolder } = require('../scripts/llm-score');
 
 const repoUji = () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'objek-beku-'));
@@ -106,4 +106,26 @@ test('run kering memakai alert dari file beku dan menghasilkan hash yang sama de
   assert.deepEqual(hasil.map((h) => h.id_alert), [null, 'SONAR-01']);
   const langsung = render.rakitPrompt({ template, kondisi: 'utama', tugas: 'verifikasi', kodeSumber: kode.teks, alertTeks: b.alert[0].teks });
   assert.equal(hasil[1].prompt_user_kanonik, langsung.hash.prompt_user_kanonik);
+});
+
+test('llm-score: objek uji dicocokkan lewat hash tree src, bukan commit', () => {
+  const { dir, commit, c1 } = siapkan();
+  const folderDari = (summaryObjek, nama = 'llm-output/v2/x-google-utama') => ({ folder: nama, summary: { objek_uji: summaryObjek } });
+  const asal = periksaObjek(dir);
+  const f = folderDari({ commit: c1, branch: 'eksperimen/seeded', tree_src: asal.tree_src });
+  // Commit baru tanpa perubahan src (misalnya hasil eksperimen di-commit): diterima, laporan memakai commit dari folder.
+  fs.mkdirSync(path.join(dir, 'hasil-eksperimen'));
+  fs.writeFileSync(path.join(dir, 'hasil-eksperimen', 'skor.json'), '{}\n');
+  const c2 = commit('data: hasil');
+  const objekBaru = periksaObjek(dir);
+  assert.notEqual(objekBaru.commit, c1);
+  assert.deepEqual(periksaObjekFolder([f], objekBaru), { commit: c1, branch: 'eksperimen/seeded' });
+  assert.notEqual(c2, c1);
+  // Folder tanpa tree tercatat, atau dari commit objek uji berbeda, ditolak.
+  assert.throws(() => periksaObjekFolder([folderDari({ commit: c1, branch: 'b' })], objekBaru), /tidak mencatat hash tree src/);
+  assert.throws(() => periksaObjekFolder([f, folderDari({ commit: c2, branch: 'eksperimen/seeded', tree_src: asal.tree_src }, 'y')], objekBaru), /commit objek uji berbeda/);
+  // src berubah: tree berbeda, ditolak.
+  fs.writeFileSync(path.join(dir, 'src', 'a.js'), 'berubah\n');
+  commit('ubah src');
+  assert.throws(() => periksaObjekFolder([f], periksaObjek(dir)), /hash tree src\/ objek uji .* berbeda dengan worktree --objek/);
 });
