@@ -8,7 +8,7 @@ const { execFileSync } = require('child_process');
 const render = require('../scripts/llm/render');
 const beku = require('../scripts/llm/sonar-beku');
 const { periksaObjek, siapkanSonar, runKering } = require('../scripts/llm-scan');
-const { periksaSumberSonar, periksaObjekFolder } = require('../scripts/llm-score');
+const { periksaSumberSonar, periksaObjekFolder, periksaGroundTruth } = require('../scripts/llm-score');
 
 const repoUji = () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'objek-beku-'));
@@ -128,4 +128,30 @@ test('llm-score: objek uji dicocokkan lewat hash tree src, bukan commit', () => 
   fs.writeFileSync(path.join(dir, 'src', 'a.js'), 'berubah\n');
   commit('ubah src');
   assert.throws(() => periksaObjekFolder([f], periksaObjek(dir)), /hash tree src\/ objek uji .* berbeda dengan worktree --objek/);
+});
+
+test('llm-score: SEEDED.md dibandingkan dengan blob di commit objek uji folder; revisi hanya dengan opsi eksplisit', () => {
+  const { dir, commit, g } = repoUji();
+  fs.writeFileSync(path.join(dir, 'SEEDED.md'), '| S1 | src/a.js | x | SQLi | CWE-89 | A05 | Mudah | terbukti |\n');
+  const c1 = commit('ground truth awal');
+  const blob1 = g('rev-parse', `${c1}:SEEDED.md`);
+  const folderC1 = { commit: c1, branch: 'eksperimen/seeded' };
+  // HEAD sama dengan commit run: diterima, revisi false.
+  assert.deepEqual(periksaGroundTruth(periksaObjek(dir), folderC1), { blob: blob1, blob_commit_objek_uji: blob1, revisi: false });
+  // Commit lain yang tidak mengubah SEEDED.md: tetap diterima.
+  fs.writeFileSync(path.join(dir, 'catatan.md'), 'x\n');
+  commit('dokumen lain');
+  assert.equal(periksaGroundTruth(periksaObjek(dir), folderC1).revisi, false);
+  // SEEDED.md berubah (misalnya reklasifikasi): ditolak tanpa opsi, diterima dan ditandai revisi dengan opsi.
+  fs.writeFileSync(path.join(dir, 'SEEDED.md'), '| S1 | src/a.js | x | SQLi | CWE-89 | A05 | Mudah | jebakan FP |\n');
+  commit('reklasifikasi');
+  const objekBaru = periksaObjek(dir);
+  assert.throws(() => periksaGroundTruth(objekBaru, folderC1), /SEEDED\.md di worktree --objek .* berbeda .*--ground-truth-revisi/);
+  const revisi = periksaGroundTruth(objekBaru, folderC1, { revisi: true });
+  assert.equal(revisi.revisi, true);
+  assert.equal(revisi.blob_commit_objek_uji, blob1);
+  assert.equal(revisi.blob, g('rev-parse', 'HEAD:SEEDED.md'));
+  assert.notEqual(revisi.blob, blob1);
+  // Commit objek uji folder yang tidak ada di repo: ditolak.
+  assert.throws(() => periksaGroundTruth(objekBaru, { commit: '0'.repeat(40), branch: 'x' }), /tidak ditemukan/);
 });

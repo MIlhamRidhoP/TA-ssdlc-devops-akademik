@@ -2,7 +2,8 @@
 //
 // Pemakaian:
 //   node scripts/llm-score.js --objek=<worktree objek uji> --sonar-beku=<file> [--label-alert=<file>] [--out=<file>] <folder> [<folder> ...]
-// --sonar-beku wajib kalau ada folder kondisi utama.
+// --sonar-beku wajib kalau ada folder kondisi utama. --ground-truth-revisi mengizinkan SEEDED.md yang berbeda dengan
+// commit objek uji folder; laporan lalu ditandai ground_truth_seeded.revisi = true.
 //
 // Semua folder harus berasal dari satu commit objek uji yang hash tree src/-nya sama dengan worktree --objek.
 // Satu folder per vendor per kondisi. Folder kondisi utama dinilai dengan Skenario A, B, C, dan verifikasi. Folder ablasi dinilai deteksinya saja.
@@ -10,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { periksaObjek } = require('./llm-scan');
+const { execFileSync } = require('child_process');
 const { bacaBeku } = require('./llm/sonar-beku');
 
 const ambilArg = (nama) => {
@@ -60,6 +62,30 @@ const periksaObjekFolder = (data, objek) => {
   return { commit: commit[0], branch: branch.length === 1 ? branch[0] : branch };
 };
 
+// Ground truth (SEEDED.md) dibaca dari HEAD worktree --objek, yang bisa berbeda commit dengan run. Hash blob SEEDED.md
+// pada commit objek uji yang tercatat di folder dibandingkan dengan HEAD:SEEDED.md. Berbeda berarti ground truth
+// berubah sejak run; scoring ditolak kecuali opsi revisi diisi, dan laporan ditandai sebagai versi revisi.
+const blobSeeded = (dir, rev) => {
+  try {
+    return execFileSync('git', ['-C', dir, 'rev-parse', '--verify', '--quiet', `${rev}:SEEDED.md`], { encoding: 'utf8' }).trim();
+  } catch {
+    return null;
+  }
+};
+
+const periksaGroundTruth = (objek, objekFolder, { revisi = false } = {}) => {
+  const blobFolder = blobSeeded(objek.dir, objekFolder.commit);
+  if (!blobFolder) throw new Error(`SEEDED.md pada commit objek uji folder ${objekFolder.commit} tidak ditemukan di repo --objek`);
+  const blob = blobSeeded(objek.dir, 'HEAD');
+  if (!blob) throw new Error(`SEEDED.md tidak ada di HEAD worktree --objek ${objek.commit}`);
+  const berbeda = blob !== blobFolder;
+  if (berbeda && !revisi) {
+    throw new Error(`SEEDED.md di worktree --objek (blob ${blob}) berbeda dengan commit objek uji folder ${objekFolder.commit} (blob ${blobFolder}). `
+      + 'Pakai --ground-truth-revisi kalau scoring memang memakai ground truth revisi');
+  }
+  return { blob, blob_commit_objek_uji: blobFolder, revisi: berbeda };
+};
+
 const bacaFolder = (folder) => {
   const summary = bacaJson(path.join(folder, 'summary.json'));
   const runs = fs.readdirSync(folder).filter((f) => /^run-\d+\.json$/.test(f))
@@ -86,6 +112,8 @@ const main = () => {
     if (d.summary.versi_prompt !== 'v2') throw new Error(`${d.folder} bukan hasil prompt v2`);
   }
   const objekFolder = periksaObjekFolder(data, objek);
+  const groundTruthSeeded = periksaGroundTruth(objek, objekFolder, { revisi: process.argv.includes('--ground-truth-revisi') });
+  if (groundTruthSeeded.revisi) console.warn(`Peringatan: scoring memakai ground truth revisi (SEEDED.md blob ${groundTruthSeeded.blob})`);
   const kunci = data.map((d) => `${d.summary.vendor}/${d.summary.kondisi}`);
   const ganda = kunci.filter((k, i) => kunci.indexOf(k) !== i);
   if (ganda.length) throw new Error(`Lebih dari satu folder untuk ${[...new Set(ganda)].join(', ')}`);
@@ -97,6 +125,7 @@ const main = () => {
   const laporan = {
     dinilai_pada: new Date().toISOString(),
     objek_uji: objekFolder,
+    ground_truth_seeded: groundTruthSeeded,
     ground_truth: gt.map((g) => ({ id: g.id, kelas: g.kelas, klasifikasi: g.status })),
     folder: data.map((d) => ({ folder: path.relative(process.cwd(), d.folder).split(path.sep).join('/'), vendor: d.summary.vendor, kondisi: d.summary.kondisi, jumlah_run: d.runs.length })),
   };
@@ -175,4 +204,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { periksaSumberSonar, periksaObjekFolder };
+module.exports = { periksaSumberSonar, periksaObjekFolder, periksaGroundTruth };
