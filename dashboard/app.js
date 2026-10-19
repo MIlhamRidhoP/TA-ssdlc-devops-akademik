@@ -70,7 +70,22 @@
     }
     return s;
   };
-  const IKON = { cek: 'M3 8.5l3 3 7-7', silang: ['M4 4l8 8', 'M12 4l-8 8'], luar: ['M9 3h4v4', 'M13 3L7 9', 'M11 9.5V13H3V5h3.5'] };
+  const IKON = {
+    cek: 'M3 8.5l3 3 7-7', silang: ['M4 4l8 8', 'M12 4l-8 8'], luar: ['M9 3h4v4', 'M13 3L7 9', 'M11 9.5V13H3V5h3.5'],
+    sistem: ['M2 3h12v8H2z', 'M6 14h4', 'M8 11v3'],
+    terang: ['M8 5.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z', 'M8 1v1.5', 'M8 13.5V15', 'M1 8h1.5', 'M13.5 8H15',
+      'M3 3l1 1', 'M12 12l1 1', 'M3 13l1-1', 'M12 4l1-1'],
+    gelap: 'M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z',
+    // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
+    padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
+    nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
+  };
+  // Tombol ikon: label dibacakan pembaca layar dan muncul sebagai tooltip
+  const pasangIkon = (tombol, jalur, label) => {
+    tombol.replaceChildren(ikon(jalur));
+    tombol.setAttribute('aria-label', label);
+    tombol.title = label;
+  };
   const segitigaRevisi = () => {
     const s = document.createElementNS(NS, 'svg');
     s.setAttribute('viewBox', '0 0 14 12');
@@ -270,12 +285,12 @@
   const terapkanTema = () => {
     const t = store.get('localStorage', KUNCI.tema);
     if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-    $('theme-toggle').textContent = `Tema: ${t ?? 'ikuti sistem'}`;
+    pasangIkon($('theme-toggle'), IKON[t ?? 'sistem'], `Tema: ${t ?? 'ikuti sistem'}`);
   };
   const terapkanKepadatan = () => {
     const d = store.get('localStorage', KUNCI.padat) === 'padat' ? 'padat' : 'nyaman';
     document.documentElement.dataset.density = d;
-    $('density-toggle').textContent = `Kepadatan: ${d}`;
+    pasangIkon($('density-toggle'), IKON[d], `Kepadatan: ${d}`);
   };
 
   // ---------- Banner ----------
