@@ -50,7 +50,7 @@ const petakanAlert = (alert, verifikasi) => {
     const sah = putusanSah(v);
     return {
       id: a.id,
-      rule: a.rule,
+      rule: a.rule ?? null,
       tipe: a.tipe ?? null,
       sumber: a.sumber,
       file: a.file ?? null,

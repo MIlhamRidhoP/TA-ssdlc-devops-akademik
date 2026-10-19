@@ -98,15 +98,6 @@
     tombol.setAttribute('aria-label', label);
     tombol.title = label;
   };
-  const segitigaRevisi = () => {
-    const s = document.createElementNS(NS, 'svg');
-    s.setAttribute('viewBox', '0 0 14 12');
-    s.setAttribute('aria-hidden', 'true');
-    const p = document.createElementNS(NS, 'path');
-    p.setAttribute('d', 'M7 0l7 12H0z');
-    s.append(p);
-    return s;
-  };
 
   // ---------- Format ----------
   const durasi = (detik) => {
@@ -278,8 +269,8 @@
     },
   };
 
-  // Mode demo punya dua kumpulan fixture: v1 (arsip pilot 10 Okt) dan v2 (eksperimen 19 Okt).
-  // Dipilih lewat hash #demo atau #demo-v2, bukan digabung, supaya jalur v1 tidak terganggu.
+  // Sejak renderer v1 dipensiunkan, mode demo hanya punya satu kumpulan fixture: data v2
+  // eksperimen 19 Okt. Hash #demo-v2 tetap diterima sebagai alias lama dari #demo.
   const basisDemo = () => 'fixtures/v2';
 
   const sumberDemo = {
@@ -603,14 +594,35 @@
   };
 
   // ---------- Render ----------
-  const renderMemuat = () => {
+  // Membersihkan seluruh blok yang terikat satu run. Tanpa ini, pindah branch atau gagal memuat
+  // menyisakan header, tabel alert, dan tab Eksperimen milik run sebelumnya.
+  const bersihkanBlokRun = () => {
     $('summary').hidden = true;
-    isi($('findings-body'), el('div', { class: 'skeleton', 'aria-label': 'Memuat hasil' }, el('i'), el('i'), el('i'), el('i')));
+    $('alerts-box').hidden = true;
+    $('catatan-alat').hidden = true;
+    $('tabs').hidden = true;
+    $('railnav-box').hidden = true;
+    $('panel-operasional').hidden = false;
+    $('panel-eksperimen').hidden = true;
+    isi($('panel-eksperimen'));
+    isi($('alerts-ringkas'));
+    isi($('alerts-body'));
     isi($('filters'));
+    isi($('title-block'));
+    state.tab = 'operasional';
+  };
+
+  const renderMemuat = () => {
+    bersihkanBlokRun();
+    isi($('findings-body'), el('div', { class: 'skeleton', 'aria-label': 'Memuat hasil' }, el('i'), el('i'), el('i'), el('i')));
     renderPipeline();
   };
 
   const renderKosong = (pesanGalatTeks, galat) => {
+    bersihkanBlokRun();
+    $('run-title').textContent = '';
+    isi($('crumb'));
+    isi($('history'));
     renderPipeline();
     $('summary').hidden = true;
     isi($('filters'));
@@ -648,7 +660,8 @@
   const renderPipeline = (live) => {
     const mode = live?.mode ?? state.hasil?.run?.mode ?? modeTerpilih();
     const status = live?.jobs ?? state.jobs ?? statusNodeDariHasil() ?? {};
-    const llmGagal = !live && state.hasil?.run?.gemini?.status === 'gagal';
+    // Skema 2 tidak punya run.gemini; kegagalan LLM terbaca dari status panggilan.
+    const llmGagal = !live && (state.hasil?.run?.status_panggilan?.error ?? 0) > 0;
     $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Pipeline run #${state.hasil.run.nomor}` : 'Status pipeline');
     const total = Object.values(status).reduce((s, j) => s + (Number.isFinite(j?.durasi) ? j.durasi : 0), 0);
     $('pipeline-total').textContent = total ? `total ${durasi(total)}` : '';
@@ -692,13 +705,15 @@
     const sel = (label, nilai, opsi = {}) => el('div', {}, el('dt', { text: label }),
       el('dd', { class: [opsi.data ? 'data' : '', opsi.warn ? 'warn' : ''].join(' ').trim() || null, title: opsi.title }, nilai));
     const bedaModel = r.model_menjawab && r.model_menjawab !== r.model_diminta;
+    // status_panggilan dan biaya_usd opsional di skema; berkas sah tanpa keduanya tidak boleh merusak render.
+    const sp = r.status_panggilan ?? null;
     const commit = el('span', { text: pendek(r.objek_uji.commit) });
     isi($('title-block'),
       sel('Model menjawab', r.model_menjawab ?? '—', { warn: bedaModel, title: bedaModel ? `Diminta ${r.model_diminta}` : r.model_diminta }),
       sel('Objek uji', commit, { data: true, title: r.objek_uji.commit }),
       sel('Durasi', durasi(r.durasi_detik), { data: true }),
-      sel('Biaya', r.biaya_usd === null ? '—' : `US$${r.biaya_usd.toFixed(4).replace('.', ',')}`, { data: true }),
-      sel('Panggilan', `${r.status_panggilan.ok}/${r.status_panggilan.total} ok`, { data: true, warn: r.status_panggilan.ok !== r.status_panggilan.total }));
+      sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true }),
+      sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, warn: Boolean(sp) && sp.ok !== sp.total }));
   };
 
   // Kartu dikelompokkan tiga baris berlabel supaya keparahan, proses, dan sumber tidak tercampur.
@@ -712,7 +727,10 @@
     const grup = (judul, ...kartuAnak) => el('div', { class: 'kartu-grup' },
       el('h3', { text: judul }), el('div', { class: 'kartu-baris' }, kartuAnak));
 
+    const SEV_DIKENAL = ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
     const sev = (daftar) => h.alerts.filter((a) => daftar.includes(String(a.severity_sonar).toUpperCase())).length;
+    // Sonar MQR memakai nama severity lain; tanpa kartu ini alert seperti itu hilang dari hitungan.
+    const sevLain = h.alerts.filter((a) => !SEV_DIKENAL.includes(String(a.severity_sonar).toUpperCase())).length;
     const ditinjau = (v) => h.findings.filter((t) => state.keputusan[t.fingerprint]?.v === v).length;
 
     isi($('summary'),
@@ -720,12 +738,13 @@
         kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
         kartu('Critical', sev(['CRITICAL']), 'severity apa adanya dari Sonar', 'high'),
         kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
-        kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar')),
+        kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
+        sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
       grup('Proses',
         kartu('Ditolak model', n('false_positive'), 'putusan false_positive'),
         kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan'),
         kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal'),
-        kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal, hanya di browser ini')),
+        kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal, hanya di browser ini, tidak tersinkron')),
       grup('Sumber',
         kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
         kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
@@ -809,7 +828,10 @@
       tampilBanner('info', 'Browser menolak penyimpanan. Catatan hanya bertahan sampai halaman dimuat ulang.');
     }
     renderRingkasanV2();
-    renderTemuanV2(t.fingerprint);
+    // Tidak memindahkan fokus: pengguna keyboard sedang berada di dalam panel detail.
+    renderTemuanV2();
+    const lagi = document.getElementById(`${t.fingerprint}-${v}`);
+    if (lagi) lagi.focus();
   };
 
   const FILTER_V2 = [
@@ -853,7 +875,7 @@
       t.kategori_owasp ? ['OWASP', t.kategori_owasp] : null,
       ['Sifat', t.sifat], ['Keyakinan', t.keyakinan],
       t.fungsi ? ['Fungsi', t.fungsi] : null,
-      t.tanda.length ? ['Tanda', t.tanda.join(', ')] : null,
+      t.tanda?.length ? ['Tanda', t.tanda.join(', ')] : null,
     ].filter(Boolean);
     const putusan = state.keputusan[t.fingerprint]?.v ?? null;
     const tombol = (v, label) => el('button', {
@@ -896,13 +918,14 @@
           chip(t.keyakinan, 'chip-keyakinan')),
         el('span', { class: 'floc', text: t.file ? `${t.file}:${t.baris ?? '?'}` : '—' }),
         putusan
-          ? el('span', { class: 'fdec', text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai FP' })
+          ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai FP' })
           : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }));
         return el('li', {}, baris, terbuka ? detailTemuanV2(t) : null);
       }))
       : el('div', { class: 'state' }, el('p', { text: semua.length ? 'Tidak ada temuan yang cocok dengan saringan ini.' : 'Panggilan deteksi tidak melaporkan temuan.' })));
-    if (fokusFp) {
-      const n = $(`d-${fokusFp}`) ? document.querySelector(`[aria-controls="d-${fokusFp}"]`) : null;
+    // Sidik jari berasal dari berkas hasil; hanya pola yang sah boleh masuk selector.
+    if (fokusFp && /^[0-9a-f]{16}$/.test(fokusFp)) {
+      const n = document.querySelector(`[aria-controls="d-${fokusFp}"]`);
       if (n) n.focus();
     }
   };

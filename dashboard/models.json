@@ -10,7 +10,7 @@
       "bawaan": true,
       "secret": "GEMINI_API_KEY",
       "biaya_perkiraan_usd": null,
-      "catatan": "Model bawaan jalur v1. Biaya belum diukur pada eksperimen 19 Oktober."
+      "catatan": "Model bawaan jalur v1. Biaya jalur v1 belum diukur; angka eksperimen 19 Okt berasal dari jalur v2 (6 panggilan per run) sehingga tidak berlaku di sini."
     },
     {
       "vendor": "google",
@@ -19,8 +19,8 @@
       "jalur": "v1",
       "bawaan": false,
       "secret": "GEMINI_API_KEY",
-      "biaya_perkiraan_usd": 0.7631,
-      "catatan": "Butuh billing aktif di project Google milik GEMINI_API_KEY."
+      "biaya_perkiraan_usd": null,
+      "catatan": "Butuh billing aktif di project Google milik GEMINI_API_KEY. Biaya jalur v1 belum diukur."
     },
     {
       "vendor": "google",

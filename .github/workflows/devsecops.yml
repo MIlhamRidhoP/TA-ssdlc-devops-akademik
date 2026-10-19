@@ -18,7 +18,7 @@ on:
         options: [auto, sast, sast-llm]
         default: auto
       model:
-        description: 'Model Gemini untuk mode sast-llm'
+        description: 'Model untuk jalur v1 (mode sast-llm). Daftar sahnya ada di dashboard/models.json.'
         type: choice
         options: [gemini-3.8-flash, gemini-3.1-pro-preview]
         default: gemini-3.8-flash
@@ -152,7 +152,8 @@ jobs:
   analisis:
     name: Analisis temuan (Sonar dan Gemini)
     needs: [rencana, sonarcloud]
-    if: needs.sonarcloud.result == 'success'
+    # inputs.jalur kosong pada push; jalur v2 mematikan job ini supaya tidak ada dua panggilan berbayar.
+    if: needs.sonarcloud.result == 'success' && inputs.jalur != 'v2'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -167,6 +168,19 @@ jobs:
 
       - name: Install dependency
         run: npm ci
+
+      # dashboard/models.json adalah daftar sah; pilihan di input workflow hanya cermin yang bisa menyimpang.
+      - name: Validasi model terhadap dashboard/models.json
+        env:
+          MODEL: ${{ inputs.model }}
+        run: |
+          node -e '
+            const m = require("./dashboard/models.json").models.filter((x) => x.jalur === "v1");
+            if (!m.some((x) => x.id === process.env.MODEL)) {
+              console.error(`Model ${process.env.MODEL} tidak terdaftar untuk jalur v1 di dashboard/models.json`);
+              process.exit(1);
+            }
+          '
 
       # --export-prompt mengambil data Sonar dan menyusun prompt tanpa memanggil Gemini.
       - name: Ambil temuan Sonar
@@ -207,8 +221,11 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
     concurrency:
-      group: analisis-v2-${{ github.ref }}
+      # Mengantre, bukan menolak: dua dispatch berurutan tetap menghasilkan dua run berbayar.
+      group: security-results
       cancel-in-progress: false
     steps:
       - name: Tolak tanpa konfirmasi eksplisit
@@ -249,7 +266,22 @@ jobs:
             console.log(`Vendor ${v}, model ${cocok.id}, secret ${cocok.secret}, perkiraan biaya US$${cocok.biaya_perkiraan_usd}`);
           '
 
-      # Satu run, kondisi utama. Secret vendor lain belum dibuat di repo ini.
+      - name: Pastikan secret vendor tersedia
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VENDOR: ${{ inputs.vendor_v2 }}
+        run: |
+          node -e '
+            const m = require("./dashboard/models.json").models.find((x) => x.jalur === "v2" && x.vendor === process.env.VENDOR);
+            if (!process.env[m.secret]) {
+              console.error(`Secret ${m.secret} belum ada di repo ini, jadi vendor ${process.env.VENDOR} tidak bisa dijalankan.`);
+              process.exit(1);
+            }
+          '
+
+      # Satu run, kondisi utama.
       - name: Jalankan llm-scan (1 run, kondisi utama)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -257,11 +289,19 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_BRANCH: ${{ github.ref_name }}
-        run: node scripts/llm-scan.js --vendor=${{ inputs.vendor_v2 }} --kondisi=utama --runs=1 --objek=.
+          VENDOR: ${{ inputs.vendor_v2 }}
+        run: node scripts/llm-scan.js --vendor="$VENDOR" --kondisi=utama --runs=1 --objek=.
 
       - name: Susun results.json skema 2
+        env:
+          VENDOR: ${{ inputs.vendor_v2 }}
         run: |
-          folder=$(ls -dt llm-output/v2/*-${{ inputs.vendor_v2 }}-utama | head -1)
+          set -euo pipefail
+          folder=$(ls -dt "llm-output/v2/"*"-$VENDOR-utama" 2>/dev/null | head -1 || true)
+          if [ -z "$folder" ]; then
+            echo "Folder keluaran llm-scan untuk vendor $VENDOR tidak ditemukan." >&2
+            exit 1
+          fi
           node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
 
       - name: Unggah output v2
@@ -274,6 +314,29 @@ jobs:
             results.json
           retention-days: 14
           if-no-files-found: warn
+
+      # Tanpa langkah ini hasil v2 tidak pernah sampai ke dashboard: job `hasil` hanya menulis skema 1.
+      - name: Terbitkan ke branch security-results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for percobaan in 1 2 3; do
+            rm -rf ../pub
+            git worktree prune
+            git branch -D security-results 2>/dev/null || true
+            if git fetch --depth=1 origin security-results 2>/dev/null; then
+              git worktree add -B security-results ../pub FETCH_HEAD
+            else
+              git worktree add --orphan -b security-results ../pub
+            fi
+            node scripts/merge-results.js publish --v2 --results=results.json --dir=../pub
+            git -C ../pub add -A
+            git -C ../pub commit -q -m "hasil v2: run #$GITHUB_RUN_NUMBER ($GITHUB_REF_NAME)"
+            if git -C ../pub push origin security-results; then exit 0; fi
+            echo "Push gagal (percobaan $percobaan), coba lagi"
+            sleep 5
+          done
+          exit 1
 
   hasil:
     name: Gabung dan terbitkan hasil

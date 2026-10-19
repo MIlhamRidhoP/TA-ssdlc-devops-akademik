@@ -39,6 +39,8 @@ const periksaKeyword = (skema, jalur) => {
 
 const telusuri = (skema, data, jalur, akar, galat) => {
   if (skema.$ref) {
+    // Keyword tetap diperiksa walau ada $ref, supaya jaminan "keyword tak didukung ditolak" tidak bocor.
+    periksaKeyword(skema, jalur);
     const nama = skema.$ref.replace('#/$defs/', '');
     const tujuan = akar.$defs && akar.$defs[nama];
     if (!tujuan) throw new Error(`$ref tidak ditemukan: ${skema.$ref}`);

@@ -5,6 +5,7 @@
 // Pemakaian:
 //   node scripts/merge-results.js merge --input=gemini-output --out=results.json [--summary=<file>]
 //   node scripts/merge-results.js publish --results=results.json --dir=<worktree security-results>
+//     (skema diambil dari isi results.json; --v2 hanya penanda eksplisit di workflow)
 //
 // Jalur v2 (prompt v2, docs/design/results-v2.schema.json), tanpa panggilan API:
 //   node scripts/merge-results.js merge --v2 --folder=<folder llm-scan> --run=N --out=<file>
@@ -271,15 +272,25 @@ const perbaruiIndex = (index, entri) => {
   return { schema_version: SCHEMA_VERSION, diperbarui: entri.selesai, runs: runs.slice(0, BATAS_INDEX) };
 };
 
+// Menerbitkan results.json ke worktree branch security-results dan memperbarui index.json.
+// Skema 1 dan 2 punya bentuk entri index yang berbeda, jadi index tidak boleh bercampur versi:
+// entri dengan schema_version berbeda dari berkas yang diterbitkan dibuang dari index.
 const terbitkan = (fileHasil, dir) => {
   const r = bacaJson(fileHasil);
-  const relPath = `${pathBranch(r.run.branch)}/${r.run.nomor}.json`;
+  const v2 = r.schema_version === 2;
+  const branch = v2 ? (r.run.objek_uji?.branch ?? 'main') : r.run.branch;
+  const relPath = `${pathBranch(branch)}/${r.run.nomor}.json`;
   fs.mkdirSync(path.join(dir, path.dirname(relPath)), { recursive: true });
   tulisJson(path.join(dir, relPath), r);
   const fileIndex = path.join(dir, 'index.json');
-  const index = fs.existsSync(fileIndex) ? bacaJson(fileIndex) : null;
-  tulisJson(fileIndex, perbaruiIndex(index, entriIndex(r, relPath)));
-  console.log(`Diterbitkan: ${relPath}`);
+  const lama = fs.existsSync(fileIndex) ? bacaJson(fileIndex) : null;
+  const sesuai = lama && (lama.schema_version ?? 1) === r.schema_version ? lama : null;
+  if (lama && !sesuai) console.warn(`index.json lama memakai skema ${lama.schema_version ?? 1}, diganti dengan skema ${r.schema_version}`);
+  const entri = v2 ? require('./llm/results-v2').entriIndexV2(r, relPath) : entriIndex(r, relPath);
+  const baru = perbaruiIndex(sesuai, entri);
+  baru.schema_version = r.schema_version;
+  tulisJson(fileIndex, baru);
+  console.log(`Diterbitkan (skema ${r.schema_version}): ${relPath}`);
 };
 
 const metaDariEnv = (env) => ({
