@@ -47,6 +47,59 @@ Tombol **Jalankan analisis** di mode demo hanya menyimulasikan job.
 Arsip demo lama (skema 1, pilot 10 Oktober) ada di
 [`docs/arsip/pilot-20261010/`](../docs/arsip/pilot-20261010/README.md) dan tidak lagi ditampilkan.
 
+## Pemeriksaan
+
+### Di dalam repo (`npm test`)
+
+Berjalan tanpa browser dan tanpa jaringan, ikut dijalankan CI:
+
+| Tes | Isi |
+|---|---|
+| `tests/results-v2.test.js` | fixture v2 sah terhadap skema 2, arsip v1 sah terhadap skema 1, uji negatif validator, pemetaan putusan, sidik jari temuan, dan **angka blok eksperimen identik dengan acuan skor** |
+| `tests/merge-results.test.js` | produsen skema 1 |
+
+Angka skor sumber hidup di branch `eksperimen/seeded`, yang tidak diambil runner CI
+(checkout satu branch). Karena itu angkanya disalin ke
+`tests/fixtures/acuan-skor-20261019.json` beserta provenance: branch, commit, path, dan
+SHA-256 tiap berkas sumber. Bila branch itu kebetulan tersedia, satu tes tambahan
+melintas-periksa acuan terhadap berkas aslinya; bila tidak, tes itu dilewati, bukan gagal.
+
+Kalau berkas skor berubah, buat ulang acuannya:
+
+```
+node scripts/buat-acuan-skor.js
+```
+
+### Di luar repo (tampilan dan aksesibilitas)
+
+Playwright dan axe-core sengaja **tidak** dijadikan dependensi repo supaya jejak dependensi
+tetap kecil. Siapkan di folder mana pun di luar repo:
+
+```
+mkdir pemeriksa && cd pemeriksa
+npm init -y
+npm install playwright @axe-core/playwright
+npx playwright install chromium
+```
+
+Jalankan dashboard lebih dulu (`python -m http.server 8765` di folder `dashboard/`), lalu
+arahkan skrip Playwright ke `http://127.0.0.1:8765/#demo`. Yang perlu diperiksa:
+
+| Pemeriksaan | Cara |
+|---|---|
+| Error konsol dan respons gagal | kumpulkan event `console` bertipe `error`, `pageerror`, dan `response` berstatus >= 400 (kecualikan `/favicon.ico`, diminta otomatis browser) |
+| Overflow horizontal | `document.documentElement.scrollWidth > clientWidth` di 375, 768, dan 1280 px |
+| Aksesibilitas | `new AxeBuilder({ page }).analyze()`, tidak boleh ada pelanggaran `serious` atau `critical` |
+| Kontras teks kecil | hitung rasio dari piksel sungguhan (Chrome mengembalikan `oklch()` di computed style; konversikan lewat canvas), ambang 4,5:1 |
+| Tumpang tindih | bandingkan `getBoundingClientRect()` antar anak di `.arow`, `.frow-v2`, `.cell`, dan `.hrow` |
+
+Dua jebakan yang pernah menipu pemeriksaan di sini, keduanya pernah meloloskan cacat nyata:
+
+- **Drawer harus dibuka.** Isi `#drawer` tersembunyi saat halaman dimuat, jadi axe maupun
+  pemindaian kontras tidak melihatnya. Pernah ada teks putih di atas putih di situ.
+- **Tumpang tindih tidak terdeteksi oleh pemeriksaan overflow.** Elemen bisa saling tindih
+  tanpa membuat halaman melebar.
+
 ## Token GitHub
 
 Buat **fine-grained personal access token**:
