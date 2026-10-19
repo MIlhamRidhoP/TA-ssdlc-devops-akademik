@@ -5,6 +5,7 @@ docs/superpowers/
 uploads/
 .claude/settings.local.json
 gemini-output/
+llm-output/
 
 # impeccable-ignore: berkas lokal Impeccable (config.json, design.json, surfaces/, critique/ tetap di-commit)
 .impeccable/config.local.json
