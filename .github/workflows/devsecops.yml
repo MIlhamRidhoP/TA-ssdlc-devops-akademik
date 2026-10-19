@@ -130,14 +130,25 @@ jobs:
     if: needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      # true hanya bila SonarCloud benar-benar punya analisis untuk commit ini.
+      analisis_siap: ${{ steps.siap.outputs.siap }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # qualitygate.wait membuat scanner menunggu server selesai memproses, supaya job berikutnya
-      # membaca analisis commit ini. Gate yang merah tidak menghentikan pipeline analisis.
+      # sonar.qualitygate.wait membuat scanner menunggu hasil Quality Gate, yang baru bisa dihitung
+      # setelah server selesai memproses laporan analisis. Dokumentasi resmi:
+      # https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/ci-based-analysis/github-actions-for-sonarcloud
+      # ("You fail a GitHub Actions workflow on quality-gate failure by making the scanner wait for
+      # the Quality Gate result and exit non-zero if it's failed.")
+      #
+      # continue-on-error dipertahankan dengan sengaja: objek uji memang berisi kerentanan tertanam,
+      # jadi gate merah tidak boleh menghentikan pipeline. Konsekuensinya, langkah ini juga menelan
+      # kegagalan analisis yang sesungguhnya, sehingga result job tidak cukup jadi bukti. Langkah
+      # berikutnya yang memisahkan "gate merah" dari "analisis tidak jadi".
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v5
         continue-on-error: true
@@ -148,6 +159,29 @@ jobs:
             -Dsonar.branch.name=${{ github.ref_name }}
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
+
+      # Membuktikan analisis untuk commit ini benar-benar ada di server, bukan sekadar scanner selesai.
+      # Tanpa ini llm-scan bisa mengambil analisis lama dan ditolak karena hash tree src/ tidak cocok.
+      # Yang diperiksa adalah revisi analisis terakhir pada branch ini, bukan status gate.
+      - name: Pastikan analisis tersedia di SonarCloud
+        id: siap
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT: MIlhamRidhoP_TA-ssdlc-devops-akademik
+          SONAR_BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          siap=false
+          for percobaan in 1 2 3 4 5 6; do
+            revisi=$(curl -s -u "$SONAR_TOKEN:"               "https://sonarcloud.io/api/project_analyses/search?project=$SONAR_PROJECT&branch=$SONAR_BRANCH&ps=1"               | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.analyses?.[0]?.revision??"")}catch(e){process.stdout.write("")}})')
+            if [ "$revisi" = "$COMMIT" ]; then siap=true; break; fi
+            echo "Percobaan $percobaan: analisis terakhir branch $SONAR_BRANCH revisi '${revisi:-tidak ada}', menunggu $COMMIT"
+            sleep 15
+          done
+          echo "siap=$siap" >> "$GITHUB_OUTPUT"
+          if [ "$siap" != "true" ]; then
+            echo "::warning::SonarCloud belum punya analisis untuk commit ini pada branch $SONAR_BRANCH. Jalur v2 akan dilewati."
+          fi
 
   analisis:
     name: Analisis temuan (Sonar dan Gemini)
@@ -217,8 +251,12 @@ jobs:
   # satu run sekaligus lewat concurrency, timeout job, dan menolak branch objek uji eksperimen.
   analisis-v2:
     name: Analisis LLM v2 (deteksi dan verifikasi)
-    needs: rencana
-    if: github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
+    needs: [rencana, sonarcloud]
+    # llm-scan menolak run bila hash tree src/ pada revisi analisis Sonar berbeda dengan commit yang
+    # di-checkout, jadi job ini baru boleh jalan setelah analisis commit ini benar-benar ada di server.
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
+      && needs.sonarcloud.result == 'success' && needs.sonarcloud.outputs.analisis_siap == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
