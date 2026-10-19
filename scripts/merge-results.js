@@ -10,6 +10,7 @@
 //   node scripts/merge-results.js merge --v2 --folder=<folder llm-scan> --run=N --out=<file>
 //     [--skor=<skor-utama.json> --skor-triase=<...> --skor-triase-konservatif=<...>] [--repo=owner/repo]
 //     [--objek=<worktree objek uji>]  (untuk potongan kode di sekitar baris temuan)
+//     [--biaya=<folder induk vendor>] (untuk biaya per run dan per vendor di blok eksperimen)
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -305,6 +306,21 @@ const mergeV2 = () => {
   const fileAlert = path.join(folder, 'sonar-alert.json');
   const alert = fs.existsSync(fileAlert) ? bacaJson(fileAlert) : [];
 
+  // --biaya menunjuk folder induk yang memuat subfolder tiap vendor (mis. .../utama/),
+  // dipakai mengisi biaya per run dan per vendor di blok eksperimen.
+  const biayaVendor = {};
+  const dirBiaya = ambilArg('biaya') ? path.resolve(ambilArg('biaya')) : null;
+  if (dirBiaya) {
+    for (const nama of fs.readdirSync(dirBiaya)) {
+      const f = path.join(dirBiaya, nama, 'summary.json');
+      if (!fs.existsSync(f)) continue;
+      const sm = bacaJson(f);
+      const perRun = {};
+      for (const r of sm.runs ?? []) if (typeof r.biaya_usd === 'number') perRun[String(r.run)] = r.biaya_usd;
+      biayaVendor[sm.vendor] = { total_usd: sm.biaya_total_usd ?? null, per_run: perRun };
+    }
+  }
+
   const skorUtama = ambilArg('skor');
   let eksperimen = null;
   if (skorUtama) {
@@ -312,10 +328,13 @@ const mergeV2 = () => {
       utama: bacaJson(path.resolve(skorUtama)),
       triaseUtama: ambilArg('skor-triase') ? bacaJson(path.resolve(ambilArg('skor-triase'))) : null,
       triaseKonservatif: ambilArg('skor-triase-konservatif') ? bacaJson(path.resolve(ambilArg('skor-triase-konservatif'))) : null,
+      sensitivitas: ambilArg('skor-sensitivitas') ? bacaJson(path.resolve(ambilArg('skor-sensitivitas'))) : null,
+      biayaVendor,
       sumber: {
         skor_utama: path.basename(skorUtama),
         skor_triase_utama: ambilArg('skor-triase') ? path.basename(ambilArg('skor-triase')) : null,
         skor_triase_konservatif: ambilArg('skor-triase-konservatif') ? path.basename(ambilArg('skor-triase-konservatif')) : null,
+        skor_sensitivitas: ambilArg('skor-sensitivitas') ? path.basename(ambilArg('skor-sensitivitas')) : null,
       },
     });
   }

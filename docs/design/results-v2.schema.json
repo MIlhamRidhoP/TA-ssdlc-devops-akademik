@@ -155,12 +155,24 @@
             "skor_utama": { "type": "string" },
             "skor_triase_utama": { "type": ["string", "null"] },
             "skor_triase_konservatif": { "type": ["string", "null"] },
+            "skor_sensitivitas": { "type": ["string", "null"] },
             "commit_kode_scoring": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" },
             "aturan_hardening": { "type": ["string", "null"] },
             "objek_uji_commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" }
           }
         },
         "sensitivitas": { "type": "boolean" },
+        "label_alert_sensitivitas": {
+          "type": ["object", "null"],
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": { "enum": ["nyata", "fp", "laten", null] },
+              "sumber": { "enum": ["otomatis", "manual", "paksa", null] }
+            }
+          }
+        },
         "label_alert": {
           "type": "object",
           "additionalProperties": {
@@ -214,6 +226,24 @@
                           }
                         },
                         "metrik_fp_positif": { "$ref": "#/$defs/pr" },
+                        "sensitivitas": {
+                          "type": ["object", "null"],
+                          "description": "Verifikasi empat kategori dengan label SONAR-03 dipaksa nyata. Dari berkas skor sensitivitas.",
+                          "additionalProperties": false,
+                          "properties": {
+                            "jumlah": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "identified_fp": { "type": "integer", "minimum": 0 },
+                                "missed_fp": { "type": "integer", "minimum": 0 },
+                                "misidentified_fp": { "type": "integer", "minimum": 0 },
+                                "correct_retention": { "type": "integer", "minimum": 0 }
+                              }
+                            },
+                            "metrik_fp_positif": { "$ref": "#/$defs/pr" }
+                          }
+                        },
                         "uncertain_dipertahankan": { "type": "array", "items": { "type": "string" } },
                         "tanpa_hasil": { "type": "array", "items": { "type": "string" } }
                       }

@@ -539,6 +539,7 @@
       "skor_utama": "skor-utama.json",
       "skor_triase_utama": "skor-setelah-triase.json",
       "skor_triase_konservatif": "skor-setelah-triase-konservatif.json",
+      "skor_sensitivitas": "skor-sensitivitas-sonar03.json",
       "commit_kode_scoring": "10be9aac06e22e7d3e81d80322fa9bf924df402c",
       "aturan_hardening": "spesifikasi",
       "objek_uji_commit": "97cfb00349e7d3ff40b04834e97a95339902cf65"
@@ -566,11 +567,34 @@
         "sumber": "otomatis"
       }
     },
+    "label_alert_sensitivitas": {
+      "SONAR-01": {
+        "label": "nyata",
+        "sumber": "otomatis"
+      },
+      "SONAR-02": {
+        "label": "fp",
+        "sumber": "otomatis"
+      },
+      "SONAR-03": {
+        "label": "nyata",
+        "sumber": "paksa"
+      },
+      "SONAR-04": {
+        "label": "fp",
+        "sumber": "otomatis"
+      },
+      "SONAR-05": {
+        "label": "nyata",
+        "sumber": "otomatis"
+      }
+    },
     "per_model": [
       {
         "vendor": "google",
         "model": "gemini-3.1-pro-preview",
         "jumlah_run": 3,
+        "biaya_total_usd": 2.289344,
         "skenario_a": {
           "tp": 1,
           "fp": 2,
@@ -678,6 +702,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.716812,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 3,
@@ -691,7 +716,20 @@
                 "f1": 1
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 1,
+                  "correct_retention": 2
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.6666666666666666,
+                  "recall": 1,
+                  "f1": 0.8
+                }
+              }
             }
           },
           {
@@ -776,6 +814,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.83411,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 3,
@@ -789,7 +828,20 @@
                 "f1": 1
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 1,
+                  "correct_retention": 2
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.6666666666666666,
+                  "recall": 1,
+                  "f1": 0.8
+                }
+              }
             }
           },
           {
@@ -874,6 +926,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.738422,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 3,
@@ -887,7 +940,20 @@
                 "f1": 1
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 1,
+                  "correct_retention": 2
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.6666666666666666,
+                  "recall": 1,
+                  "f1": 0.8
+                }
+              }
             }
           }
         ],
@@ -932,6 +998,7 @@
         "vendor": "anthropic",
         "model": "claude-sonnet-5-5",
         "jumlah_run": 3,
+        "biaya_total_usd": 1.110496,
         "skenario_a": {
           "tp": 1,
           "fp": 2,
@@ -1039,6 +1106,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.373722,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 1,
@@ -1052,7 +1120,20 @@
                 "f1": 0.4
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 1,
+                  "missed_fp": 1,
+                  "misidentified_fp": 1,
+                  "correct_retention": 2
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.5,
+                  "recall": 0.5,
+                  "f1": 0.5
+                }
+              }
             }
           },
           {
@@ -1137,6 +1218,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.367662,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 1,
@@ -1150,7 +1232,20 @@
                 "f1": 0.4
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 1,
+                  "missed_fp": 1,
+                  "misidentified_fp": 1,
+                  "correct_retention": 2
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.5,
+                  "recall": 0.5,
+                  "f1": 0.5
+                }
+              }
             }
           },
           {
@@ -1235,6 +1330,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.369112,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 2,
@@ -1248,7 +1344,20 @@
                 "f1": 0.6666666666666666
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 1,
+                  "correct_retention": 2
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.6666666666666666,
+                  "recall": 1,
+                  "f1": 0.8
+                }
+              }
             }
           }
         ],
@@ -1293,6 +1402,7 @@
         "vendor": "openai",
         "model": "gpt-6.1-sol",
         "jumlah_run": 3,
+        "biaya_total_usd": 0.609284,
         "skenario_a": {
           "tp": 1,
           "fp": 2,
@@ -1400,6 +1510,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.286326,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 3,
@@ -1413,7 +1524,20 @@
                 "f1": 0.8571428571428571
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 2,
+                  "correct_retention": 1
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.5,
+                  "recall": 1,
+                  "f1": 0.6666666666666666
+                }
+              }
             }
           },
           {
@@ -1498,6 +1622,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.174044,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 3,
@@ -1511,7 +1636,20 @@
                 "f1": 0.8571428571428571
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 2,
+                  "correct_retention": 1
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.5,
+                  "recall": 1,
+                  "f1": 0.6666666666666666
+                }
+              }
             }
           },
           {
@@ -1596,6 +1734,7 @@
                 "belum_ditriase": 0
               }
             },
+            "biaya_usd": 0.148914,
             "verifikasi": {
               "jumlah": {
                 "identified_fp": 3,
@@ -1609,7 +1748,20 @@
                 "f1": 0.8571428571428571
               },
               "uncertain_dipertahankan": [],
-              "tanpa_hasil": []
+              "tanpa_hasil": [],
+              "sensitivitas": {
+                "jumlah": {
+                  "identified_fp": 2,
+                  "missed_fp": 0,
+                  "misidentified_fp": 2,
+                  "correct_retention": 1
+                },
+                "metrik_fp_positif": {
+                  "precision": 0.5,
+                  "recall": 1,
+                  "f1": 0.6666666666666666
+                }
+              }
             }
           }
         ],

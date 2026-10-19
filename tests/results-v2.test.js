@@ -136,11 +136,16 @@ test('blok eksperimen menyalin angka apa adanya dari berkas skor', () => {
   const utama = bacaSkor('skor-utama.json');
   const triase = bacaSkor('skor-setelah-triase.json');
   const kons = bacaSkor('skor-setelah-triase-konservatif.json');
+  const sens = bacaSkor('skor-sensitivitas-sonar03.json');
 
   for (const fix of fixtureV2) {
     const eks = fix.eksperimen;
     assert.ok(eks, 'blok eksperimen harus ada di fixture');
     assert.equal(eks.sumber.commit_kode_scoring, utama.commit_kode_scoring.head);
+    // Label SONAR-03 berbeda antara analisis utama dan analisis sensitivitas; keduanya harus terbawa.
+    assert.equal(eks.label_alert['SONAR-03'].label, utama.utama.label_alert['SONAR-03'].label);
+    assert.equal(eks.label_alert_sensitivitas['SONAR-03'].label, sens.utama.label_alert['SONAR-03'].label);
+    assert.notEqual(eks.label_alert['SONAR-03'].label, eks.label_alert_sensitivitas['SONAR-03'].label);
     assert.equal(eks.sumber.aturan_hardening, utama.aturan_hardening);
     assert.equal(eks.per_model.length, utama.utama.per_model.length);
 
@@ -181,6 +186,11 @@ test('blok eksperimen menyalin angka apa adanya dari berkas skor', () => {
         // Verifikasi empat kategori disalin apa adanya.
         assert.deepEqual(r.verifikasi.jumlah, rs.verifikasi.jumlah, `${m.vendor} run ${r.run} verifikasi`);
         assert.deepEqual(r.verifikasi.metrik_fp_positif, rs.verifikasi.metrik_fp_positif);
+
+        // Varian sensitivitas SONAR-03 juga disalin apa adanya, dari berkas skor sensitivitas.
+        const rsen = sens.utama.per_model.find((x) => x.vendor === m.vendor).runs.find((x) => x.run === r.run);
+        assert.deepEqual(r.verifikasi.sensitivitas.jumlah, rsen.verifikasi.jumlah, `${m.vendor} run ${r.run} verifikasi sensitivitas`);
+        assert.deepEqual(r.verifikasi.sensitivitas.metrik_fp_positif, rsen.verifikasi.metrik_fp_positif);
       }
 
       // rata_rata ketat disalin; rata_rata triase dihitung dengan aturan rataRata yang sama dengan score.js.

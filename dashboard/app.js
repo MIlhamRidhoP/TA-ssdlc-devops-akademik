@@ -113,6 +113,8 @@
   const state = {
     demo: false,
     demoV2: false,
+    tab: 'operasional',
+    eksLabel: 'utama',
     token: null,
     tokenDiingat: false,
     projects: [],
@@ -853,6 +855,9 @@
     $('alerts-box').hidden = true;
     $('verif-box').hidden = false;
     $('catatan-alat').hidden = true;
+    $('tabs').hidden = true;
+    $('panel-operasional').hidden = false;
+    $('panel-eksperimen').hidden = true;
     $('verif-h').textContent = 'Verifikasi temuan Sonar';
     const v = h?.sonar_verification;
     isi($('verif'), v
@@ -1110,6 +1115,126 @@
     $('metrics-box').hidden = true; // Blok riset pindah ke tab Eksperimen (S5)
   };
 
+  // ---------- Tab Eksperimen ----------
+  // Angka ditampilkan apa adanya beserta variannya. Tidak ada peringkat, tidak ada penilaian
+  // model mana yang lebih baik: itu kesimpulan yang harus ditarik di luar dashboard.
+  const n3 = (v) => (typeof v === 'number' ? v.toFixed(3).replace('.', ',') : '—');
+  const usd = (v) => (typeof v === 'number' ? `US$${v.toFixed(4).replace('.', ',')}` : '—');
+
+  const tabel = (kepala, baris) => el('div', { class: 'tabel-bungkus' },
+    el('table', { class: 'eks' },
+      el('thead', {}, el('tr', {}, kepala.map((h) => el('th', { scope: 'col', text: h })))),
+      el('tbody', {}, baris.map((r) => el('tr', {}, r.map((c, i) => el('td', {
+        class: i > 0 && typeof c !== 'object' ? 'num' : null,
+      }, c)))))));
+
+  const blokEks = (judul, keterangan, isiBlok, sumberTeks) => el('section', { class: 'eks-blok' },
+    el('h3', { text: judul }),
+    keterangan ? el('p', { class: 'eks-ket', text: keterangan }) : null,
+    isiBlok,
+    el('p', { class: 'eks-sumber', text: sumberTeks }));
+
+  const eksSkenario = (eks) => {
+    const kepala = ['Model', 'Skenario', 'Ketat P/R/F1', 'Triase konservatif P/R/F1', 'Triase utama P/R/F1'];
+    const baris = [];
+    for (const m of eks.per_model) {
+      const a = m.skenario_a;
+      baris.push([`${m.vendor} (${m.model})`, 'A — alert Sonar saja',
+        `${n3(a?.precision)} / ${n3(a?.recall)} / ${n3(a?.f1)}`, '—', '—']);
+      for (const [kunci, nama] of [['skenario_b', 'B — alert dipertahankan + temuan LLM'], ['skenario_c', 'C — temuan LLM saja']]) {
+        const r = m.rata_rata[kunci];
+        const f = (v) => (v ? `${n3(v.precision)} / ${n3(v.recall)} / ${n3(v.f1)}` : '—');
+        baris.push([`${m.vendor}`, nama, f(r.ketat), f(r.triase_konservatif), f(r.triase_utama)]);
+      }
+    }
+    return blokEks('1. Skenario A, B, dan C per model',
+      'Rata-rata lintas run. Ketat: temuan di luar ground truth dihitung FP. Triase konservatif: kategori teoretis ikut dihitung FP. '
+      + 'Triase utama: teoretis tidak dihitung FP. Tidak ada varian yang menambah TP, jadi recall sama di ketiganya.',
+      tabel(kepala, baris),
+      `Sumber: ${eks.sumber.skor_utama}, ${eks.sumber.skor_triase_konservatif ?? '—'}, ${eks.sumber.skor_triase_utama ?? '—'} · kode scoring ${pendek(eks.sumber.commit_kode_scoring ?? '')}`);
+  };
+
+  const eksVerifikasi = (eks) => {
+    const pakaiSens = state.eksLabel === 'sensitivitas';
+    const kepala = ['Model', 'Run', 'Identified FP', 'Missed FP', 'Mis-identified FP', 'Correct retention', 'P/R/F1'];
+    const baris = [];
+    for (const m of eks.per_model) {
+      for (const r of m.runs) {
+        const v = pakaiSens ? (r.verifikasi?.sensitivitas ?? null) : (r.verifikasi ?? null);
+        const j = v?.jumlah ?? {};
+        const mp = v?.metrik_fp_positif ?? {};
+        baris.push([m.vendor, String(r.run), String(j.identified_fp ?? '—'), String(j.missed_fp ?? '—'),
+          String(j.misidentified_fp ?? '—'), String(j.correct_retention ?? '—'),
+          `${n3(mp.precision)} / ${n3(mp.recall)} / ${n3(mp.f1)}`]);
+      }
+    }
+    const pilih = el('div', { class: 'eks-pilih' },
+      el('span', { class: 'note', text: 'Label alert:' }),
+      ...[['utama', `Utama (SONAR-03 = ${eks.label_alert?.['SONAR-03']?.label ?? '—'})`],
+        ['sensitivitas', `Sensitivitas (SONAR-03 = ${eks.label_alert_sensitivitas?.['SONAR-03']?.label ?? '—'})`]]
+        .map(([k, label]) => el('button', {
+          class: 'btn btn-sm', type: 'button', 'aria-pressed': (state.eksLabel ?? 'utama') === k ? 'true' : 'false',
+          disabled: k === 'sensitivitas' && !eks.label_alert_sensitivitas,
+          onclick: () => { state.eksLabel = k; renderEksperimen(); },
+        }, label)));
+    return blokEks('2. Verifikasi empat kategori',
+      'FP diperlakukan sebagai kelas positif. Putusan uncertain dihitung sebagai alert yang dipertahankan, bukan kegagalan. '
+      + 'Label alert menentukan benar atau salahnya putusan, dan hanya memengaruhi tabel ini, bukan Skenario A, B, atau C.',
+      el('div', {}, pilih, tabel(kepala, baris)),
+      `Sumber: ${pakaiSens ? (eks.sumber.skor_sensitivitas ?? '—') : eks.sumber.skor_utama}`);
+  };
+
+  const eksTabelItem = (eks) => {
+    const vendor = eks.per_model.map((m) => m.vendor);
+    const kepala = ['Item', 'Kelas', 'Klasifikasi', 'Sonar A', 'Sonar B', ...vendor.flatMap((v) => [`${v} B`, `${v} C`])];
+    const sel = (x) => (x ? `${x.ketat ?? 0}/${x.dari ?? 0}` : '—');
+    const baris = (eks.tabel_per_item ?? []).map((t) => [
+      t.id, t.kelas ?? '—', t.klasifikasi ?? '—', t.sonar_a ?? '—', t.sonar_b ?? '—',
+      ...vendor.flatMap((v) => [sel(t.per_model?.[v]?.skenario_b), sel(t.per_model?.[v]?.skenario_c)]),
+    ]);
+    return blokEks('3. Tabel per item seeded',
+      'Satu baris per item ground truth di SEEDED.md. Angka model berbentuk "run cocok ketat / jumlah run".',
+      tabel(kepala, baris),
+      `Sumber: ${eks.sumber.skor_utama} · objek uji ${pendek(eks.sumber.objek_uji_commit ?? '')}`);
+  };
+
+  const eksBiaya = (eks) => {
+    const kepala = ['Model', 'Run', 'Biaya run', 'Total vendor'];
+    const baris = [];
+    for (const m of eks.per_model) {
+      const total = m.runs.reduce((s, r) => s + (r.biaya_usd ?? 0), 0);
+      m.runs.forEach((r, i) => baris.push([i === 0 ? m.vendor : '', String(r.run), usd(r.biaya_usd),
+        i === 0 ? usd(m.biaya_total_usd ?? total) : '']));
+    }
+    const adaBiaya = baris.some((r) => r[2] !== '—');
+    return blokEks('4. Biaya per run dan per vendor',
+      'Dari metadata usage tiap panggilan. Percobaan yang ditolak sebelum diproses tidak mengembalikan usage, jadi biayanya tidak tercatat.',
+      adaBiaya ? tabel(kepala, baris)
+        : el('p', { class: 'note', text: 'Biaya per run tidak tersedia di berkas skor; lihat kartu Biaya pada tiap run di tab Operasional.' }),
+      `Sumber: ${eks.sumber.skor_utama}`);
+  };
+
+  const renderEksperimen = () => {
+    const eks = state.hasil?.eksperimen;
+    const panel = $('panel-eksperimen');
+    if (!eks) {
+      isi(panel, el('div', { class: 'state' }, el('p', { text: 'Run ini tidak memuat blok eksperimen.' })));
+      return;
+    }
+    isi(panel, eksSkenario(eks), eksVerifikasi(eks), eksTabelItem(eks), eksBiaya(eks));
+  };
+
+  const pilihTab = (tab) => {
+    state.tab = tab;
+    const eks = tab === 'eksperimen';
+    $('tab-operasional').setAttribute('aria-selected', String(!eks));
+    $('tab-eksperimen').setAttribute('aria-selected', String(eks));
+    $('panel-operasional').hidden = eks;
+    $('panel-eksperimen').hidden = !eks;
+    $('summary').hidden = eks;
+    if (eks) renderEksperimen();
+  };
+
   // Ekspor dan impor catatan lokal. Satu-satunya jalan memindahkan catatan antar browser atau perangkat,
   // karena catatan sengaja tidak dikirim ke mana pun.
   const eksporCatatan = () => {
@@ -1148,6 +1273,8 @@
 
   const renderSemuaV2 = () => {
     $('catatan-alat').hidden = false;
+    $('tabs').hidden = !state.hasil.eksperimen;
+    if (!state.hasil.eksperimen && state.tab === 'eksperimen') state.tab = 'operasional';
     renderKepalaV2();
     // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions.
     $('pipeline-title').textContent = 'Dijalankan dari CLI, tidak lewat pipeline';
@@ -1159,6 +1286,7 @@
     renderTemuanV2();
     renderAlertV2();
     renderSampingV2();
+    pilihTab(state.tab);
     perbaruiTombolJalankan();
   };
 
@@ -1293,6 +1421,8 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
+    $('tab-operasional').addEventListener('click', () => pilihTab('operasional'));
+    $('tab-eksperimen').addEventListener('click', () => pilihTab('eksperimen'));
     $('catatan-ekspor').addEventListener('click', eksporCatatan);
     $('catatan-impor-btn').addEventListener('click', () => $('catatan-impor').click());
     $('catatan-impor').addEventListener('change', (e) => {

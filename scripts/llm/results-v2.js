@@ -135,7 +135,9 @@ const runVarian = (laporan, vendor, nomorRun) => {
   return m?.runs?.find((r) => r.run === nomorRun);
 };
 
-const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sumber }) => {
+// biayaVendor: { "<vendor>": { total_usd, per_run: { "<n>": usd } } } dari summary.json tiap folder vendor.
+// Berkas skor tidak memuat biaya, jadi angka ini harus datang dari keluaran llm-scan.
+const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sensitivitas, sumber, biayaVendor = {} }) => {
   if (!utama?.utama?.per_model) return null;
   const perModel = utama.utama.per_model.map((m) => {
     const runs = m.runs.map((r) => {
@@ -150,6 +152,8 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sumber }) => {
         return v;
       };
       const entri = { run: r.run, skenario_b: varian('skenario_b'), skenario_c: varian('skenario_c') };
+      const biaya = biayaVendor[m.vendor]?.per_run?.[String(r.run)];
+      if (typeof biaya === 'number') entri.biaya_usd = biaya;
       if (r.verifikasi) {
         entri.verifikasi = {
           jumlah: { ...r.verifikasi.jumlah },
@@ -157,6 +161,13 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sumber }) => {
           uncertain_dipertahankan: [...(r.verifikasi.uncertain_dipertahankan ?? [])],
           tanpa_hasil: (r.verifikasi.tanpa_hasil ?? []).map((t) => t.id_alert ?? String(t)),
         };
+        const rv = runVarian(sensitivitas, m.vendor, r.run);
+        if (rv?.verifikasi) {
+          entri.verifikasi.sensitivitas = {
+            jumlah: { ...rv.verifikasi.jumlah },
+            metrik_fp_positif: { ...rv.verifikasi.metrik_fp_positif },
+          };
+        }
       }
       return entri;
     });
@@ -170,6 +181,7 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sumber }) => {
       vendor: m.vendor,
       model: m.model,
       jumlah_run: m.runs.length,
+      ...(typeof biayaVendor[m.vendor]?.total_usd === 'number' ? { biaya_total_usd: biayaVendor[m.vendor].total_usd } : {}),
       skenario_a: salinMetrik(utama.utama.skenario_a?.b_filter_v2?.ketat),
       status_panggilan: m.status_panggilan,
       runs,
@@ -190,20 +202,27 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sumber }) => {
     return baris;
   });
 
-  const label = {};
-  for (const [id, l] of Object.entries(utama.utama.label_alert ?? {})) label[id] = { label: l.label ?? null, sumber: l.sumber ?? null };
+  const ambilLabel = (lap) => {
+    if (!lap?.utama?.label_alert) return null;
+    const out = {};
+    for (const [id, l] of Object.entries(lap.utama.label_alert)) out[id] = { label: l.label ?? null, sumber: l.sumber ?? null };
+    return out;
+  };
+  const label = ambilLabel(utama) ?? {};
 
   return {
     sumber: {
       skor_utama: sumber.skor_utama,
       skor_triase_utama: sumber.skor_triase_utama ?? null,
       skor_triase_konservatif: sumber.skor_triase_konservatif ?? null,
+      skor_sensitivitas: sumber.skor_sensitivitas ?? null,
       commit_kode_scoring: utama.commit_kode_scoring?.head ?? null,
       aturan_hardening: utama.aturan_hardening ?? null,
       objek_uji_commit: utama.objek_uji?.commit ?? null,
     },
     sensitivitas: Boolean(utama.sensitivitas),
     label_alert: label,
+    label_alert_sensitivitas: ambilLabel(sensitivitas),
     per_model: perModel,
     tabel_per_item: tabel,
   };

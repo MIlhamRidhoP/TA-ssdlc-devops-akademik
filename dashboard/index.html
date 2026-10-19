@@ -125,7 +125,14 @@
 
         <section class="summary" id="summary" aria-label="Ringkasan run"></section>
 
-        <div class="body">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Tampilan hasil" hidden>
+          <button class="tab" type="button" id="tab-operasional" role="tab" aria-selected="true" aria-controls="panel-operasional">Operasional</button>
+          <button class="tab" type="button" id="tab-eksperimen" role="tab" aria-selected="false" aria-controls="panel-eksperimen">Eksperimen</button>
+        </div>
+
+        <section id="panel-eksperimen" role="tabpanel" aria-labelledby="tab-eksperimen" hidden></section>
+
+        <div class="body" id="panel-operasional" role="tabpanel" aria-labelledby="tab-operasional">
           <section class="findings" id="alerts-box" aria-labelledby="alerts-h" hidden>
             <div class="findings-head">
               <h2 id="alerts-h">Verifikasi alert Sonar</h2>
