@@ -436,12 +436,22 @@ test('koneksi: headersTimeout dan bodyTimeout sama dengan timeout SDK 20 menit, 
     timeout_sdk_ms: duaPuluhMenit, headers_timeout_ms: duaPuluhMenit, body_timeout_ms: duaPuluhMenit, fetch: 'undici 7.30.1',
   });
   // SDK OpenAI dan Anthropic: fetch undici dipasangkan dengan dispatcher yang sama, timeout SDK 20 menit, tanpa retry SDK.
-  for (const adapter of [openai, anthropic]) {
-    const k = adapter.ambilKlien();
-    assert.equal(k.fetch, undici.fetch);
-    assert.equal(k.fetchOptions.dispatcher, httpLlm.dispatcher);
-    assert.equal(k.timeout, duaPuluhMenit);
-    assert.equal(k.maxRetries, 0);
+  // Konstruktor SDK OpenAI menolak berjalan tanpa API key, jadi tes memakai key palsu sementara (CI tidak punya key).
+  const kunciAsli = { OPENAI_API_KEY: process.env.OPENAI_API_KEY, ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY };
+  for (const k of Object.keys(kunciAsli)) process.env[k] = 'kunci-palsu-untuk-tes';
+  try {
+    for (const adapter of [openai, anthropic]) {
+      const k = adapter.ambilKlien();
+      assert.equal(k.fetch, undici.fetch);
+      assert.equal(k.fetchOptions.dispatcher, httpLlm.dispatcher);
+      assert.equal(k.timeout, duaPuluhMenit);
+      assert.equal(k.maxRetries, 0);
+    }
+  } finally {
+    for (const [k, v] of Object.entries(kunciAsli)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
   }
   // Gemini: http.fetch meneruskan dispatcher yang sama ke fetch undici.
   const fetchUndiciAsli = undici.fetch;
