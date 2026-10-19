@@ -10,6 +10,10 @@
 // Semua folder harus berasal dari satu commit objek uji yang hash tree src/-nya sama dengan worktree --objek.
 // Satu folder per vendor per kondisi. Folder kondisi utama dinilai dengan Skenario A, B, C, dan verifikasi. Folder ablasi dinilai deteksinya saja.
 // triase-manual.json (opsional) dibaca dari masing-masing folder.
+// --triase=<file> memberi satu file triase gabungan untuk semua vendor sekaligus: { entri: { <vendor>: { "run-N.json": { "<idx>": {kategori, lokasi, ...} } } } }.
+// Sub-pohon per vendor menimpa triase per folder. Kategori tp_di_luar_seeded/teoretis/informasional/duplikat tidak dihitung FP
+// setelah triase; hanya kategori "fp" dan temuan "di luar ground truth" yang belum ditriase yang tetap FP. Tidak ada kategori yang
+// menambah TP, jadi recall tetap. FP ketat (tanpa triase) tetap dilaporkan berdampingan di setiap run.
 const fs = require('fs');
 const path = require('path');
 const { periksaObjek } = require('./llm-scan');
@@ -88,6 +92,21 @@ const periksaGroundTruth = (objek, objekFolder, { revisi = false } = {}) => {
   return { blob, blob_commit_objek_uji: blobFolder, revisi: berbeda };
 };
 
+// Memetakan file triase gabungan { entri: { <vendor>: {...} } } ke sub-pohon per vendor. Menolak bentuk salah atau vendor
+// yang tidak ada di folder yang dinilai, supaya salah ketik vendor tidak diam-diam membuat triase terlewat.
+const petakanTriaseGabungan = (gabungan, vendorDinilai) => {
+  if (!gabungan || typeof gabungan !== 'object' || typeof gabungan.entri !== 'object' || gabungan.entri === null) {
+    throw new Error('File --triase harus punya objek "entri" berisi sub-pohon triase per vendor');
+  }
+  const dikenal = new Set(vendorDinilai);
+  const peta = {};
+  for (const [vendor, sub] of Object.entries(gabungan.entri)) {
+    if (!dikenal.has(vendor)) throw new Error(`File --triase memuat vendor "${vendor}" yang tidak ada di folder yang dinilai (${[...dikenal].join(', ')})`);
+    peta[vendor] = sub;
+  }
+  return peta;
+};
+
 const bacaFolder = (folder) => {
   const summary = bacaJson(path.join(folder, 'summary.json'));
   const runs = fs.readdirSync(folder).filter((f) => /^run-\d+\.json$/.test(f))
@@ -113,6 +132,13 @@ const main = () => {
   for (const d of data) {
     if (d.summary.versi_prompt !== 'v2') throw new Error(`${d.folder} bukan hasil prompt v2`);
   }
+  // --triase=<file> memberi satu file triase gabungan untuk semua folder: { entri: { <vendor>: { "run-N.json": {...} } } }.
+  // Sub-pohon per vendor dipetakan ke d.triase, bentuknya sama dengan triase-manual.json per folder. Menimpa file per folder.
+  const fileTriaseGabungan = ambilArg('triase');
+  if (fileTriaseGabungan) {
+    const peta = petakanTriaseGabungan(bacaJson(path.resolve(fileTriaseGabungan)), data.map((d) => d.summary.vendor));
+    for (const d of data) d.triase = peta[d.summary.vendor] ?? null;
+  }
   const objekFolder = periksaObjekFolder(data, objek);
   const groundTruthSeeded = periksaGroundTruth(objek, objekFolder, { revisi: process.argv.includes('--ground-truth-revisi') });
   if (groundTruthSeeded.revisi) console.warn(`Peringatan: scoring memakai ground truth revisi (SEEDED.md blob ${groundTruthSeeded.blob})`);
@@ -132,6 +158,7 @@ const main = () => {
     ground_truth: gt.map((g) => ({ id: g.id, kelas: g.kelas, klasifikasi: g.status })),
     folder: data.map((d) => ({ folder: path.relative(process.cwd(), d.folder).split(path.sep).join('/'), vendor: d.summary.vendor, kondisi: d.summary.kondisi, jumlah_run: d.runs.length })),
   };
+  if (fileTriaseGabungan) laporan.triase_gabungan = { path: path.relative(process.cwd(), path.resolve(fileTriaseGabungan)).split(path.sep).join('/') };
 
   const fileBeku = ambilArg('sonar-beku');
   const beku = fileBeku ? bacaBeku(path.resolve(fileBeku), objek) : null;
@@ -214,4 +241,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { periksaSumberSonar, periksaObjekFolder, periksaGroundTruth };
+module.exports = { periksaSumberSonar, periksaObjekFolder, periksaGroundTruth, petakanTriaseGabungan };

@@ -148,6 +148,44 @@ test('triase: FP setelah triase, validasi lokasi dan status kandidat', () => {
   assert.throws(() => score.validasiTriase({ 'run-1.json': { 2: { kategori: 'aneh', lokasi: 'src/lain.js:2' } } }, [run], perRun), /kategori/);
 });
 
+test('triase gabungan: hanya kategori fp dan belum-ditriase yang tetap FP; tp_di_luar_seeded/teoretis/informasional/duplikat tidak; TP & recall tetap; FP ketat tetap dilaporkan', () => {
+  const label = score.labelAlert(alert, gt, { 'SONAR-05': { label: 'fp', lokasi: 'src/lain.js:2' } });
+  // Satu kandidat LLM di luar ground truth (src/lain.js:2, rujukan "2"). FP ketat skenario C = 1, TP = 1, recall = 1.
+  const dasar = score.skorRunUtama({ run, alert, gt, label, triase: null });
+  assert.equal(dasar.skenario_c.ketat.fp, 1);
+  assert.equal(dasar.skenario_c.ketat.tp, 1);
+  assert.equal(dasar.skenario_c.setelah_triase.fp, 1); // tanpa triase: konservatif, tetap FP
+
+  const kasus = [
+    ['fp', 1], ['tp_di_luar_seeded', 0], ['teoretis', 0], ['informasional', 0], ['duplikat', 0],
+  ];
+  for (const [kategori, fpHarap] of kasus) {
+    const triase = { 'run-1.json': { 2: { kategori, lokasi: 'src/lain.js:2' } } };
+    const s = score.skorRunUtama({ run, alert, gt, label, triase });
+    const st = s.skenario_c.setelah_triase;
+    assert.equal(st.fp, fpHarap, `kategori ${kategori}: FP setelah triase`);
+    assert.equal(st.rincian_triase[kategori], 1, `kategori ${kategori}: tercatat di rincian`);
+    assert.equal(st.belum_ditriase, 0, `kategori ${kategori}: tidak ada yang belum ditriase`);
+    // Tidak ada kategori yang menambah TP: TP & recall sama dengan ketat.
+    assert.equal(s.skenario_c.ketat.tp, 1, `kategori ${kategori}: TP ketat tidak berubah`);
+    assert.equal(st.recall, s.skenario_c.ketat.recall, `kategori ${kategori}: recall tetap`);
+    // FP ketat tetap dilaporkan berdampingan, tidak terpengaruh triase.
+    assert.equal(s.skenario_c.ketat.fp, 1, `kategori ${kategori}: FP ketat tetap dilaporkan`);
+  }
+});
+
+test('petakanTriaseGabungan: sub-pohon per vendor, tolak vendor asing dan bentuk salah', () => {
+  const { petakanTriaseGabungan } = require('../scripts/llm-score');
+  const gabungan = { entri: { google: { 'run-1.json': { 2: { kategori: 'teoretis', lokasi: 'src/lain.js:2' } } }, openai: {} } };
+  const peta = petakanTriaseGabungan(gabungan, ['google', 'openai', 'anthropic']);
+  assert.deepEqual(peta.google, gabungan.entri.google);
+  assert.deepEqual(peta.openai, {});
+  assert.equal(peta.anthropic, undefined); // vendor tanpa entri: tidak ditriase
+  assert.throws(() => petakanTriaseGabungan({ entri: { vendorX: {} } }, ['google']), /vendor "vendorX" yang tidak ada/);
+  assert.throws(() => petakanTriaseGabungan({}, ['google']), /objek "entri"/);
+  assert.throws(() => petakanTriaseGabungan(null, ['google']), /objek "entri"/);
+});
+
 test('tabel per item dan gabungan antar model', () => {
   const label = score.labelAlert(alert, gt, { 'SONAR-05': { label: 'fp', lokasi: 'src/lain.js:2' } });
   const skorA = score.skenarioA(alert, gt);
