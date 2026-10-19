@@ -126,6 +126,15 @@
         <section class="summary" id="summary" aria-label="Ringkasan run"></section>
 
         <div class="body">
+          <section class="findings" id="alerts-box" aria-labelledby="alerts-h" hidden>
+            <div class="findings-head">
+              <h2 id="alerts-h">Verifikasi alert Sonar</h2>
+              <p>Setiap alert SonarCloud dikirim ke model dalam panggilan verifikasi tersendiri. Putusan di bawah adalah jawaban model, bukan hasil pencocokan lokasi dan CWE.</p>
+            </div>
+            <div class="putusan-ringkas" id="alerts-ringkas"></div>
+            <div id="alerts-body" aria-live="polite"></div>
+          </section>
+
           <section class="findings" id="temuan" aria-labelledby="temuan-h" tabindex="-1">
             <div class="findings-head">
               <h2 id="temuan-h">Temuan</h2>
@@ -136,7 +145,7 @@
           </section>
 
           <aside class="side" aria-label="Detail run">
-            <section class="box" aria-labelledby="verif-h">
+            <section class="box" id="verif-box" aria-labelledby="verif-h">
               <h2 id="verif-h">Verifikasi temuan Sonar</h2>
               <div id="verif"></div>
             </section>

@@ -847,6 +847,10 @@
 
   const renderSamping = () => {
     const h = state.hasil;
+    // Jalur v1 memakai blok verifikasi di sidebar, bukan tabel alert kolom utama.
+    $('alerts-box').hidden = true;
+    $('verif-box').hidden = false;
+    $('verif-h').textContent = 'Verifikasi temuan Sonar';
     const v = h?.sonar_verification;
     isi($('verif'), v
       ? [
@@ -939,18 +943,45 @@
       kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'));
   };
 
+  // Satu baris per alert: severity Sonar (dengan sumbernya), putusan model, keyakinan, dan alasan
+  // yang bisa dibuka. Alert tanpa putusan sah ditampilkan apa adanya sebagai "Tanpa putusan".
   const renderAlertV2 = () => {
     const alerts = state.hasil.alerts;
-    $('verif-h').textContent = 'Verifikasi alert Sonar';
-    isi($('verif'), [
-      ...alerts.map((a) => {
+    $('alerts-box').hidden = false;
+    $('verif-box').hidden = true; // Digantikan tabel di kolom utama
+
+    const urut = ['true_positive', 'false_positive', 'uncertain', null];
+    isi($('alerts-ringkas'), urut.map((p) => {
+      const inf = infoPutusan(p);
+      const n = alerts.filter((a) => a.putusan === p).length;
+      return el('span', { class: 'ringkas-item' },
+        el('b', { class: `putusan p-${inf.kelas}`, text: String(n) }), el('span', { text: inf.label }));
+    }));
+
+    isi($('alerts-body'), alerts.length
+      ? el('ul', { class: 'alist' }, alerts.map((a) => {
         const inf = infoPutusan(a.putusan);
-        return el('div', { class: 'kv' },
-          el('span', { text: `${a.id} · ${a.severity_sonar ?? '—'}` }),
-          el('b', { class: `putusan p-${inf.kelas}`, text: inf.label }));
-      }),
-      el('p', { class: 'note', text: 'Putusan berasal dari panggilan verifikasi model per alert, bukan dari pencocokan lokasi dan CWE.' }),
-    ]);
+        const idDetail = `ad-${a.id}`;
+        const detail = el('div', { class: 'adetail', id: idDetail, hidden: true },
+          el('p', { class: 'alasan', text: a.alasan ?? 'Model tidak memberi alasan untuk alert ini.' }),
+          el('p', { class: 'note', text: [a.rule, a.cwe.join(', ') || null, a.pesan].filter(Boolean).join(' · ') }));
+        const tombol = el('button', {
+          class: 'arow', type: 'button', 'aria-expanded': 'false', 'aria-controls': idDetail,
+          onclick: (e) => {
+            const buka = detail.hidden;
+            detail.hidden = !buka;
+            e.currentTarget.setAttribute('aria-expanded', String(buka));
+          },
+        },
+        el('span', { class: 'fid', text: a.id }),
+        el('span', { class: 'ftitle', text: a.file ? `${a.file}:${a.baris ?? '?'}` : (a.rule ?? '—') }),
+        el('span', { class: 'chip chip-sev', title: 'Severity apa adanya dari SonarCloud, tidak diterjemahkan' },
+          el('span', { text: a.severity_sonar ?? '—' }), el('small', { text: 'dari Sonar' })),
+        el('span', { class: `putusan p-${inf.kelas}`, text: inf.label }),
+        el('span', { class: 'akey', text: a.keyakinan ? `keyakinan ${a.keyakinan}` : '—' }));
+        return el('li', {}, tombol, detail);
+      }))
+      : el('div', { class: 'state' }, el('p', { text: 'Tidak ada alert Sonar pada run ini.' })));
   };
 
   const renderTemuanV2 = () => {
