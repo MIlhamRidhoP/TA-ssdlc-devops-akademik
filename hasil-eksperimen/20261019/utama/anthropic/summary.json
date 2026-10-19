@@ -1,0 +1,305 @@
+{
+  "dibuat": "2026-10-19T12:54:35.827Z",
+  "diperbarui": "2026-10-19T13:26:19.637Z",
+  "versi_prompt": "v2",
+  "vendor": "anthropic",
+  "model_diminta": "claude-sonnet-5-5",
+  "kondisi": "utama",
+  "objek_uji": {
+    "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+    "branch": "eksperimen/seeded",
+    "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+  },
+  "analisis_sonar": "2026-10-10T10:58:15+0000",
+  "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+  "tree_src_analisis_sonar": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+  "sumber_sonar": "beku",
+  "sonar_beku": {
+    "path": "hasil-eksperimen/20261019/sonar-beku.json",
+    "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+    "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+    "dibuat": "2026-10-19T11:58:38.644Z"
+  },
+  "sonar": {
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "branch": "main",
+    "jumlah_issue": 26,
+    "jumlah_hotspot": 0,
+    "jumlah_alert": 5
+  },
+  "hash_laporan_sonar": "52be3d215c2c0d5850d08c7f7f238d4079ea0594610586003e877cf850e3a48e",
+  "hash_kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+  "jumlah_file": 43,
+  "commit_kode": {
+    "head": "353634a6b3e52ca31a1ea02284b8825a06969a71",
+    "branch": "feat/prompt-v2",
+    "bersih": true,
+    "berubah": [],
+    "lingkup": [
+      "scripts",
+      "prompts",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      ".github/workflows",
+      ".gitignore",
+      "src",
+      "docker-compose.yml",
+      "Dockerfile"
+    ]
+  },
+  "pengaturan": {
+    "sampling": "bawaan",
+    "tingkat_thinking": "high",
+    "batas_output": 64000,
+    "tools": "none",
+    "fallback": "none",
+    "parameter_vendor": {
+      "thinking": "output_config.effort",
+      "format": "output_config.format"
+    },
+    "koneksi": {
+      "timeout_sdk_ms": 1200000,
+      "headers_timeout_ms": 1200000,
+      "body_timeout_ms": 1200000,
+      "fetch": "undici 7.30.1"
+    }
+  },
+  "tarif": {
+    "input": 2,
+    "input_cache_baca": 0.2,
+    "input_cache_tulis": 2.5,
+    "output": 10,
+    "sumber": "Referensi Claude API (skill claude-api, cache 2026-10-06): $2/$10, cache read $0,20, cache write 1,25x"
+  },
+  "sdk": {
+    "node": "v25.2.1",
+    "@anthropic-ai/sdk": "0.135.0",
+    "openai": "7.39.0",
+    "undici": "7.30.1",
+    "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+  },
+  "total_run_diminta": 3,
+  "galat": null,
+  "sidik_run": {
+    "versi_prompt": "v2",
+    "vendor": "anthropic",
+    "model_diminta": "claude-sonnet-5-5",
+    "kondisi": "utama",
+    "objek_uji": {
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+    },
+    "sumber_sonar": "beku",
+    "sonar_beku_sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "hash_kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+    "hash_laporan_sonar": "52be3d215c2c0d5850d08c7f7f238d4079ea0594610586003e877cf850e3a48e",
+    "hash_file_prompt": {
+      "alert-format.txt": "ba10996ab93faf92ef4894e02d1845d0a094dd97bfaaa24b23e3b3ebb2ba1a4d",
+      "detection.schema.json": "8181da09da098db355a3e33615bc9d9bb397c6a1c496e1280161a4dfb4bec45a",
+      "sonar-reference.txt": "e22f4600c7b4d0b3249f917cd719590c1e664a1e9a58b01ed405ec0883a6b746",
+      "source-header.txt": "f2e57de193a3767aa4cb524bcf84de2d24012651d6e5c412b85d465a9ac2020a",
+      "system.txt": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+      "task-detection.txt": "b61eccd776f58d14692c53c96b4b3ab779c46cd7188945d4e147d643aa2c29dc",
+      "task-verification.txt": "832c52f4eb77f89373b00ae892437335779083a236e115114ae8ac514372f863",
+      "verification.schema.json": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a"
+    },
+    "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+    "prompt_user_kanonik": {
+      "deteksi": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c",
+      "SONAR-01": "41651564fc86f4a5650f1e67bf0f4fa6e33465b276dc76f6f2467ce206f26b60",
+      "SONAR-02": "313b3f9c9b041e124ab84268f2d42dbfc26a5052422f1f8d8877854a2cf3e992",
+      "SONAR-03": "80cc89b4a86d4259d563dcf07578c7b066805a61b699e5df93173882a15a3e99",
+      "SONAR-04": "2c3a98c02847215d94dee6f608e115865bdbfddb583847ae4213e434cb669de1",
+      "SONAR-05": "1e5444667a4d4f747b14ac105ff191df411da661d47dd819c4f849d788f478f9"
+    },
+    "pengaturan": {
+      "sampling": "bawaan",
+      "tingkat_thinking": "high",
+      "batas_output": 64000,
+      "tools": "none",
+      "fallback": "none",
+      "parameter_vendor": {
+        "thinking": "output_config.effort",
+        "format": "output_config.format"
+      },
+      "koneksi": {
+        "timeout_sdk_ms": 1200000,
+        "headers_timeout_ms": 1200000,
+        "body_timeout_ms": 1200000,
+        "fetch": "undici 7.30.1"
+      }
+    },
+    "sdk": {
+      "node": "v25.2.1",
+      "@anthropic-ai/sdk": "0.135.0",
+      "openai": "7.39.0",
+      "undici": "7.30.1",
+      "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+    },
+    "commit_kode": "353634a6b3e52ca31a1ea02284b8825a06969a71"
+  },
+  "biaya_total_usd": 1.110496,
+  "runs": [
+    {
+      "run": 1,
+      "file": "run-1.json",
+      "file_raw": "run-1.raw.json",
+      "waktu_mulai": "2026-10-19T12:53:28.445Z",
+      "waktu_selesai": "2026-10-19T12:54:35.824Z",
+      "commit_kode": "353634a6b3e52ca31a1ea02284b8825a06969a71",
+      "deteksi": {
+        "status": "ok",
+        "parse_ok": true,
+        "jumlah_temuan": 14
+      },
+      "verifikasi": [
+        {
+          "id_alert": "SONAR-01",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-02",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-03",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-04",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-05",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        }
+      ],
+      "panggilan": {
+        "total": 6,
+        "refusal": 0,
+        "truncated": 0,
+        "error": 0,
+        "parse_gagal": 0
+      },
+      "biaya_usd": 0.373722
+    },
+    {
+      "run": 2,
+      "file": "run-2.json",
+      "file_raw": "run-2.raw.json",
+      "waktu_mulai": "2026-10-19T13:14:05.277Z",
+      "waktu_selesai": "2026-10-19T13:15:04.431Z",
+      "commit_kode": "353634a6b3e52ca31a1ea02284b8825a06969a71",
+      "deteksi": {
+        "status": "ok",
+        "parse_ok": true,
+        "jumlah_temuan": 13
+      },
+      "verifikasi": [
+        {
+          "id_alert": "SONAR-01",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-02",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-03",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-04",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-05",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        }
+      ],
+      "panggilan": {
+        "total": 6,
+        "refusal": 0,
+        "truncated": 0,
+        "error": 0,
+        "parse_gagal": 0
+      },
+      "biaya_usd": 0.367662
+    },
+    {
+      "run": 3,
+      "file": "run-3.json",
+      "file_raw": "run-3.raw.json",
+      "waktu_mulai": "2026-10-19T13:25:15.192Z",
+      "waktu_selesai": "2026-10-19T13:26:19.635Z",
+      "commit_kode": "353634a6b3e52ca31a1ea02284b8825a06969a71",
+      "deteksi": {
+        "status": "ok",
+        "parse_ok": true,
+        "jumlah_temuan": 13
+      },
+      "verifikasi": [
+        {
+          "id_alert": "SONAR-01",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-02",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-03",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-04",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-05",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        }
+      ],
+      "panggilan": {
+        "total": 6,
+        "refusal": 0,
+        "truncated": 0,
+        "error": 0,
+        "parse_gagal": 0
+      },
+      "biaya_usd": 0.369112
+    }
+  ]
+}

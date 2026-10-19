@@ -1,0 +1,3742 @@
+{
+  "dinilai_pada": "2026-10-19T13:32:26.593Z",
+  "objek_uji": {
+    "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+    "branch": "eksperimen/seeded"
+  },
+  "ground_truth": [
+    {
+      "id": "S1",
+      "kelas": "SQL Injection",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S2",
+      "kelas": "SQL Injection (ORDER BY)",
+      "klasifikasi": "jebakan fp"
+    },
+    {
+      "id": "S3",
+      "kelas": "SQL Injection",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S4",
+      "kelas": "Stored XSS",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S5",
+      "kelas": "Reflected XSS",
+      "klasifikasi": "jebakan fp"
+    },
+    {
+      "id": "S6",
+      "kelas": "Path Traversal",
+      "klasifikasi": "laten"
+    },
+    {
+      "id": "S7",
+      "kelas": "IDOR",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S8",
+      "kelas": "IDOR",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S9",
+      "kelas": "Mass Assignment",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S10",
+      "kelas": "Mass Assignment",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S11",
+      "kelas": "Missing Authorization",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "S12",
+      "kelas": "Sensitive Data Exposure",
+      "klasifikasi": "terbukti"
+    },
+    {
+      "id": "B1",
+      "kelas": "CORS mengizinkan semua origin",
+      "klasifikasi": "bawaan"
+    },
+    {
+      "id": "B2",
+      "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+      "klasifikasi": "bawaan"
+    },
+    {
+      "id": "B3",
+      "kelas": "Tidak ada rate limiting login dan register",
+      "klasifikasi": "bawaan"
+    },
+    {
+      "id": "B4",
+      "kelas": "Respons 409 register membocorkan email terdaftar",
+      "klasifikasi": "bawaan"
+    },
+    {
+      "id": "B5",
+      "kelas": "Token tetap berlaku setelah akun dihapus",
+      "klasifikasi": "bawaan"
+    },
+    {
+      "id": "B6",
+      "kelas": "requireConsent meloloskan user nonaktif",
+      "klasifikasi": "bawaan"
+    },
+    {
+      "id": "N1",
+      "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+      "klasifikasi": "bawaan"
+    }
+  ],
+  "folder": [
+    {
+      "folder": "llm-output/v2/20261019-200241-google-utama",
+      "vendor": "google",
+      "kondisi": "utama",
+      "jumlah_run": 3
+    },
+    {
+      "folder": "llm-output/v2/20261019-195328-anthropic-utama",
+      "vendor": "anthropic",
+      "kondisi": "utama",
+      "jumlah_run": 3
+    },
+    {
+      "folder": "llm-output/v2/20261019-195437-openai-utama",
+      "vendor": "openai",
+      "kondisi": "utama",
+      "jumlah_run": 3
+    }
+  ],
+  "sonar_beku": {
+    "path": "hasil-eksperimen/20261019/sonar-beku.json",
+    "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+    "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+    "dibuat": "2026-10-19T11:58:38.644Z"
+  },
+  "utama": {
+    "label_alert": {
+      "SONAR-01": {
+        "label": "nyata",
+        "sumber": "otomatis",
+        "id_gt": [
+          "B1"
+        ],
+        "status_cocok": "cocok"
+      },
+      "SONAR-02": {
+        "label": "fp",
+        "sumber": "otomatis",
+        "id_gt": [
+          "S5"
+        ],
+        "status_cocok": "cocok"
+      },
+      "SONAR-03": {
+        "label": "fp",
+        "sumber": "otomatis",
+        "id_gt": [
+          "S5"
+        ],
+        "status_cocok": "cocok"
+      },
+      "SONAR-04": {
+        "label": "fp",
+        "sumber": "otomatis",
+        "id_gt": [
+          "S2"
+        ],
+        "status_cocok": "cocok"
+      },
+      "SONAR-05": {
+        "label": "nyata",
+        "sumber": "otomatis",
+        "id_gt": [
+          "S3"
+        ],
+        "status_cocok": "cocok"
+      }
+    },
+    "skenario_a": {
+      "a_hanya_vulnerability": {
+        "alert": [
+          "SONAR-01",
+          "SONAR-02",
+          "SONAR-03",
+          "SONAR-04",
+          "SONAR-05"
+        ],
+        "jumlah_positif": 9,
+        "rincian_fp": {
+          "di_luar_ground_truth": 0,
+          "n1": 0,
+          "jebakan_terdeteksi": 2
+        },
+        "ketat": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "longgar_cocok_lokasi": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "hardening_di_luar_ground_truth": 0,
+        "hardening_cocok_seeded": 0,
+        "status_gt": {
+          "S1": "tidak",
+          "S2": "cocok",
+          "S3": "cocok",
+          "S4": "tidak",
+          "S5": "cocok",
+          "S6": "tidak",
+          "S7": "tidak",
+          "S8": "tidak",
+          "S9": "tidak",
+          "S10": "tidak",
+          "S11": "tidak",
+          "S12": "tidak",
+          "B1": "cocok",
+          "B2": "tidak",
+          "B3": "tidak",
+          "B4": "tidak",
+          "B5": "tidak",
+          "B6": "tidak",
+          "N1": "tidak"
+        }
+      },
+      "b_filter_v2": {
+        "alert": [
+          "SONAR-01",
+          "SONAR-02",
+          "SONAR-03",
+          "SONAR-04",
+          "SONAR-05"
+        ],
+        "jumlah_positif": 9,
+        "rincian_fp": {
+          "di_luar_ground_truth": 0,
+          "n1": 0,
+          "jebakan_terdeteksi": 2
+        },
+        "ketat": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "longgar_cocok_lokasi": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "hardening_di_luar_ground_truth": 0,
+        "hardening_cocok_seeded": 0,
+        "status_gt": {
+          "S1": "tidak",
+          "S2": "cocok",
+          "S3": "cocok",
+          "S4": "tidak",
+          "S5": "cocok",
+          "S6": "tidak",
+          "S7": "tidak",
+          "S8": "tidak",
+          "S9": "tidak",
+          "S10": "tidak",
+          "S11": "tidak",
+          "S12": "tidak",
+          "B1": "cocok",
+          "B2": "tidak",
+          "B3": "tidak",
+          "B4": "tidak",
+          "B5": "tidak",
+          "B6": "tidak",
+          "N1": "tidak"
+        }
+      }
+    },
+    "per_model": [
+      {
+        "vendor": "google",
+        "model": "gemini-3.1-pro-preview",
+        "status_panggilan": {
+          "deteksi": {
+            "total": 3,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          },
+          "verifikasi": {
+            "total": 15,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          }
+        },
+        "rata_rata": {
+          "skenario_a": {
+            "precision": 0.3333333333333333,
+            "recall": 0.1111111111111111,
+            "f1": 0.16666666666666666,
+            "jumlah_run": 1
+          },
+          "skenario_b": {
+            "precision": 0.8000000000000002,
+            "recall": 0.4444444444444444,
+            "f1": 0.5714285714285714,
+            "jumlah_run": 3
+          },
+          "skenario_c": {
+            "precision": 0.8000000000000002,
+            "recall": 0.4444444444444444,
+            "f1": 0.5714285714285714,
+            "jumlah_run": 3
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 5,
+                "fp": 1,
+                "fn": 4,
+                "precision": 0.8333333333333334,
+                "recall": 0.5555555555555556,
+                "f1": 0.6666666666666667
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "cocok",
+                "S9": "cocok lokasi",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 5,
+                "fp": 1,
+                "fn": 4,
+                "precision": 0.8333333333333334,
+                "recall": 0.5555555555555556,
+                "f1": 0.6666666666666667
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "cocok",
+                "S9": "cocok lokasi",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-01",
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-03",
+                  "SONAR-04"
+                ],
+                "missed_fp": [],
+                "misidentified_fp": [],
+                "correct_retention": [
+                  "SONAR-01",
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 0,
+                "correct_retention": 2
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 1,
+                "recall": 1,
+                "f1": 1
+              }
+            }
+          },
+          {
+            "run": 2,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 1,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 5,
+                "fp": 1,
+                "fn": 4,
+                "precision": 0.8333333333333334,
+                "recall": 0.5555555555555556,
+                "f1": 0.6666666666666667
+              },
+              "hardening_di_luar_ground_truth": 1,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 1
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "cocok lokasi",
+                "S10": "tidak",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 1,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 5,
+                "fp": 1,
+                "fn": 4,
+                "precision": 0.8333333333333334,
+                "recall": 0.5555555555555556,
+                "f1": 0.6666666666666667
+              },
+              "hardening_di_luar_ground_truth": 1,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 1
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "cocok lokasi",
+                "S10": "tidak",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-01",
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-03",
+                  "SONAR-04"
+                ],
+                "missed_fp": [],
+                "misidentified_fp": [],
+                "correct_retention": [
+                  "SONAR-01",
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 0,
+                "correct_retention": 2
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 1,
+                "recall": 1,
+                "f1": 1
+              }
+            }
+          },
+          {
+            "run": 3,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 5,
+                "fp": 1,
+                "fn": 4,
+                "precision": 0.8333333333333334,
+                "recall": 0.5555555555555556,
+                "f1": 0.6666666666666667
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "cocok lokasi",
+                "S10": "tidak",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 5,
+                "fp": 1,
+                "fn": 4,
+                "precision": 0.8333333333333334,
+                "recall": 0.5555555555555556,
+                "f1": 0.6666666666666667
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "cocok lokasi",
+                "S10": "tidak",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-01",
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-03",
+                  "SONAR-04"
+                ],
+                "missed_fp": [],
+                "misidentified_fp": [],
+                "correct_retention": [
+                  "SONAR-01",
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 0,
+                "correct_retention": 2
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 1,
+                "recall": 1,
+                "f1": 1
+              }
+            }
+          }
+        ],
+        "tabel_per_item": [
+          {
+            "id": "S1",
+            "kelas": "SQL Injection",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S2",
+            "kelas": "SQL Injection (ORDER BY)",
+            "klasifikasi": "jebakan fp",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S3",
+            "kelas": "SQL Injection",
+            "klasifikasi": "terbukti",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S4",
+            "kelas": "Stored XSS",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S5",
+            "kelas": "Reflected XSS",
+            "klasifikasi": "jebakan fp",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S6",
+            "kelas": "Path Traversal",
+            "klasifikasi": "laten",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S7",
+            "kelas": "IDOR",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S8",
+            "kelas": "IDOR",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 1,
+              "longgar": 1,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 1,
+              "longgar": 1,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S9",
+            "kelas": "Mass Assignment",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S10",
+            "kelas": "Mass Assignment",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S11",
+            "kelas": "Missing Authorization",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S12",
+            "kelas": "Sensitive Data Exposure",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B1",
+            "kelas": "CORS mengizinkan semua origin",
+            "klasifikasi": "bawaan",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B2",
+            "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B3",
+            "kelas": "Tidak ada rate limiting login dan register",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B4",
+            "kelas": "Respons 409 register membocorkan email terdaftar",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B5",
+            "kelas": "Token tetap berlaku setelah akun dihapus",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B6",
+            "kelas": "requireConsent meloloskan user nonaktif",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "N1",
+            "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        ]
+      },
+      {
+        "vendor": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "status_panggilan": {
+          "deteksi": {
+            "total": 3,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          },
+          "verifikasi": {
+            "total": 15,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          }
+        },
+        "rata_rata": {
+          "skenario_a": {
+            "precision": 0.3333333333333333,
+            "recall": 0.1111111111111111,
+            "f1": 0.16666666666666666,
+            "jumlah_run": 1
+          },
+          "skenario_b": {
+            "precision": 0.7962962962962963,
+            "recall": 0.8518518518518517,
+            "f1": 0.8226120857699805,
+            "jumlah_run": 3
+          },
+          "skenario_c": {
+            "precision": 0.7962962962962963,
+            "recall": 0.8518518518518517,
+            "f1": 0.8226120857699805,
+            "jumlah_run": 3
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 1,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 2,
+                "fn": 1,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 9,
+                "fp": 2,
+                "fn": 0,
+                "precision": 0.8181818181818182,
+                "recall": 1,
+                "f1": 0.9
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 2,
+              "setelah_triase": {
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 1
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok lokasi",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "cocok",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 1,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 2,
+                "fn": 1,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 9,
+                "fp": 2,
+                "fn": 0,
+                "precision": 0.8181818181818182,
+                "recall": 1,
+                "f1": 0.9
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 2,
+              "setelah_triase": {
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 1
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok lokasi",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "cocok",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-02",
+                "SONAR-03",
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 8,
+                "precision": 0.5,
+                "recall": 0.1111111111111111,
+                "f1": 0.1818181818181818
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 8,
+                "precision": 0.5,
+                "recall": 0.1111111111111111,
+                "f1": 0.1818181818181818
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-04"
+                ],
+                "missed_fp": [
+                  "SONAR-02",
+                  "SONAR-03"
+                ],
+                "misidentified_fp": [
+                  "SONAR-01"
+                ],
+                "correct_retention": [
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 1,
+                "missed_fp": 2,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 0.3333333333333333,
+                "f1": 0.4
+              }
+            }
+          },
+          {
+            "run": 2,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 2,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 7,
+                "fp": 3,
+                "fn": 2,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 7,
+                "fp": 3,
+                "fn": 2,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 2
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "tidak",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 2,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 7,
+                "fp": 3,
+                "fn": 2,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 7,
+                "fp": 3,
+                "fn": 2,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 2
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "tidak",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-02",
+                "SONAR-03",
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 8,
+                "precision": 0.5,
+                "recall": 0.1111111111111111,
+                "f1": 0.1818181818181818
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 8,
+                "precision": 0.5,
+                "recall": 0.1111111111111111,
+                "f1": 0.1818181818181818
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-04"
+                ],
+                "missed_fp": [
+                  "SONAR-02",
+                  "SONAR-03"
+                ],
+                "misidentified_fp": [
+                  "SONAR-01"
+                ],
+                "correct_retention": [
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 1,
+                "missed_fp": 2,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 0.3333333333333333,
+                "f1": 0.4
+              }
+            }
+          },
+          {
+            "run": 3,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 1,
+                "fn": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 9,
+                "fp": 1,
+                "fn": 0,
+                "precision": 0.9,
+                "recall": 1,
+                "f1": 0.9473684210526316
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 2,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok lokasi",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "cocok",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 1,
+                "fn": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 9,
+                "fp": 1,
+                "fn": 0,
+                "precision": 0.9,
+                "recall": 1,
+                "f1": 0.9473684210526316
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 2,
+              "setelah_triase": {
+                "fp": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok lokasi",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "cocok",
+                "B1": "cocok",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-03",
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 1
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 8,
+                "precision": 0.5,
+                "recall": 0.1111111111111111,
+                "f1": 0.1818181818181818
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 8,
+                "precision": 0.5,
+                "recall": 0.1111111111111111,
+                "f1": 0.1818181818181818
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "cocok",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-04"
+                ],
+                "missed_fp": [
+                  "SONAR-03"
+                ],
+                "misidentified_fp": [
+                  "SONAR-01"
+                ],
+                "correct_retention": [
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 1,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 0.6666666666666666,
+                "recall": 0.6666666666666666,
+                "f1": 0.6666666666666666
+              }
+            }
+          }
+        ],
+        "tabel_per_item": [
+          {
+            "id": "S1",
+            "kelas": "SQL Injection",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S2",
+            "kelas": "SQL Injection (ORDER BY)",
+            "klasifikasi": "jebakan fp",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S3",
+            "kelas": "SQL Injection",
+            "klasifikasi": "terbukti",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S4",
+            "kelas": "Stored XSS",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S5",
+            "kelas": "Reflected XSS",
+            "klasifikasi": "jebakan fp",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S6",
+            "kelas": "Path Traversal",
+            "klasifikasi": "laten",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S7",
+            "kelas": "IDOR",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S8",
+            "kelas": "IDOR",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S9",
+            "kelas": "Mass Assignment",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 1,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 1,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S10",
+            "kelas": "Mass Assignment",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S11",
+            "kelas": "Missing Authorization",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S12",
+            "kelas": "Sensitive Data Exposure",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B1",
+            "kelas": "CORS mengizinkan semua origin",
+            "klasifikasi": "bawaan",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B2",
+            "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B3",
+            "kelas": "Tidak ada rate limiting login dan register",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B4",
+            "kelas": "Respons 409 register membocorkan email terdaftar",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B5",
+            "kelas": "Token tetap berlaku setelah akun dihapus",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B6",
+            "kelas": "requireConsent meloloskan user nonaktif",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "N1",
+            "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        ]
+      },
+      {
+        "vendor": "openai",
+        "model": "gpt-6.1-sol",
+        "status_panggilan": {
+          "deteksi": {
+            "total": 3,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          },
+          "verifikasi": {
+            "total": 15,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          }
+        },
+        "rata_rata": {
+          "skenario_a": {
+            "precision": 0.3333333333333333,
+            "recall": 0.1111111111111111,
+            "f1": 0.16666666666666666,
+            "jumlah_run": 1
+          },
+          "skenario_b": {
+            "precision": 0.7272727272727272,
+            "recall": 0.8888888888888888,
+            "f1": 0.7999999999999999,
+            "jumlah_run": 3
+          },
+          "skenario_c": {
+            "precision": 0.7272727272727272,
+            "recall": 0.8888888888888888,
+            "f1": 0.7999999999999999,
+            "jumlah_run": 3
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 3,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 3
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "cocok",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 3,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 3
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "cocok",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-03",
+                  "SONAR-04"
+                ],
+                "missed_fp": [],
+                "misidentified_fp": [
+                  "SONAR-01"
+                ],
+                "correct_retention": [
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 0.75,
+                "recall": 1,
+                "f1": 0.8571428571428571
+              }
+            }
+          },
+          {
+            "run": 2,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 3,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 3
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "cocok",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 3,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 3
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "cocok",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-03",
+                  "SONAR-04"
+                ],
+                "missed_fp": [],
+                "misidentified_fp": [
+                  "SONAR-01"
+                ],
+                "correct_retention": [
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 0.75,
+                "recall": 1,
+                "f1": 0.8571428571428571
+              }
+            }
+          },
+          {
+            "run": 3,
+            "deteksi_parse_ok": true,
+            "skenario_c": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 3,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 3
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "skenario_b": {
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 3,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "setelah_triase": {
+                "fp": 3,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 3
+              },
+              "status_gt": {
+                "S1": "cocok",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "cocok",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "cocok",
+                "S8": "cocok",
+                "S9": "cocok",
+                "S10": "cocok",
+                "S11": "cocok",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "cocok",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              },
+              "alert_tanpa_putusan": []
+            },
+            "sonar_setelah_verifikasi": {
+              "alert": [
+                "SONAR-05"
+              ],
+              "jumlah_positif": 9,
+              "rincian_fp": {
+                "di_luar_ground_truth": 0,
+                "n1": 0,
+                "jebakan_terdeteksi": 0
+              },
+              "ketat": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "longgar_cocok_lokasi": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 8,
+                "precision": 1,
+                "recall": 0.1111111111111111,
+                "f1": 0.19999999999999998
+              },
+              "hardening_di_luar_ground_truth": 0,
+              "hardening_cocok_seeded": 0,
+              "status_gt": {
+                "S1": "tidak",
+                "S2": "tidak",
+                "S3": "cocok",
+                "S4": "tidak",
+                "S5": "tidak",
+                "S6": "tidak",
+                "S7": "tidak",
+                "S8": "tidak",
+                "S9": "tidak",
+                "S10": "tidak",
+                "S11": "tidak",
+                "S12": "tidak",
+                "B1": "tidak",
+                "B2": "tidak",
+                "B3": "tidak",
+                "B4": "tidak",
+                "B5": "tidak",
+                "B6": "tidak",
+                "N1": "tidak"
+              }
+            },
+            "verifikasi": {
+              "kategori": {
+                "identified_fp": [
+                  "SONAR-02",
+                  "SONAR-03",
+                  "SONAR-04"
+                ],
+                "missed_fp": [],
+                "misidentified_fp": [
+                  "SONAR-01"
+                ],
+                "correct_retention": [
+                  "SONAR-05"
+                ]
+              },
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "uncertain_dipertahankan": [],
+              "laten": [],
+              "tanpa_hasil": [],
+              "belum_dilabel": [],
+              "metrik_fp_positif": {
+                "precision": 0.75,
+                "recall": 1,
+                "f1": 0.8571428571428571
+              }
+            }
+          }
+        ],
+        "tabel_per_item": [
+          {
+            "id": "S1",
+            "kelas": "SQL Injection",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S2",
+            "kelas": "SQL Injection (ORDER BY)",
+            "klasifikasi": "jebakan fp",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S3",
+            "kelas": "SQL Injection",
+            "klasifikasi": "terbukti",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S4",
+            "kelas": "Stored XSS",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S5",
+            "kelas": "Reflected XSS",
+            "klasifikasi": "jebakan fp",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S6",
+            "kelas": "Path Traversal",
+            "klasifikasi": "laten",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S7",
+            "kelas": "IDOR",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S8",
+            "kelas": "IDOR",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S9",
+            "kelas": "Mass Assignment",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S10",
+            "kelas": "Mass Assignment",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S11",
+            "kelas": "Missing Authorization",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "S12",
+            "kelas": "Sensitive Data Exposure",
+            "klasifikasi": "terbukti",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B1",
+            "kelas": "CORS mengizinkan semua origin",
+            "klasifikasi": "bawaan",
+            "sonar_a": "cocok",
+            "sonar_b": "cocok",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B2",
+            "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B3",
+            "kelas": "Tidak ada rate limiting login dan register",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B4",
+            "kelas": "Respons 409 register membocorkan email terdaftar",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B5",
+            "kelas": "Token tetap berlaku setelah akun dihapus",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "B6",
+            "kelas": "requireConsent meloloskan user nonaktif",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          {
+            "id": "N1",
+            "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+            "klasifikasi": "bawaan",
+            "sonar_a": "tidak",
+            "sonar_b": "tidak",
+            "sonar_setelah_verifikasi": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        ]
+      }
+    ],
+    "eksploratif_gabungan_model": {
+      "catatan": "Eksploratif, terpisah dari hasil utama. Gabungan per indeks run yang ada di semua model.",
+      "model": [
+        "google",
+        "anthropic",
+        "openai"
+      ],
+      "runs": [
+        {
+          "run": 1,
+          "skenario_c": {
+            "jumlah_positif": 9,
+            "rincian_fp": {
+              "di_luar_ground_truth": 4,
+              "n1": 0,
+              "jebakan_terdeteksi": 1
+            },
+            "ketat": {
+              "tp": 9,
+              "fp": 5,
+              "fn": 0,
+              "precision": 0.6428571428571429,
+              "recall": 1,
+              "f1": 0.782608695652174
+            },
+            "longgar_cocok_lokasi": {
+              "tp": 9,
+              "fp": 5,
+              "fn": 0,
+              "precision": 0.6428571428571429,
+              "recall": 1,
+              "f1": 0.782608695652174
+            },
+            "hardening_di_luar_ground_truth": 0,
+            "hardening_cocok_seeded": 2
+          },
+          "skenario_b": {
+            "jumlah_positif": 9,
+            "rincian_fp": {
+              "di_luar_ground_truth": 4,
+              "n1": 0,
+              "jebakan_terdeteksi": 1
+            },
+            "ketat": {
+              "tp": 9,
+              "fp": 5,
+              "fn": 0,
+              "precision": 0.6428571428571429,
+              "recall": 1,
+              "f1": 0.782608695652174
+            },
+            "longgar_cocok_lokasi": {
+              "tp": 9,
+              "fp": 5,
+              "fn": 0,
+              "precision": 0.6428571428571429,
+              "recall": 1,
+              "f1": 0.782608695652174
+            },
+            "hardening_di_luar_ground_truth": 0,
+            "hardening_cocok_seeded": 2
+          }
+        },
+        {
+          "run": 2,
+          "skenario_c": {
+            "jumlah_positif": 9,
+            "rincian_fp": {
+              "di_luar_ground_truth": 6,
+              "n1": 0,
+              "jebakan_terdeteksi": 1
+            },
+            "ketat": {
+              "tp": 8,
+              "fp": 7,
+              "fn": 1,
+              "precision": 0.5333333333333333,
+              "recall": 0.8888888888888888,
+              "f1": 0.6666666666666667
+            },
+            "longgar_cocok_lokasi": {
+              "tp": 8,
+              "fp": 7,
+              "fn": 1,
+              "precision": 0.5333333333333333,
+              "recall": 0.8888888888888888,
+              "f1": 0.6666666666666667
+            },
+            "hardening_di_luar_ground_truth": 1,
+            "hardening_cocok_seeded": 0
+          },
+          "skenario_b": {
+            "jumlah_positif": 9,
+            "rincian_fp": {
+              "di_luar_ground_truth": 6,
+              "n1": 0,
+              "jebakan_terdeteksi": 1
+            },
+            "ketat": {
+              "tp": 8,
+              "fp": 7,
+              "fn": 1,
+              "precision": 0.5333333333333333,
+              "recall": 0.8888888888888888,
+              "f1": 0.6666666666666667
+            },
+            "longgar_cocok_lokasi": {
+              "tp": 8,
+              "fp": 7,
+              "fn": 1,
+              "precision": 0.5333333333333333,
+              "recall": 0.8888888888888888,
+              "f1": 0.6666666666666667
+            },
+            "hardening_di_luar_ground_truth": 1,
+            "hardening_cocok_seeded": 0
+          }
+        },
+        {
+          "run": 3,
+          "skenario_c": {
+            "jumlah_positif": 9,
+            "rincian_fp": {
+              "di_luar_ground_truth": 3,
+              "n1": 0,
+              "jebakan_terdeteksi": 1
+            },
+            "ketat": {
+              "tp": 9,
+              "fp": 4,
+              "fn": 0,
+              "precision": 0.6923076923076923,
+              "recall": 1,
+              "f1": 0.8181818181818181
+            },
+            "longgar_cocok_lokasi": {
+              "tp": 9,
+              "fp": 4,
+              "fn": 0,
+              "precision": 0.6923076923076923,
+              "recall": 1,
+              "f1": 0.8181818181818181
+            },
+            "hardening_di_luar_ground_truth": 0,
+            "hardening_cocok_seeded": 2
+          },
+          "skenario_b": {
+            "jumlah_positif": 9,
+            "rincian_fp": {
+              "di_luar_ground_truth": 3,
+              "n1": 0,
+              "jebakan_terdeteksi": 1
+            },
+            "ketat": {
+              "tp": 9,
+              "fp": 4,
+              "fn": 0,
+              "precision": 0.6923076923076923,
+              "recall": 1,
+              "f1": 0.8181818181818181
+            },
+            "longgar_cocok_lokasi": {
+              "tp": 9,
+              "fp": 4,
+              "fn": 0,
+              "precision": 0.6923076923076923,
+              "recall": 1,
+              "f1": 0.8181818181818181
+            },
+            "hardening_di_luar_ground_truth": 0,
+            "hardening_cocok_seeded": 2
+          }
+        }
+      ],
+      "rata_rata": {
+        "skenario_c": {
+          "precision": 0.6228327228327228,
+          "recall": 0.9629629629629629,
+          "f1": 0.7558190601668864,
+          "jumlah_run": 3
+        },
+        "skenario_b": {
+          "precision": 0.6228327228327228,
+          "recall": 0.9629629629629629,
+          "f1": 0.7558190601668864,
+          "jumlah_run": 3
+        }
+      }
+    }
+  }
+}
