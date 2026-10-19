@@ -331,6 +331,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # actions/checkout memakai fetch-depth 1, jadi revisi analisis Sonar (yang berasal dari branch
+      # lain, mis. main) tidak ikut terbawa. llm-scan membutuhkannya untuk membandingkan hash tree
+      # src/, dan tanpa commit itu run ditolak dengan "Revisi analisis Sonar ... tidak ditemukan".
+      # Diambil satu commit saja, bukan seluruh riwayat: revisinya sudah diverifikasi job sonarcloud.
+      - name: Ambil revisi analisis Sonar ke dalam clone
+        env:
+          SONAR_REVISI: ${{ needs.sonarcloud.outputs.sonar_revisi }}
+          SONAR_TREE: ${{ needs.sonarcloud.outputs.sonar_tree_src }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SONAR_REVISI" ]; then
+            echo "Output sonar_revisi kosong; job sonarcloud tidak menetapkan revisi analisis." >&2
+            exit 1
+          fi
+          if ! git cat-file -e "$SONAR_REVISI^{commit}" 2>/dev/null; then
+            git fetch --depth=1 origin "$SONAR_REVISI"
+          fi
+          if ! git cat-file -e "$SONAR_REVISI^{commit}" 2>/dev/null; then
+            echo "Revisi analisis Sonar $SONAR_REVISI tidak bisa diambil ke clone ini." >&2
+            echo "Perbaikan: ganti fetch-depth job ini menjadi 0." >&2
+            exit 1
+          fi
+          # Pemeriksaan yang sama dengan llm-scan, dijalankan lebih awal supaya gagal sebelum npm ci
+          # dan sebelum langkah berbiaya. Pemeriksaan di llm-scan sendiri tidak diubah.
+          tree_analisis=$(git rev-parse "$SONAR_REVISI^{commit}:src")
+          tree_commit=$(git rev-parse HEAD:src)
+          echo "Revisi analisis $SONAR_REVISI tree src $tree_analisis; commit ini tree src $tree_commit"
+          if [ "$tree_analisis" != "$tree_commit" ]; then
+            echo "Hash tree src/ analisis Sonar berbeda dengan commit ini. Run ditolak sebelum panggilan LLM." >&2
+            exit 1
+          fi
+          if [ -n "$SONAR_TREE" ] && [ "$SONAR_TREE" != "$tree_analisis" ]; then
+            echo "Hash tree dari output job sonarcloud ($SONAR_TREE) berbeda dengan yang dihitung di sini." >&2
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
