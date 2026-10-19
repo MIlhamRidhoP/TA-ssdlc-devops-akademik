@@ -124,6 +124,7 @@ const main = () => {
   const ablasi = data.filter((d) => d.summary.kondisi !== 'utama');
   const laporan = {
     dinilai_pada: new Date().toISOString(),
+    aturan_hardening: score.ATURAN_HARDENING,
     objek_uji: objekFolder,
     ground_truth_seeded: groundTruthSeeded,
     ground_truth: gt.map((g) => ({ id: g.id, kelas: g.kelas, klasifikasi: g.status })),

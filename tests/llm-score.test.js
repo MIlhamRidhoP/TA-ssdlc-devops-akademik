@@ -172,3 +172,34 @@ test('hitung status panggilan per tugas', () => {
     verifikasi: { total: 2, refusal: 1, truncated: 1, error: 0, parse_ok_false: 0 },
   });
 });
+
+const tmn = (ubah) => ({
+  file: 'src/models/m.js', baris: 5, fungsi: 'order', jenis: 'SQL Injection ORDER BY', cwe: 'CWE-89', kategori_owasp: 'A05',
+  penjelasan: 'x', sifat: 'vulnerability', keyakinan: 'high', tanda: [], ...ubah,
+});
+const entriLlm = (ts) => ts.map((t, i) => ({ asal: 'llm', v1: score.temuanKeV1(t), sifat: t.sifat, rujukan: String(i) }));
+
+test('aturan hardening spesifikasi: hardening cocok jebakan tidak dihitung FP ketat, tetapi tetap terdeteksi; TP dari hardening tetap dihitung', () => {
+  // S2 (jebakan, m.js:5 order) terdeteksi hanya oleh temuan hardening.
+  const hard = score.nilaiHimpunan(entriLlm([tmn({ sifat: 'hardening', keyakinan: 'low' })]), gt);
+  assert.equal(hard.aturan_hardening, 'spesifikasi');
+  assert.equal(hard.metrik.ketat.fp, 0); // tidak dihitung FP
+  assert.deepEqual(hard.metrik.rincian_fp, { di_luar_ground_truth: 0, n1: 0, jebakan_terdeteksi: 0 });
+  assert.equal(hard.status_gt.S2, 'cocok'); // tetap terdeteksi di tabel per item
+  assert.equal(hard.hardening_cocok_seeded, 1);
+
+  // Jebakan yang sama terdeteksi oleh temuan vulnerability: dihitung FP.
+  const vuln = score.nilaiHimpunan(entriLlm([tmn({ sifat: 'vulnerability' })]), gt);
+  assert.equal(vuln.metrik.ketat.fp, 1);
+  assert.equal(vuln.metrik.rincian_fp.jebakan_terdeteksi, 1);
+
+  // TP tetap dihitung tanpa memandang sifat (B2): hardening yang cocok item terbukti S1 jadi TP.
+  const tp = score.nilaiHimpunan(entriLlm([tmn({ file: 'src/models/m.js', baris: 2, fungsi: 'list', jenis: 'SQLi', sifat: 'hardening', keyakinan: 'low' })]), gt);
+  assert.equal(tp.metrik.ketat.tp, 1);
+  assert.equal(tp.metrik.ketat.fp, 0);
+  assert.equal(tp.status_gt.S1, 'cocok');
+
+  // Jebakan terdeteksi oleh hardening DAN vulnerability sekaligus: tetap FP (karena ada non-hardening).
+  const campur = score.nilaiHimpunan(entriLlm([tmn({ sifat: 'hardening', keyakinan: 'low' }), tmn({ sifat: 'vulnerability', baris: 5 })]), gt);
+  assert.equal(campur.metrik.rincian_fp.jebakan_terdeteksi, 1);
+});

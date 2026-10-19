@@ -33,25 +33,40 @@ const alertKeV1 = (a) => ({
   file: a.file, baris: a.baris, cwe: a.cwe.join(', '), jenis: `${a.sumber} ${a.rule}`, penjelasan: a.pesan ?? '',
 });
 
+// Aturan spesifikasi (IMPLEMENTASI-PROMPT-V2.md langkah 7): temuan sifat hardening tidak dihitung FP ketat,
+// termasuk yang cocok jebakan atau N1. TP tetap dihitung tanpa memandang sifat (keputusan B2).
+const ATURAN_HARDENING = 'spesifikasi';
+// Status yang, untuk temuan hardening, dinetralkan supaya tidak masuk fpDiLuar maupun fpN1.
+const HARDENING_NETRAL = ['di luar ground truth', 'false positive dikenal'];
+
 // entri: [{ asal: 'llm' | 'sonar', v1, sifat, rujukan }]
 const nilaiHimpunan = (entri, gt) => {
   const { nilaiTemuan, hitungMetrik, URUTAN_STATUS, TERDETEKSI_LONGGAR } = gs();
   const penilaian = entri.map((e, i) => {
     const p = nilaiTemuan(e.v1, gt);
-    const status = e.sifat === 'hardening' && p.status === 'di luar ground truth' ? STATUS_HARDENING_LUAR : p.status;
+    const status = e.sifat === 'hardening' && HARDENING_NETRAL.includes(p.status) ? STATUS_HARDENING_LUAR : p.status;
     return { indeks: i, asal: e.asal, sifat: e.sifat ?? null, rujukan: e.rujukan ?? null, ...p, status };
   });
+  const jebakanId = new Set(gt.filter((g) => g.status === 'jebakan fp').map((g) => g.id));
+  // statusGt: deteksi oleh semua temuan, untuk pelaporan dan tabel per item.
+  // statusGtMetrik: untuk metrik, jebakan dihitung dari temuan non-hardening saja, sehingga jebakan yang hanya
+  // terdeteksi sebagai hardening tidak menjadi FP ketat. Item lain (termasuk terbukti untuk TP) tetap dari semua temuan.
   const statusGt = {};
+  const statusGtMetrik = {};
+  const statusDari = (daftar) => URUTAN_STATUS.find((s) => daftar
+    .map((p) => (p.status === 'false positive dikenal' ? 'cocok' : p.status)).includes(s)) ?? 'tidak';
   for (const g of gt) {
-    const terkait = penilaian.filter((p) => p.id.includes(g.id)).map((p) => (p.status === 'false positive dikenal' ? 'cocok' : p.status));
-    statusGt[g.id] = URUTAN_STATUS.find((s) => terkait.includes(s)) ?? 'tidak';
+    const terkait = penilaian.filter((p) => p.id.includes(g.id));
+    statusGt[g.id] = statusDari(terkait);
+    statusGtMetrik[g.id] = jebakanId.has(g.id) ? statusDari(terkait.filter((p) => p.sifat !== 'hardening')) : statusGt[g.id];
   }
   const hardeningCocokSeeded = penilaian.filter((p) => p.asal === 'llm' && p.sifat === 'hardening'
     && TERDETEKSI_LONGGAR.includes(p.status) && p.id.some((id) => /^S\d+$/.test(id))).length;
   return {
     penilaian,
     status_gt: statusGt,
-    metrik: hitungMetrik(gt, statusGt, penilaian),
+    aturan_hardening: ATURAN_HARDENING,
+    metrik: hitungMetrik(gt, statusGtMetrik, penilaian),
     hardening_di_luar_ground_truth: penilaian.filter((p) => p.status === STATUS_HARDENING_LUAR).length,
     hardening_cocok_seeded: hardeningCocokSeeded,
   };
@@ -300,7 +315,7 @@ const validasiTriase = (triase, runs, penilaianPerRun) => {
 };
 
 module.exports = {
-  KATEGORI_TRIASE, LABEL_ALERT, temuanKeV1, alertKeV1, nilaiHimpunan, metrikSetelahTriase, labelAlert,
+  ATURAN_HARDENING, KATEGORI_TRIASE, LABEL_ALERT, temuanKeV1, alertKeV1, nilaiHimpunan, metrikSetelahTriase, labelAlert,
   kategoriVerifikasi, skorRunUtama, skorRunDeteksi, skenarioA, tabelPerItem, gabunganAntarModel,
   hitungStatusPanggilan, validasiTriase, rataMetrik, lokasi,
 };
