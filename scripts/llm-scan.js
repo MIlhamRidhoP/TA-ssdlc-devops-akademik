@@ -5,8 +5,14 @@
 //   node scripts/llm-scan.js --vendor=google|anthropic|openai --kondisi=utama|sonar_di_deteksi|komentar_menyesatkan
 //                            --objek=<worktree commit yang dianalisis> [--runs=N]
 //
-// --objek harus worktree git tanpa perubahan yang belum di-commit. Kondisi utama dan sonar_di_deteksi butuh
-// SONAR_TOKEN, SONAR_PROJECT, dan SONAR_BRANCH, dan analisis Sonar harus untuk commit yang sama.
+//   node scripts/llm-scan.js ... --sonar-beku=<file>     alert Sonar dari file beku (wajib untuk data eksperimen)
+//   node scripts/llm-scan.js ... --kering                rakit prompt dan tampilkan hash tanpa memanggil API LLM
+//   node scripts/llm-scan.js --bekukan-sonar --objek=<worktree> [--keluar=<file>]
+//                                                        ambil laporan Sonar dari API sekali dan tulis file beku
+//
+// --objek harus worktree git tanpa perubahan yang belum di-commit. Tanpa --sonar-beku, kondisi utama dan
+// sonar_di_deteksi mengambil laporan dari API (butuh SONAR_TOKEN, SONAR_PROJECT, SONAR_BRANCH), dan hash tree src/
+// pada revisi analisis Sonar harus sama dengan objek uji. Metadata mencatat sumber_sonar: "beku" atau "api".
 require('dotenv').config({ quiet: true });
 const fs = require('fs');
 const path = require('path');
@@ -16,6 +22,7 @@ const { validasiDeteksi, validasiVerifikasi } = require('./llm/validate');
 const { panggilDenganUlang, ADAPTER } = require('./llm/panggil');
 const { VENDOR, BATAS_OUTPUT, TINGKAT_THINKING, versiSdk, hitungBiaya } = require('./llm/vendor');
 const { pengaturanKoneksi } = require('./llm/http');
+const { buatIsiBeku, tulisBeku, bacaBeku } = require('./llm/sonar-beku');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUTPUT_DIR = path.join(ROOT, 'llm-output', 'v2');
@@ -118,6 +125,8 @@ const metadata = ({ konteks, tugas, run, idAlert, prompt, hasil, parseOk }) => (
   tree_src_objek_uji: konteks.objek.tree_src,
   analisis_sonar: konteks.analisisSonar,
   revisi_analisis_sonar: konteks.revisiSonar,
+  sumber_sonar: konteks.sumberSonar,
+  sonar_beku: konteks.infoBeku,
   status: hasil.status,
   detail_status: hasil.detail_status ?? '',
   parse_ok: parseOk,
@@ -152,6 +161,7 @@ const jalankanSatuRun = async (konteks, n) => {
     versi_prompt: render.VERSI_PROMPT, kondisi, vendor: konteks.vendor, model_diminta: konteks.model, run: n,
     commit_objek_uji: konteks.objek.commit, branch_objek_uji: konteks.objek.branch, tree_src_objek_uji: konteks.objek.tree_src,
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
+    sumber_sonar: konteks.sumberSonar, sonar_beku: konteks.infoBeku,
     parse_ok: validDeteksi.parse_ok,
     temuan: validDeteksi.temuan,
     deteksi: metadata({ konteks, tugas: 'deteksi', run: n, idAlert: null, prompt: promptDeteksi, hasil: hasilDeteksi, parseOk: validDeteksi.parse_ok }),
@@ -209,15 +219,65 @@ const ringkasRun = (c) => {
   };
 };
 
+// Ambil data Sonar dari file beku (eksperimen) atau dari API (run uji dan pengembangan).
+const siapkanSonar = async (objek, fileBeku) => {
+  if (fileBeku) {
+    const b = bacaBeku(path.resolve(fileBeku), objek);
+    return { sonar: { laporan: b.laporan, ringkasan: b.ringkasan, tree_src_analisis: b.tree_src_analisis }, sumber: 'beku', infoBeku: b.info };
+  }
+  return { sonar: await ambilSonar(objek), sumber: 'api', infoBeku: null };
+};
+
+const infoBekuRelatif = (info, objek) => (info ? {
+  ...info, path: path.relative(objek.dir, path.resolve(info.path)).split(path.sep).join('/'),
+} : null);
+
+// --bekukan-sonar: ambil laporan dari API sekali (dengan cek hash tree src/), lalu tulis file beku di worktree objek uji.
+const bekukanSonar = async (objek) => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  const keluar = path.resolve(ambilArg('keluar') ?? path.join(objek.dir, 'hasil-eksperimen', `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`, 'sonar-beku.json'));
+  if (fs.existsSync(keluar)) throw new Error(`File sudah ada, tidak ditimpa: ${keluar}`);
+  const sonar = await ambilSonar(objek);
+  const isi = buatIsiBeku({ laporan: sonar.laporan, treeSrcAnalisis: sonar.tree_src_analisis });
+  fs.mkdirSync(path.dirname(keluar), { recursive: true });
+  const shaFile = tulisBeku(keluar, isi);
+  console.log(`File Sonar beku: ${keluar}`);
+  console.log(`  project ${isi.project}, branch ${isi.branch}, analisis ${isi.analisis.tanggal} revisi ${isi.analisis.revisi}, tree src ${isi.tree_src}`);
+  console.log(`  issue ${isi.ringkasan.jumlah_issue}, hotspot ${isi.ringkasan.jumlah_hotspot}, alert terpilih ${isi.ringkasan.jumlah_alert}`);
+  console.log(`  hash laporan Sonar ${isi.ringkasan.hash_laporan_sonar}`);
+  console.log(`  sha256_isi ${isi.sha256_isi}`);
+  console.log(`  SHA-256 file ${shaFile}`);
+};
+
+// --kering: rakit semua prompt satu run dan tampilkan hash-nya tanpa memanggil API LLM dan tanpa menulis file.
+const runKering = ({ template, kondisi, kode, alert, sonarTeks }) => {
+  const deteksi = render.rakitPrompt({ template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks: kondisi === 'sonar_di_deteksi' ? sonarTeks : null });
+  const hasil = [{ tugas: 'deteksi', id_alert: null, ...deteksi.hash }];
+  if (kondisi === 'utama') {
+    for (const a of alert) {
+      const v = render.rakitPrompt({ template, kondisi, tugas: 'verifikasi', kodeSumber: kode.teks, alertTeks: a.teks });
+      hasil.push({ tugas: 'verifikasi', id_alert: a.id, ...v.hash });
+    }
+  }
+  return hasil;
+};
+
 const main = async () => {
   const prompt = ambilArg('prompt') ?? 'v2';
   if (prompt === 'v1') throw new Error('Prompt v1 dijalankan dengan: node scripts/gemini-scan.js --runs=N');
   if (prompt !== 'v2') throw new Error(`Versi prompt tidak dikenal: ${prompt}`);
+  if (process.argv.includes('--bekukan-sonar')) {
+    const objek = periksaObjek(ambilArg('objek'));
+    process.env.OBJEK_UJI_DIR = objek.dir;
+    return bekukanSonar(objek);
+  }
+  const kering = process.argv.includes('--kering');
   const vendor = ambilArg('vendor');
   const kondisi = ambilArg('kondisi');
   if (!VENDOR[vendor]) throw new Error('--vendor harus google, anthropic, atau openai');
   if (!render.KONDISI.includes(kondisi)) throw new Error(`--kondisi harus ${render.KONDISI.join(', ')}`);
-  if (!process.env[KUNCI_API[vendor]]) throw new Error(`${KUNCI_API[vendor]} tidak diset`);
+  if (!kering && !process.env[KUNCI_API[vendor]]) throw new Error(`${KUNCI_API[vendor]} tidak diset`);
   const jumlahRun = Number(ambilArg('runs') ?? 1);
   if (!Number.isInteger(jumlahRun) || jumlahRun < 1) throw new Error('--runs harus bilangan bulat >= 1');
 
@@ -231,10 +291,25 @@ const main = async () => {
   let alert = [];
   let sonarTeks = null;
   let sonar = null;
+  let sumberSonar = null;
+  let infoBeku = null;
   if (kondisi !== 'komentar_menyesatkan') {
-    sonar = await ambilSonar(objek);
+    ({ sonar, sumber: sumberSonar, infoBeku } = await siapkanSonar(objek, ambilArg('sonar-beku')));
     alert = render.pilihAlert(sonar.ringkasan).map((a) => ({ ...a, teks: render.formatAlert(a, template.alert.teks) }));
     sonarTeks = render.laporanSonar(alert.map((a) => a.teks));
+  }
+  infoBeku = infoBekuRelatif(infoBeku, objek);
+
+  if (kering) {
+    console.log(`Run kering: vendor ${vendor}, kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, sumber Sonar ${sumberSonar ?? '-'}`);
+    if (infoBeku) console.log(`  file beku ${infoBeku.path} (SHA-256 ${infoBeku.sha256_file}, revisi ${infoBeku.revisi})`);
+    console.log(`  hash kode_sumber ${render.sha256(kode.teks)}`);
+    if (sonarTeks !== null) console.log(`  hash laporan Sonar ${render.sha256(sonarTeks)}, ${alert.length} alert`);
+    for (const h of runKering({ template, kondisi, kode, alert, sonarTeks })) {
+      console.log(`  ${(h.id_alert ?? h.tugas).padEnd(9)} prompt_user_kanonik ${h.prompt_user_kanonik}`);
+    }
+    console.log('Tidak ada panggilan API LLM dan tidak ada file yang ditulis.');
+    return;
   }
 
   const model = VENDOR[vendor].model;
@@ -250,6 +325,7 @@ const main = async () => {
     vendor, model, kondisi, objek, kode, template, alert, sonarTeks, folder, sdk: versiSdk(),
     analisisSonar: sonar ? sonar.laporan.analisis.tanggal : null,
     revisiSonar: sonar ? sonar.laporan.analisis.revisi : null,
+    sumberSonar, infoBeku,
   };
   const contoh = render.rakitPrompt({ template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks });
   fs.writeFileSync(path.join(folder, 'prompt-system.txt'), contoh.system, 'utf8');
@@ -273,6 +349,7 @@ const main = async () => {
     objek_uji: { commit: objek.commit, branch: objek.branch, tree_src: objek.tree_src },
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     tree_src_analisis_sonar: sonar ? sonar.tree_src_analisis : null,
+    sumber_sonar: sumberSonar, sonar_beku: infoBeku,
     sonar: sonar ? { project: sonar.laporan.project, branch: sonar.laporan.branch, jumlah_issue: sonar.laporan.issues.length, jumlah_hotspot: sonar.laporan.hotspots.length, jumlah_alert: alert.length } : null,
     hash_laporan_sonar: sonarTeks === null ? null : render.sha256(sonarTeks),
     hash_kode_sumber: render.sha256(kode.teks), jumlah_file: kode.file.length,
@@ -295,4 +372,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { periksaObjek, periksaBranchKondisi, ambilSonar, treeSrc, percobaanGagal, biayaPercobaanGagal };
+module.exports = { periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, treeSrc, percobaanGagal, biayaPercobaanGagal };

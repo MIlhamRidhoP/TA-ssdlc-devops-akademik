@@ -1,7 +1,8 @@
 // Scoring hasil prompt v2 (scripts/llm-scan.js).
 //
 // Pemakaian:
-//   node scripts/llm-score.js --objek=<worktree objek uji> [--label-alert=<file>] [--out=<file>] <folder> [<folder> ...]
+//   node scripts/llm-score.js --objek=<worktree objek uji> --sonar-beku=<file> [--label-alert=<file>] [--out=<file>] <folder> [<folder> ...]
+// --sonar-beku wajib kalau ada folder kondisi utama.
 //
 // Semua folder harus berasal dari commit objek uji yang sama dengan HEAD --objek. Satu folder per vendor per
 // kondisi. Folder kondisi utama dinilai dengan Skenario A, B, C, dan verifikasi. Folder ablasi dinilai deteksinya saja.
@@ -9,12 +10,37 @@
 const fs = require('fs');
 const path = require('path');
 const { periksaObjek } = require('./llm-scan');
+const { bacaBeku } = require('./llm/sonar-beku');
 
 const ambilArg = (nama) => {
   const arg = process.argv.find((a) => a.startsWith(`--${nama}=`));
   return arg ? arg.slice(nama.length + 3) : null;
 };
 const bacaJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+// Folder kondisi utama wajib memakai laporan Sonar beku yang sama dengan file --sonar-beku, dan alert yang dikirim
+// ke panggilan verifikasi (sonar-alert.json) harus identik dengan alert yang diturunkan dari file itu. Scoring
+// Skenario A dan B memakai alert hasil turunan file beku, jadi verifikasi dan scoring berasal dari satu sumber.
+const KUNCI_ALERT = ['id', 'rule', 'tipe', 'file', 'baris', 'cwe', 'teks'];
+const ringkasAlert = (a) => JSON.stringify(KUNCI_ALERT.map((k) => a[k] ?? null));
+
+const periksaSumberSonar = (utama, beku) => {
+  if (!utama.length) return;
+  if (!beku) throw new Error('Folder kondisi utama ada, tetapi --sonar-beku tidak diisi. Scoring eksperimen wajib memakai laporan Sonar beku');
+  for (const d of utama) {
+    if (d.summary.sumber_sonar !== 'beku') {
+      throw new Error(`${d.folder} memakai laporan Sonar dari ${d.summary.sumber_sonar ?? 'sumber tidak tercatat'}, bukan file beku`);
+    }
+    if (d.summary.sonar_beku?.sha256_isi !== beku.info.sha256_isi) {
+      throw new Error(`${d.folder} memakai file Sonar beku lain (sha256_isi ${d.summary.sonar_beku?.sha256_isi})`);
+    }
+    const dikirim = (d.alert ?? []).map(ringkasAlert);
+    const turunan = beku.alert.map(ringkasAlert);
+    if (dikirim.length !== turunan.length || dikirim.some((a, i) => a !== turunan[i])) {
+      throw new Error(`${d.folder}: alert yang dikirim ke verifikasi tidak sama dengan alert dari file Sonar beku`);
+    }
+  }
+};
 
 const bacaFolder = (folder) => {
   const summary = bacaJson(path.join(folder, 'summary.json'));
@@ -59,9 +85,14 @@ const main = () => {
     folder: data.map((d) => ({ folder: path.relative(process.cwd(), d.folder).split(path.sep).join('/'), vendor: d.summary.vendor, kondisi: d.summary.kondisi, jumlah_run: d.runs.length })),
   };
 
+  const fileBeku = ambilArg('sonar-beku');
+  const beku = fileBeku ? bacaBeku(path.resolve(fileBeku), objek) : null;
+  periksaSumberSonar(utama, beku);
+  if (beku) laporan.sonar_beku = { ...beku.info, path: path.relative(objek.dir, path.resolve(fileBeku)).split(path.sep).join('/') };
+
   if (utama.length) {
     if (new Set(utama.map((d) => d.summary.hash_laporan_sonar)).size > 1) throw new Error('Alert Sonar berbeda antar folder utama');
-    const { alert } = utama[0];
+    const { alert } = beku;
     const fileLabel = ambilArg('label-alert');
     const label = score.labelAlert(alert, gt, fileLabel ? bacaJson(path.resolve(fileLabel)) : {});
     const skorA = score.skenarioA(alert, gt);
@@ -127,3 +158,5 @@ if (require.main === module) {
     process.exitCode = 1;
   }
 }
+
+module.exports = { periksaSumberSonar };
