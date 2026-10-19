@@ -5,6 +5,10 @@
 // Pemakaian:
 //   node scripts/merge-results.js merge --input=gemini-output --out=results.json [--summary=<file>]
 //   node scripts/merge-results.js publish --results=results.json --dir=<worktree security-results>
+//
+// Jalur v2 (prompt v2, docs/design/results-v2.schema.json), tanpa panggilan API:
+//   node scripts/merge-results.js merge --v2 --folder=<folder llm-scan> --run=N --out=<file>
+//     [--skor=<skor-utama.json> --skor-triase=<...> --skor-triase-konservatif=<...>] [--repo=owner/repo]
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -282,8 +286,47 @@ const metaDariEnv = (env) => ({
   jobs: { build_test: teks(env.JOB_BUILD_TEST), sonarcloud: teks(env.JOB_SONARCLOUD), analisis: teks(env.JOB_ANALISIS) },
 });
 
+// Mode v2: baca satu folder keluaran llm-scan.js (summary.json, run-N.json, sonar-alert.json) dan,
+// bila diberikan, laporan skor llm-score.js untuk blok eksperimen. Tidak memanggil API apa pun.
+const mergeV2 = () => {
+  const { susunHasilV2, susunEksperimen } = require('./llm/results-v2');
+  const folder = path.resolve(ambilArg('folder') || '');
+  if (!folder || !fs.existsSync(folder)) throw new Error('--folder wajib: folder hasil llm-scan (berisi summary.json)');
+  const bacaJson = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
+  const summary = bacaJson(path.join(folder, 'summary.json'));
+  const indeksRun = Number(ambilArg('run') || 1);
+  // --nomor memisahkan nomor run di dashboard dari indeks berkas run-N.json, supaya beberapa vendor
+  // bisa tampil sebagai beberapa run berurutan dalam satu daftar.
+  const nomor = Number(ambilArg('nomor') || indeksRun);
+  const fileRun = path.join(folder, `run-${indeksRun}.json`);
+  if (!fs.existsSync(fileRun)) throw new Error(`run-${indeksRun}.json tidak ada di ${folder}`);
+  const run = bacaJson(fileRun);
+  const fileAlert = path.join(folder, 'sonar-alert.json');
+  const alert = fs.existsSync(fileAlert) ? bacaJson(fileAlert) : [];
+
+  const skorUtama = ambilArg('skor');
+  let eksperimen = null;
+  if (skorUtama) {
+    eksperimen = susunEksperimen({
+      utama: bacaJson(path.resolve(skorUtama)),
+      triaseUtama: ambilArg('skor-triase') ? bacaJson(path.resolve(ambilArg('skor-triase'))) : null,
+      triaseKonservatif: ambilArg('skor-triase-konservatif') ? bacaJson(path.resolve(ambilArg('skor-triase-konservatif'))) : null,
+      sumber: {
+        skor_utama: path.basename(skorUtama),
+        skor_triase_utama: ambilArg('skor-triase') ? path.basename(ambilArg('skor-triase')) : null,
+        skor_triase_konservatif: ambilArg('skor-triase-konservatif') ? path.basename(ambilArg('skor-triase-konservatif')) : null,
+      },
+    });
+  }
+
+  const hasil = susunHasilV2({ summary, run, nomor, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen });
+  tulisJson(ambilArg('out') || 'results-v2.json', hasil);
+  console.log(`results v2: ${hasil.findings.length} temuan, ${hasil.alerts.length} alert, vendor ${hasil.run.vendor}, eksperimen ${eksperimen ? 'ada' : 'tidak'}`);
+};
+
 const main = () => {
   const perintah = process.argv[2];
+  if (perintah === 'merge' && process.argv.includes('--v2')) return mergeV2();
   if (perintah === 'merge') {
     const bahan = bacaBahan(ambilArg('input') || path.join(ROOT, 'gemini-output'));
     if (!bahan.folder) console.warn('Peringatan: folder output gemini-scan tidak ditemukan, hasil berisi nol temuan');

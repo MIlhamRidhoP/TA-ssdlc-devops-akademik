@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "diperbarui": "2026-10-19T16:00:00.000Z",
+  "runs": [
+    {
+      "id": 3,
+      "nomor": 3,
+      "branch": "eksperimen/seeded",
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "vendor": "openai",
+      "model_diminta": "gpt-6.1-sol",
+      "model_menjawab": "gpt-6.1-sol",
+      "kondisi": "utama",
+      "mulai": "2026-10-19T12:54:37.363Z",
+      "selesai": "2026-10-19T12:59:12.908Z",
+      "durasi_detik": 276,
+      "biaya_usd": 0.286326,
+      "path": "eksperimen/seeded/3.json",
+      "status": "ok",
+      "jumlah": {
+        "alert": 5,
+        "temuan": 14,
+        "true_positive": 1,
+        "false_positive": 4,
+        "uncertain": 0,
+        "tanpa_putusan": 0
+      }
+    },
+    {
+      "id": 2,
+      "nomor": 2,
+      "branch": "eksperimen/seeded",
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "vendor": "anthropic",
+      "model_diminta": "claude-sonnet-5-5",
+      "model_menjawab": "claude-sonnet-5-5",
+      "kondisi": "utama",
+      "mulai": "2026-10-19T12:53:28.445Z",
+      "selesai": "2026-10-19T12:54:35.824Z",
+      "durasi_detik": 67,
+      "biaya_usd": 0.373722,
+      "path": "eksperimen/seeded/2.json",
+      "status": "ok",
+      "jumlah": {
+        "alert": 5,
+        "temuan": 14,
+        "true_positive": 3,
+        "false_positive": 2,
+        "uncertain": 0,
+        "tanpa_putusan": 0
+      }
+    },
+    {
+      "id": 1,
+      "nomor": 1,
+      "branch": "eksperimen/seeded",
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "vendor": "google",
+      "model_diminta": "gemini-3.1-pro-preview",
+      "model_menjawab": "gemini-3.1-pro-preview",
+      "kondisi": "utama",
+      "mulai": "2026-10-19T13:02:41.503Z",
+      "selesai": "2026-10-19T13:08:21.636Z",
+      "durasi_detik": 340,
+      "biaya_usd": 0.716812,
+      "path": "eksperimen/seeded/1.json",
+      "status": "ok",
+      "jumlah": {
+        "alert": 5,
+        "temuan": 7,
+        "true_positive": 2,
+        "false_positive": 3,
+        "uncertain": 0,
+        "tanpa_putusan": 0
+      }
+    }
+  ]
+}

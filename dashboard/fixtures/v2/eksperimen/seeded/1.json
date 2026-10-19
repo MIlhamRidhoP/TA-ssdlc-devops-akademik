@@ -1,0 +1,2232 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 1,
+    "nomor": 1,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "vendor": "google",
+    "model_diminta": "gemini-3.1-pro-preview",
+    "model_menjawab": "gemini-3.1-pro-preview",
+    "kondisi": "utama",
+    "mulai": "2026-10-19T13:02:41.503Z",
+    "selesai": "2026-10-19T13:08:21.636Z",
+    "durasi_detik": 340,
+    "objek_uji": {
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "branch": "eksperimen/seeded",
+      "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+    },
+    "commit_kode": {
+      "head": "353634a6b3e52ca31a1ea02284b8825a06969a71",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "sumber_sonar": "beku",
+    "sonar_beku": {
+      "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8"
+    },
+    "biaya_usd": 0.716812,
+    "status_panggilan": {
+      "total": 6,
+      "ok": 6,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0
+    },
+    "pipeline": null
+  },
+  "alerts": [
+    {
+      "id": "SONAR-01",
+      "rule": "javascript:S5122",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "pesan": "Make sure that enabling CORS is safe here.",
+      "severity_sonar": "MAJOR",
+      "severity_asal": "sonar",
+      "putusan": "true_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Pemanggilan cors() tanpa argumen konfigurasi di src/app.js mengaktifkan Cross-Origin Resource Sharing (CORS) dengan nilai default yang mengizinkan semua origin ('*'). Untuk backend sistem akademik yang menangani data pribadi, pengaturan ini terlalu permisif (CWE-942) karena seharusnya hanya origin frontend resmi yang diizinkan mengakses API.",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-02",
+      "rule": "jssecurity:S5131",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "cwe": [
+        "CWE-79"
+      ],
+      "pesan": "Reflected XSS via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Peringatan ini adalah false positive karena alat analisis statis gagal memodelkan kondisi logika pada kode. Variabel `semester` berasal dari `req.query.semester` namun hanya akan masuk ke baris 160 jika memenuhi kondisi `!semester`. Satu-satunya nilai string yang bernilai falsy dalam JavaScript adalah string kosong (`\"\"`), sehingga tidak ada payload XSS yang dapat disisipkan ke dalam output HTML tersebut.",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-03",
+      "rule": "jssecurity:S5131",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 170,
+      "cwe": [
+        "CWE-79"
+      ],
+      "pesan": "Reflected XSS via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Peringatan ini merupakan false positive karena input pengguna pada variabel 'semester' telah disanitasi sebelum disisipkan ke dalam HTML. Nilai tersebut diproses menggunakan fungsi 'escapeHtml' dari 'src/utils/html.js' di dalam pemanggilan 'halamanKhs' untuk menghindari injeksi karakter berbahaya. Alat analisis statis kemungkinan besar tidak mengenali fungsi sanitasi kustom ini sehingga memunculkan peringatan Reflected XSS (CWE-79).",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-04",
+      "rule": "jssecurity:S3649",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "pesan": "SQL Injection via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Alert jssecurity:S3649 mendeteksi potensi SQL Injection (CWE-89) karena interpolasi variabel ${sort} dan ${order} ke dalam query database di cutiModel.js. Namun, sebelum fungsi model dipanggil, input dari req.query.sort dan req.query.order divalidasi secara ketat oleh fungsi listQuery di cutiController.js. Fungsi tersebut memastikan input hanya berisi key yang diizinkan (dari model.SORT) dan format 'asc'/'desc', lalu melempar error jika tidak sesuai sehingga mencegah eksekusi query berbahaya.",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-05",
+      "rule": "jssecurity:S3649",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "pesan": "SQL Injection via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "true_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Alert ini adalah true positive karena input dari req.query.semester pada fungsi khs di src/controllers/nilaiController.js diteruskan tanpa validasi format yang memadai. Variabel semester tersebut kemudian disisipkan secara langsung ke dalam string query SQL menggunakan interpolasi string ('${semester}') pada src/models/nilaiModel.js, yang membuka celah eksploitasi SQL Injection.",
+      "tanda": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 54,
+      "fungsi": "listFrom",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Variabel pola (parameter pencarian q) digabungkan secara langsung menggunakan string template ke dalam query pencarian tanpa disanitasi kutip tunggalnya. Hal ini memungkinkan penyerang menyisipkan perintah SQL arbitrer, yang berpotensi memaparkan atau memanipulasi keseluruhan data pada basis data.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "000d7157e043d8f9",
+      "tanda": []
+    },
+    {
+      "id": "T-02",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 143,
+      "fungsi": "updateByUserId",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Kunci dari objek body JSON permintaan diekstrak secara otomatis untuk kemudian disisipkan langsung ke klausa SET pada perintah UPDATE. Karena controller tidak memiliki validasi atau pemutihan daftar field (mass assignment allowlist), pihak yang berwenang memperbarui profil dapat memodifikasi properti arbitrer dan memasukkan payload SQL pada nama key JSON.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "0438dc56e2952dbc",
+      "tanda": []
+    },
+    {
+      "id": "T-03",
+      "file": "src/models/nilaiModel.js",
+      "baris": 133,
+      "fungsi": "publishedBySemester",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter semester yang bersumber dari query string (req.query.semester) disambung ke dalam kueri SQL menggunakan literal tanpa disanitasi terlebih dahulu di kontroler bersangkutan. Penyerang yang memiliki akun mahasiswa bisa melakukan manipulasi SQL, misalnya menghilangkan restriksi mahasiswa_id untuk mengakses nilai mata kuliah milik pihak lain.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "d9fa5fdb7e08aca0",
+      "tanda": []
+    },
+    {
+      "id": "T-04",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "fungsi": "khs",
+      "jenis": "Reflected Cross-Site Scripting",
+      "cwe": [
+        "CWE-79"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter input semester langsung dipantulkan kembali sebagai konten HTML apabila terjadi kegagalan validasi kosong, tanpa proses filter karakter khusus (HTML encoding). Penyerang dapat merancang sebuah tautan dengan payload berbahaya yang ketika diakses akan menjalankan kode skrip pada peramban korban.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "f14a169dc52d7e18",
+      "tanda": []
+    },
+    {
+      "id": "T-05",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 120,
+      "fungsi": "halamanKhs",
+      "jenis": "Stored Cross-Site Scripting",
+      "cwe": [
+        "CWE-79"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Tidak seperti properti data lainnya, variabel i.nama yang merepresentasikan nama mata kuliah ditulis secara mentah pada halaman KHS HTML. Bila akun dengan kendali atas data tersebut menginjeksi vektor XSS ke daftar mata kuliah, maka skrip yang tersimpan tersebut akan senantiasa tereksekusi bagi pengguna yang membukanya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "0d3dad70aaf9e52d",
+      "tanda": []
+    },
+    {
+      "id": "T-06",
+      "file": "src/models/profilModel.js",
+      "baris": 38,
+      "fungsi": "removeEmail",
+      "jenis": "Insecure Direct Object Reference",
+      "cwe": [
+        "CWE-862"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Query untuk proses penghapusan email tambahan pada basis data semata-mata bergantung pada filter id email dan mengabaikan parameter id mahasiswa. Kondisi akses yang rusak ini menyebabkan sembarang mahasiswa yang terautentikasi dapat menghapus konfigurasi alamat email pengguna manapun asalkan berhasil mengetahui tebakan ID-nya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "ba92551277ac44bf",
+      "tanda": []
+    },
+    {
+      "id": "T-07",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Missing Rate Limiting",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint untuk proses otentikasi login sama sekali tidak menerapkan modul pengendalian jumlah lalu lintas atau rate limiting per IP/pengguna. Ketiadaan perlindungan ini memberikan kelonggaran terhadap serangan brute-force, password guessing, maupun credential stuffing untuk membobol akses sistem akademiknya.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "7aeb70d86d293354",
+      "tanda": []
+    }
+  ],
+  "eksperimen": {
+    "sumber": {
+      "skor_utama": "skor-utama.json",
+      "skor_triase_utama": "skor-setelah-triase.json",
+      "skor_triase_konservatif": "skor-setelah-triase-konservatif.json",
+      "commit_kode_scoring": "10be9aac06e22e7d3e81d80322fa9bf924df402c",
+      "aturan_hardening": "spesifikasi",
+      "objek_uji_commit": "97cfb00349e7d3ff40b04834e97a95339902cf65"
+    },
+    "sensitivitas": false,
+    "label_alert": {
+      "SONAR-01": {
+        "label": "nyata",
+        "sumber": "otomatis"
+      },
+      "SONAR-02": {
+        "label": "fp",
+        "sumber": "otomatis"
+      },
+      "SONAR-03": {
+        "label": "fp",
+        "sumber": "otomatis"
+      },
+      "SONAR-04": {
+        "label": "fp",
+        "sumber": "otomatis"
+      },
+      "SONAR-05": {
+        "label": "nyata",
+        "sumber": "otomatis"
+      }
+    },
+    "per_model": [
+      {
+        "vendor": "google",
+        "model": "gemini-3.1-pro-preview",
+        "jumlah_run": 3,
+        "skenario_a": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "status_panggilan": {
+          "deteksi": {
+            "total": 3,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          },
+          "verifikasi": {
+            "total": 15,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "skenario_b": {
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 0,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 1,
+                "recall": 1,
+                "f1": 1
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          },
+          {
+            "run": 2,
+            "skenario_b": {
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.4444444444444444,
+                "f1": 0.6153846153846153,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.4444444444444444,
+                "f1": 0.6153846153846153,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.4444444444444444,
+                "f1": 0.6153846153846153,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.4444444444444444,
+                "f1": 0.6153846153846153,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 0,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 1,
+                "recall": 1,
+                "f1": 1
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          },
+          {
+            "run": 3,
+            "skenario_b": {
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 4,
+                "fp": 1,
+                "fn": 5,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 1,
+                "precision": 0.8,
+                "recall": 0.4444444444444444,
+                "f1": 0.5714285714285714,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 0,
+                "correct_retention": 2
+              },
+              "metrik_fp_positif": {
+                "precision": 1,
+                "recall": 1,
+                "f1": 1
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          }
+        ],
+        "rata_rata": {
+          "skenario_b": {
+            "ketat": {
+              "precision": 0.8000000000000002,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "precision": 0.8666666666666667,
+              "recall": 0.4444444444444444,
+              "f1": 0.586080586080586
+            },
+            "triase_konservatif": {
+              "precision": 0.8666666666666667,
+              "recall": 0.4444444444444444,
+              "f1": 0.586080586080586
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "precision": 0.8000000000000002,
+              "recall": 0.4444444444444444,
+              "f1": 0.5714285714285714
+            },
+            "triase_utama": {
+              "precision": 0.8666666666666667,
+              "recall": 0.4444444444444444,
+              "f1": 0.586080586080586
+            },
+            "triase_konservatif": {
+              "precision": 0.8666666666666667,
+              "recall": 0.4444444444444444,
+              "f1": 0.586080586080586
+            }
+          }
+        }
+      },
+      {
+        "vendor": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "jumlah_run": 3,
+        "skenario_a": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "status_panggilan": {
+          "deteksi": {
+            "total": 3,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          },
+          "verifikasi": {
+            "total": 15,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "skenario_b": {
+              "ketat": {
+                "tp": 8,
+                "fp": 2,
+                "fn": 1,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 1,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 1,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 8,
+                "fp": 1,
+                "fn": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 1,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 1,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 1,
+                "missed_fp": 2,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 0.3333333333333333,
+                "f1": 0.4
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          },
+          {
+            "run": 2,
+            "skenario_b": {
+              "ketat": {
+                "tp": 7,
+                "fp": 3,
+                "fn": 2,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 3,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 2,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 3,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 2,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 7,
+                "fp": 3,
+                "fn": 2,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 3,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 2,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 3,
+                "precision": 0.7,
+                "recall": 0.7777777777777778,
+                "f1": 0.7368421052631577,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 2,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 1,
+                "missed_fp": 2,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.5,
+                "recall": 0.3333333333333333,
+                "f1": 0.4
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          },
+          {
+            "run": 3,
+            "skenario_b": {
+              "ketat": {
+                "tp": 8,
+                "fp": 1,
+                "fn": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 1,
+                "precision": 0.8888888888888888,
+                "recall": 0.8888888888888888,
+                "f1": 0.8888888888888888,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 8,
+                "fp": 0,
+                "fn": 1,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 0,
+                  "fp": 0,
+                  "teoretis": 0,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 2,
+                "missed_fp": 1,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.6666666666666666,
+                "recall": 0.6666666666666666,
+                "f1": 0.6666666666666666
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          }
+        ],
+        "rata_rata": {
+          "skenario_b": {
+            "ketat": {
+              "precision": 0.7962962962962963,
+              "recall": 0.8518518518518517,
+              "f1": 0.8226120857699805
+            },
+            "triase_utama": {
+              "precision": 0.7962962962962963,
+              "recall": 0.8518518518518517,
+              "f1": 0.8226120857699805
+            },
+            "triase_konservatif": {
+              "precision": 0.7962962962962963,
+              "recall": 0.8518518518518517,
+              "f1": 0.8226120857699805
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "precision": 0.8629629629629628,
+              "recall": 0.8518518518518517,
+              "f1": 0.855635821580094
+            },
+            "triase_utama": {
+              "precision": 0.8629629629629628,
+              "recall": 0.8518518518518517,
+              "f1": 0.855635821580094
+            },
+            "triase_konservatif": {
+              "precision": 0.8629629629629628,
+              "recall": 0.8518518518518517,
+              "f1": 0.855635821580094
+            }
+          }
+        }
+      },
+      {
+        "vendor": "openai",
+        "model": "gpt-6.1-sol",
+        "jumlah_run": 3,
+        "skenario_a": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.1111111111111111,
+          "f1": 0.16666666666666666
+        },
+        "status_panggilan": {
+          "deteksi": {
+            "total": 3,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          },
+          "verifikasi": {
+            "total": 15,
+            "refusal": 0,
+            "truncated": 0,
+            "error": 0,
+            "parse_ok_false": 0
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "skenario_b": {
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.75,
+                "recall": 1,
+                "f1": 0.8571428571428571
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          },
+          {
+            "run": 2,
+            "skenario_b": {
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.75,
+                "recall": 1,
+                "f1": 0.8571428571428571
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          },
+          {
+            "run": 3,
+            "skenario_b": {
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "skenario_c": {
+              "ketat": {
+                "tp": 8,
+                "fp": 3,
+                "fn": 1,
+                "precision": 0.7272727272727273,
+                "recall": 0.8888888888888888,
+                "f1": 0.7999999999999999
+              },
+              "triase_utama": {
+                "varian": "utama",
+                "fp": 0,
+                "precision": 1,
+                "recall": 0.8888888888888888,
+                "f1": 0.9411764705882353,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              },
+              "triase_konservatif": {
+                "varian": "konservatif",
+                "fp": 2,
+                "precision": 0.8,
+                "recall": 0.8888888888888888,
+                "f1": 0.8421052631578948,
+                "rincian_triase": {
+                  "tp_di_luar_seeded": 1,
+                  "fp": 0,
+                  "teoretis": 2,
+                  "informasional": 0,
+                  "duplikat": 0
+                },
+                "belum_ditriase": 0
+              }
+            },
+            "verifikasi": {
+              "jumlah": {
+                "identified_fp": 3,
+                "missed_fp": 0,
+                "misidentified_fp": 1,
+                "correct_retention": 1
+              },
+              "metrik_fp_positif": {
+                "precision": 0.75,
+                "recall": 1,
+                "f1": 0.8571428571428571
+              },
+              "uncertain_dipertahankan": [],
+              "tanpa_hasil": []
+            }
+          }
+        ],
+        "rata_rata": {
+          "skenario_b": {
+            "ketat": {
+              "precision": 0.7272727272727272,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882352
+            },
+            "triase_konservatif": {
+              "precision": 0.8000000000000002,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948
+            }
+          },
+          "skenario_c": {
+            "ketat": {
+              "precision": 0.7272727272727272,
+              "recall": 0.8888888888888888,
+              "f1": 0.7999999999999999
+            },
+            "triase_utama": {
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882352
+            },
+            "triase_konservatif": {
+              "precision": 0.8000000000000002,
+              "recall": 0.8888888888888888,
+              "f1": 0.8421052631578948
+            }
+          }
+        }
+      }
+    ],
+    "tabel_per_item": [
+      {
+        "id": "S1",
+        "kelas": "SQL Injection",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S2",
+        "kelas": "SQL Injection (ORDER BY)",
+        "klasifikasi": "jebakan fp",
+        "sonar_a": "cocok",
+        "sonar_b": "cocok",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S3",
+        "kelas": "SQL Injection",
+        "klasifikasi": "terbukti",
+        "sonar_a": "cocok",
+        "sonar_b": "cocok",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S4",
+        "kelas": "Stored XSS",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S5",
+        "kelas": "Reflected XSS",
+        "klasifikasi": "jebakan fp",
+        "sonar_a": "cocok",
+        "sonar_b": "cocok",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S6",
+        "kelas": "Path Traversal",
+        "klasifikasi": "laten",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S7",
+        "kelas": "IDOR",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S8",
+        "kelas": "IDOR",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 1,
+              "longgar": 1,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 1,
+              "longgar": 1,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S9",
+        "kelas": "Mass Assignment",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 1,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 1,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S10",
+        "kelas": "Mass Assignment",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S11",
+        "kelas": "Missing Authorization",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "S12",
+        "kelas": "Sensitive Data Exposure",
+        "klasifikasi": "terbukti",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "B1",
+        "kelas": "CORS mengizinkan semua origin",
+        "klasifikasi": "bawaan",
+        "sonar_a": "cocok",
+        "sonar_b": "cocok",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "B2",
+        "kelas": "ReDoS regex email (regex sebelum cek panjang)",
+        "klasifikasi": "bawaan",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "B3",
+        "kelas": "Tidak ada rate limiting login dan register",
+        "klasifikasi": "bawaan",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 2,
+              "longgar": 2,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 3,
+              "longgar": 3,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "B4",
+        "kelas": "Respons 409 register membocorkan email terdaftar",
+        "klasifikasi": "bawaan",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "B5",
+        "kelas": "Token tetap berlaku setelah akun dihapus",
+        "klasifikasi": "bawaan",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "B6",
+        "kelas": "requireConsent meloloskan user nonaktif",
+        "klasifikasi": "bawaan",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "N1",
+        "kelas": "Regex email aman tapi ditandai Sonar (false positive)",
+        "klasifikasi": "bawaan",
+        "sonar_a": "tidak",
+        "sonar_b": "tidak",
+        "per_model": {
+          "google": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "anthropic": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          },
+          "openai": {
+            "skenario_b": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            },
+            "skenario_c": {
+              "ketat": 0,
+              "longgar": 0,
+              "dari": 3
+            }
+          }
+        }
+      }
+    ]
+  }
+}
