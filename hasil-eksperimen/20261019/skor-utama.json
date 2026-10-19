@@ -1,8 +1,14 @@
 {
-  "dinilai_pada": "2026-10-19T13:32:26.593Z",
+  "dinilai_pada": "2026-10-19T14:10:33.035Z",
+  "aturan_hardening": "spesifikasi",
   "objek_uji": {
     "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
     "branch": "eksperimen/seeded"
+  },
+  "ground_truth_seeded": {
+    "blob": "8c8061a41fe1a5f78b08435d6ee286c7e4cdc9a3",
+    "blob_commit_objek_uji": "8c8061a41fe1a5f78b08435d6ee286c7e4cdc9a3",
+    "revisi": false
   },
   "ground_truth": [
     {
@@ -1401,9 +1407,9 @@
             "jumlah_run": 3
           },
           "skenario_c": {
-            "precision": 0.7962962962962963,
+            "precision": 0.8629629629629628,
             "recall": 0.8518518518518517,
-            "f1": 0.8226120857699805,
+            "f1": 0.855635821580094,
             "jumlah_run": 3
           }
         },
@@ -1416,31 +1422,31 @@
               "rincian_fp": {
                 "di_luar_ground_truth": 1,
                 "n1": 0,
-                "jebakan_terdeteksi": 1
+                "jebakan_terdeteksi": 0
               },
               "ketat": {
                 "tp": 8,
-                "fp": 2,
+                "fp": 1,
                 "fn": 1,
-                "precision": 0.8,
+                "precision": 0.8888888888888888,
                 "recall": 0.8888888888888888,
-                "f1": 0.8421052631578948
+                "f1": 0.8888888888888888
               },
               "longgar_cocok_lokasi": {
                 "tp": 9,
-                "fp": 2,
+                "fp": 1,
                 "fn": 0,
-                "precision": 0.8181818181818182,
+                "precision": 0.9,
                 "recall": 1,
-                "f1": 0.9
+                "f1": 0.9473684210526316
               },
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 2,
               "setelah_triase": {
-                "fp": 2,
-                "precision": 0.8,
+                "fp": 1,
+                "precision": 0.8888888888888888,
                 "recall": 0.8888888888888888,
-                "f1": 0.8421052631578948,
+                "f1": 0.8888888888888888,
                 "rincian_triase": {
                   "tp_di_luar_seeded": 0,
                   "fp": 0,
@@ -1838,31 +1844,31 @@
               "rincian_fp": {
                 "di_luar_ground_truth": 0,
                 "n1": 0,
-                "jebakan_terdeteksi": 1
+                "jebakan_terdeteksi": 0
               },
               "ketat": {
                 "tp": 8,
-                "fp": 1,
+                "fp": 0,
                 "fn": 1,
-                "precision": 0.8888888888888888,
+                "precision": 1,
                 "recall": 0.8888888888888888,
-                "f1": 0.8888888888888888
+                "f1": 0.9411764705882353
               },
               "longgar_cocok_lokasi": {
                 "tp": 9,
-                "fp": 1,
+                "fp": 0,
                 "fn": 0,
-                "precision": 0.9,
+                "precision": 1,
                 "recall": 1,
-                "f1": 0.9473684210526316
+                "f1": 1
               },
               "hardening_di_luar_ground_truth": 0,
               "hardening_cocok_seeded": 2,
               "setelah_triase": {
-                "fp": 1,
-                "precision": 0.8888888888888888,
+                "fp": 0,
+                "precision": 1,
                 "recall": 0.8888888888888888,
-                "f1": 0.8888888888888888,
+                "f1": 0.9411764705882353,
                 "rincian_triase": {
                   "tp_di_luar_seeded": 0,
                   "fp": 0,
