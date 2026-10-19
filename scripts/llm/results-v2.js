@@ -98,6 +98,11 @@ const susunRun = ({ summary, run, nomor, repo = null, pipeline = null }) => {
     commit_kode: { head: run.commit_kode?.head ?? null, bersih: run.commit_kode?.bersih ?? null },
     hash_prompt: { system: d.hash?.prompt_system_kanonik ?? null, user_deteksi: d.hash?.prompt_user_kanonik ?? null },
     sumber_sonar: run.sumber_sonar ?? summary.sumber_sonar,
+    analisis_sonar: {
+      tanggal: run.analisis_sonar ?? summary.analisis_sonar ?? null,
+      revisi: run.revisi_analisis_sonar ?? summary.revisi_analisis_sonar ?? null,
+      tree_src: summary.tree_src_analisis_sonar ?? null,
+    },
     sonar_beku: run.sonar_beku ? { sha256_isi: run.sonar_beku.sha256_isi ?? null, revisi: run.sonar_beku.revisi ?? null } : null,
     biaya_usd: Number(biaya.toFixed(6)),
     status_panggilan: {

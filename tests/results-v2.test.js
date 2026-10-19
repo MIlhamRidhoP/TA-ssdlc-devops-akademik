@@ -235,6 +235,18 @@ test('susunEksperimen tanpa berkas triase tetap menghasilkan varian ketat saja',
 
 // ---------- Index ----------
 
+test('metadata analisis Sonar tercatat, dan tree src-nya sama dengan objek uji', () => {
+  for (const f of fixtureV2) {
+    const a = f.run.analisis_sonar;
+    assert.ok(a, 'run.analisis_sonar harus ada');
+    assert.match(a.revisi, /^[0-9a-f]{40}$/, 'revisi analisis Sonar tercatat');
+    // Inilah jaminan bahwa data Sonar cocok dengan kode yang dianalisis; aturan yang sama
+    // dipakai llm-scan dan oleh gerbang kesiapan di workflow.
+    assert.equal(a.tree_src, f.run.objek_uji.tree_src,
+      'hash tree src analisis Sonar harus sama dengan objek uji');
+  }
+});
+
 test('index v2 konsisten dengan fixture yang ditunjuknya', () => {
   assert.equal(indexV2.schema_version, 2);
   assert.equal(indexV2.runs.length, 3);

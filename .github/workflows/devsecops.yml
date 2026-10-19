@@ -40,6 +40,14 @@ on:
         description: 'Ketik JALANKAN untuk menyetujui biaya panggilan berbayar jalur v2'
         type: string
         default: ''
+      sonar_branch_v2:
+        description: >-
+          Branch SonarCloud untuk jalur v2. ikut-branch-run = branch yang dipicu. Paket Free hanya
+          menganalisis main, jadi untuk branch lain pilih main; kecocokan data dijamin pemeriksaan
+          hash tree src/, bukan oleh nama branch.
+        type: choice
+        options: [ikut-branch-run, main]
+        default: ikut-branch-run
 
 permissions:
   contents: read
@@ -131,8 +139,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      # true hanya bila SonarCloud benar-benar punya analisis untuk commit ini.
+      # true hanya bila analisis Sonar yang dipakai punya src/ identik dengan commit yang berjalan.
       analisis_siap: ${{ steps.siap.outputs.siap }}
+      sonar_branch: ${{ steps.siap.outputs.sonar_branch }}
+      sonar_revisi: ${{ steps.siap.outputs.sonar_revisi }}
+      sonar_tree_src: ${{ steps.siap.outputs.sonar_tree_src }}
+      commit_tree_src: ${{ steps.siap.outputs.commit_tree_src }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -160,27 +172,64 @@ jobs:
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
 
-      # Membuktikan analisis untuk commit ini benar-benar ada di server, bukan sekadar scanner selesai.
-      # Tanpa ini llm-scan bisa mengambil analisis lama dan ditolak karena hash tree src/ tidak cocok.
-      # Yang diperiksa adalah revisi analisis terakhir pada branch ini, bukan status gate.
-      - name: Pastikan analisis tersedia di SonarCloud
+      # Paket Free SonarCloud hanya menganalisis branch main
+      # (https://docs.sonarsource.com/sonarqube-cloud/enriching/branch-analysis).
+      # Pada dispatch di branch lain, langkah scan di atas memang gagal; itu bukan pipeline rusak.
+      - name: Catat scan branch non-main yang memang gagal di paket Free
+        if: github.ref_name != 'main'
+        run: |
+          echo "::notice::Branch $GITHUB_REF_NAME bukan main. Paket Free SonarCloud hanya menganalisis main, jadi scan branch ini wajar gagal dan sengaja tidak menggagalkan pipeline. Jalur v2 dapat memakai input sonar_branch_v2=main; kecocokan datanya dijamin pemeriksaan hash tree src/."
+
+      # Kesiapan diukur dengan aturan yang sama seperti scripts/llm-scan.js: yang harus cocok adalah
+      # hash tree src/ pada revisi analisis Sonar versus commit yang berjalan, BUKAN nama branch atau
+      # kesamaan revisi. Dengan begitu analisis main tetap sah dipakai untuk commit di branch lain
+      # selama src/ tidak berubah, dan ditolak begitu src/ berbeda.
+      - name: Pastikan analisis Sonar cocok dengan commit ini
         id: siap
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_PROJECT: MIlhamRidhoP_TA-ssdlc-devops-akademik
-          SONAR_BRANCH: ${{ github.ref_name }}
-          COMMIT: ${{ github.sha }}
+          BRANCH_PILIHAN: ${{ inputs.sonar_branch_v2 }}
         run: |
+          sonar_branch="$GITHUB_REF_NAME"
+          if [ -n "$BRANCH_PILIHAN" ] && [ "$BRANCH_PILIHAN" != "ikut-branch-run" ]; then
+            sonar_branch="$BRANCH_PILIHAN"
+          fi
+          commit_tree=$(git rev-parse HEAD:src)
           siap=false
+          revisi=""
+          sonar_tree=""
           for percobaan in 1 2 3 4 5 6; do
-            revisi=$(curl -s -u "$SONAR_TOKEN:"               "https://sonarcloud.io/api/project_analyses/search?project=$SONAR_PROJECT&branch=$SONAR_BRANCH&ps=1"               | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.analyses?.[0]?.revision??"")}catch(e){process.stdout.write("")}})')
-            if [ "$revisi" = "$COMMIT" ]; then siap=true; break; fi
-            echo "Percobaan $percobaan: analisis terakhir branch $SONAR_BRANCH revisi '${revisi:-tidak ada}', menunggu $COMMIT"
+            revisi=$(curl -s -u "$SONAR_TOKEN:" \
+              "https://sonarcloud.io/api/project_analyses/search?project=$SONAR_PROJECT&branch=$sonar_branch&ps=1" \
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.analyses?.[0]?.revision??"")}catch(e){process.stdout.write("")}})')
+            if [ -n "$revisi" ] && git cat-file -e "$revisi^{commit}" 2>/dev/null; then
+              sonar_tree=$(git rev-parse "$revisi:src" 2>/dev/null || echo "")
+              if [ "$sonar_tree" = "$commit_tree" ]; then siap=true; break; fi
+            fi
+            echo "Percobaan $percobaan: branch Sonar $sonar_branch revisi ${revisi:-tidak-ada} tree ${sonar_tree:-tidak-ada} vs commit tree $commit_tree"
             sleep 15
           done
-          echo "siap=$siap" >> "$GITHUB_OUTPUT"
+          {
+            echo "siap=$siap"
+            echo "sonar_branch=$sonar_branch"
+            echo "sonar_revisi=$revisi"
+            echo "sonar_tree_src=$sonar_tree"
+            echo "commit_tree_src=$commit_tree"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Kesiapan analisis Sonar untuk jalur v2"
+            echo ""
+            echo "| Butir | Nilai |"
+            echo "|---|---|"
+            echo "| Branch Sonar dipakai | $sonar_branch |"
+            echo "| Revisi analisis Sonar | ${revisi:-tidak ada} |"
+            echo "| Hash tree src analisis | ${sonar_tree:-tidak ada} |"
+            echo "| Hash tree src commit | $commit_tree |"
+            echo "| Siap | $siap |"
+          } >> "$GITHUB_STEP_SUMMARY"
           if [ "$siap" != "true" ]; then
-            echo "::warning::SonarCloud belum punya analisis untuk commit ini pada branch $SONAR_BRANCH. Jalur v2 akan dilewati."
+            echo "::warning::Analisis Sonar pada branch $sonar_branch tidak cocok dengan src/ commit ini. Jalur v2 dilewati, tidak ada panggilan LLM."
           fi
 
   analisis:
@@ -304,6 +353,25 @@ jobs:
             console.log(`Vendor ${v}, model ${cocok.id}, secret ${cocok.secret}, perkiraan biaya US$${cocok.biaya_perkiraan_usd}`);
           '
 
+      - name: Catat analisis Sonar yang dipakai
+        env:
+          SONAR_BRANCH: ${{ needs.sonarcloud.outputs.sonar_branch }}
+          SONAR_REVISI: ${{ needs.sonarcloud.outputs.sonar_revisi }}
+          SONAR_TREE: ${{ needs.sonarcloud.outputs.sonar_tree_src }}
+          COMMIT_TREE: ${{ needs.sonarcloud.outputs.commit_tree_src }}
+        run: |
+          {
+            echo "### Analisis Sonar yang dipakai jalur v2"
+            echo ""
+            echo "| Butir | Nilai |"
+            echo "|---|---|"
+            echo "| Branch Sonar | $SONAR_BRANCH |"
+            echo "| Revisi analisis | $SONAR_REVISI |"
+            echo "| Hash tree src analisis | $SONAR_TREE |"
+            echo "| Hash tree src commit | $COMMIT_TREE |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch Sonar $SONAR_BRANCH, revisi $SONAR_REVISI, tree src $SONAR_TREE (commit $COMMIT_TREE)"
+
       - name: Pastikan secret vendor tersedia
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -326,7 +394,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_BRANCH: ${{ github.ref_name }}
+          # Branch Sonar yang kecocokannya sudah diverifikasi job sonarcloud lewat hash tree src/.
+          SONAR_BRANCH: ${{ needs.sonarcloud.outputs.sonar_branch }}
           VENDOR: ${{ inputs.vendor_v2 }}
         run: node scripts/llm-scan.js --vendor="$VENDOR" --kondisi=utama --runs=1 --objek=.
 
