@@ -607,3 +607,22 @@ table.eks th { font-weight: 600; color: var(--ink-2); background: var(--paper-2)
 table.eks td.num { font-family: var(--font-data); }
 table.eks tr:last-child td { border-bottom: 0; }
 .eks-pilih { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-bottom: var(--s-3); }
+
+/* Drawer "Jalankan analisis": memisahkan menjalankan dari melihat */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Blok pipeline mempertahankan latar graphite: seluruh gaya node dibangun di atas token --on-graphite. */
+.pipeline-box {
+  margin-top: var(--s-5); padding: var(--s-5); border-radius: var(--radius-card);
+  background: var(--graphite); color: var(--on-graphite);
+}
+.drawer { position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end; }
+.drawer-tirai { position: absolute; inset: 0; background: oklch(0% 0 0 / 0.45); }
+.drawer-panel {
+  position: relative; width: min(28rem, 100%); height: 100%; overflow-y: auto;
+  background: var(--paper); border-left: 1px solid var(--rule); padding: var(--s-5);
+  display: grid; gap: var(--s-4); align-content: start;
+}
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.drawer-head h2 { margin: 0; font-size: 1.125rem; }
+.drawer-panel .field > label, .drawer-panel .field > legend { color: var(--ink-2); }
+@media (max-width: 30rem) { .drawer-panel { width: 100%; border-left: 0; } }

@@ -86,11 +86,24 @@
             <h1 class="run-title" id="run-title"></h1>
           </div>
           <dl class="title-block" id="title-block" aria-label="Identitas run"></dl>
+          <button class="btn btn-line" type="button" id="buka-drawer" aria-haspopup="dialog" aria-expanded="false">Jalankan analisis</button>
         </header>
 
-        <section class="runner" aria-labelledby="runner-h">
-          <div>
-            <h2 id="runner-h">Jalankan analisis</h2>
+        <section class="pipeline-box" aria-labelledby="pipeline-h2">
+          <div class="pipeline">
+            <p class="pipeline-h"><span id="pipeline-title">Status pipeline</span><b id="pipeline-total" class="data"></b></p>
+            <h2 id="pipeline-h2" class="sr-only">Status pipeline</h2>
+            <ol class="nodes" id="nodes" aria-label="Job pipeline"></ol>
+          </div>
+        </section>
+
+        <div class="drawer" id="drawer" hidden>
+          <div class="drawer-tirai" id="drawer-tirai"></div>
+          <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="runner-h">
+            <div class="drawer-head">
+              <h2 id="runner-h">Jalankan analisis</h2>
+              <button class="btn btn-sm" type="button" id="drawer-tutup">Tutup</button>
+            </div>
             <form class="run-form" id="run-form" novalidate>
               <div class="field">
                 <label for="f-branch">Branch</label>
@@ -117,11 +130,7 @@
               </div>
             </form>
           </div>
-          <div class="pipeline">
-            <p class="pipeline-h"><span id="pipeline-title">Status pipeline</span><b id="pipeline-total" class="data"></b></p>
-            <ol class="nodes" id="nodes" aria-label="Job pipeline"></ol>
-          </div>
-        </section>
+        </div>
 
         <section class="summary" id="summary" aria-label="Ringkasan run"></section>
 

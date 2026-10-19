@@ -1115,6 +1115,38 @@
     $('metrics-box').hidden = true; // Blok riset pindah ke tab Eksperimen (S5)
   };
 
+  // ---------- Drawer "Jalankan analisis" ----------
+  // Memisahkan menjalankan dari melihat: header hanya menjelaskan run yang sedang dibuka.
+  // Fokus dikurung di dalam panel, Escape menutup, dan fokus kembali ke tombol pembuka.
+  let fokusSebelumDrawer = null;
+  const elemenFokus = () => [...$('drawer').querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((n) => n.offsetParent !== null);
+  const kurungFokus = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); tutupDrawer(); return; }
+    if (e.key !== 'Tab') return;
+    const f = elemenFokus();
+    if (!f.length) return;
+    const awal = f[0];
+    const akhir = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === awal) { e.preventDefault(); akhir.focus(); }
+    else if (!e.shiftKey && document.activeElement === akhir) { e.preventDefault(); awal.focus(); }
+  };
+  function bukaDrawer() {
+    fokusSebelumDrawer = document.activeElement;
+    $('drawer').hidden = false;
+    $('buka-drawer').setAttribute('aria-expanded', 'true');
+    document.addEventListener('keydown', kurungFokus, true);
+    const f = elemenFokus();
+    (f[0] ?? $('drawer-tutup')).focus();
+  }
+  function tutupDrawer() {
+    $('drawer').hidden = true;
+    $('buka-drawer').setAttribute('aria-expanded', 'false');
+    document.removeEventListener('keydown', kurungFokus, true);
+    if (fokusSebelumDrawer && document.contains(fokusSebelumDrawer)) fokusSebelumDrawer.focus();
+    else $('buka-drawer').focus();
+  }
+
   // ---------- Tab Eksperimen ----------
   // Angka ditampilkan apa adanya beserta variannya. Tidak ada peringkat, tidak ada penilaian
   // model mana yang lebih baik: itu kesimpulan yang harus ditarik di luar dashboard.
@@ -1325,6 +1357,8 @@
     state.pantau = pantau;
     state.sibuk = true;
     const awal = Object.fromEntries(NODE.map((n) => [n.key, { s: 'wait', durasi: null }]));
+    // Begitu analisis berjalan, fokus pindah ke melihat: drawer ditutup supaya pipeline terlihat.
+    if (!$('drawer').hidden) tutupDrawer();
     renderPipeline({ mode, jobs: awal });
     perbaruiTombolJalankan(state.demo ? 'Simulasi dimulai.' : 'Mengirim permintaan ke GitHub…');
     try {
@@ -1421,6 +1455,9 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
+    $('buka-drawer').addEventListener('click', bukaDrawer);
+    $('drawer-tutup').addEventListener('click', tutupDrawer);
+    $('drawer-tirai').addEventListener('click', tutupDrawer);
     $('tab-operasional').addEventListener('click', () => pilihTab('operasional'));
     $('tab-eksperimen').addEventListener('click', () => pilihTab('eksperimen'));
     $('catatan-ekspor').addEventListener('click', eksporCatatan);
