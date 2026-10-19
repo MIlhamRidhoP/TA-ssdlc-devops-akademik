@@ -1,0 +1,15 @@
+# PoC S2 - sort/order list cuti admin
+# Dijalankan: 2026-10-19T14:27:53Z
+# Objek uji: eksperimen/seeded @ 97cfb00 (tree src ef5ff34), container lokal data seed sintetis
+# ---
+== Baseline: sort valid (sort=nim, order=desc) ==
+  HTTP 200
+== Payload SQLi pada sort/order (harapan: semua 400) ==
+  [sort=(SELECT 1)] -> HTTP 400
+  [sort=c.created_at; DROP TABLE pengajuan_cuti--] -> HTTP 400
+  [sort=nama--] -> HTTP 400
+  [sort=c.alamat_cuti] -> HTTP 400
+  [order=asc; SELECT pg_sleep(5)] -> HTTP 400
+  [order=asc--] -> HTTP 400
+
+KESIMPULAN: S2 JEBAKAN FP TERKONFIRMASI. 6/6 payload sort/order ditolak 400 oleh listQuery (allowlist) sebelum menyentuh ORDER BY. Tidak dapat dieksploitasi.

@@ -1,0 +1,7 @@
+{
+  "SONAR-03": {
+    "label": "nyata",
+    "lokasi": "src/controllers/nilaiController.js:170",
+    "alasan": "Analisis sensitivitas: SONAR-03 (reflected XSS di baris 170, sink khs) dianggap nyata lewat rangkaian S3 (SQLi di publishedBySemester, nilaiModel.js:133) yang mengisi i.nama, lalu S4 (i.nama tanpa escape di halamanKhs, nilaiController.js:120). SEEDED.md tidak diubah; S5 tetap jebakan FP."
+  }
+}

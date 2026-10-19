@@ -1,0 +1,12 @@
+# PoC SONAR-03 - UNION di parameter semester KHS
+# Dijalankan: 2026-10-19T14:27:55Z
+# Objek uji: eksperimen/seeded @ 97cfb00 (tree src ef5ff34), container lokal data seed sintetis
+# ---
+== Payload A: UNION + komentar baris ==
+  respon (200 char pertama): {"success":false,"error":{"code":"INTERNAL_ERROR","message":"Terjadi kesalahan pada server"}}
+  -> marker tidak muncul (kemungkinan error SQL)
+== Payload B: UNION SELECT ... FROM ... tutup string ==
+  respon (200 char pertama): {"success":false,"error":{"code":"INTERNAL_ERROR","message":"Terjadi kesalahan pada server"}}
+  -> marker tidak muncul (kemungkinan error SQL)
+
+KESIMPULAN: TIDAK TERBUKTI. UNION gagal (lihat respon); query diakhiri 'ORDER BY mk.kode' (kolom berkualifikasi) yang tidak valid setelah UNION, sehingga HTML tidak dapat disuntikkan ke i.nama lewat jalur ini. (SQLi boolean-based S3 tetap nyata, lihat s3-sqli-semester-khs.sh.)

@@ -1,0 +1,37 @@
+# PoC TOCTOU KRS - race addItem vs submit
+# Dijalankan: 2026-10-19T14:28:12Z
+# Objek uji: eksperimen/seeded @ 97cfb00 (tree src ef5ff34), container lokal data seed sintetis
+# ---
+N=30 percobaan race (addItem IF1004 || submit). Kuota=15, baseline=13, menang jika submitted & total>15.
+  #1 (baseline 13) -> status=draft total=16
+  #2 (baseline 13) -> status=draft total=16
+  #3 (baseline 13) -> status=draft total=16
+  #4 (baseline 13) -> status=draft total=16
+  #5 (baseline 13) -> status=draft total=16
+  #6 (baseline 13) -> status=draft total=16
+  #7 (baseline 13) -> status=draft total=16
+  #8 (baseline 13) -> status=draft total=16
+  #9 (baseline 13) -> status=draft total=16
+  #10 (baseline 13) -> status=draft total=16
+  #11 (baseline 13) -> status=draft total=16
+  #12 (baseline 13) -> status=draft total=16
+  #13 (baseline 13) -> status=draft total=16
+  #14 (baseline 13) -> status=draft total=16
+  #15 (baseline 13) -> status=draft total=16
+  #16 (baseline 13) -> status=draft total=16
+  #17 (baseline 13) -> status=draft total=16
+  #18 (baseline 13) -> status=draft total=16
+  #19 (baseline 13) -> status=draft total=16
+  #20 (baseline 13) -> status=draft total=16
+  #21 (baseline 13) -> status=draft total=16
+  #22 (baseline 13) -> status=draft total=16
+  #23 MENANG: submitted dengan total_sks=16 (> kuota 15)
+  #24 (baseline 13) -> status=draft total=16
+  #25 (baseline 13) -> status=draft total=16
+  #26 (baseline 13) -> status=draft total=16
+  #27 (baseline 13) -> status=draft total=16
+  #28 (baseline 13) -> status=draft total=16
+  #29 (baseline 13) -> status=draft total=16
+  #30 (baseline 13) -> status=draft total=16
+
+KESIMPULAN: 1 dari 30 percobaan menghasilkan KRS submitted dengan total SKS melebihi kuota (TOCTOU).
