@@ -112,6 +112,7 @@
   // ---------- State ----------
   const state = {
     demo: false,
+    demoV2: false,
     token: null,
     tokenDiingat: false,
     projects: [],
@@ -197,10 +198,17 @@
   const repoPath = (p) => `/repos/${enc(p.owner)}/${enc(p.repo)}`;
   const contentsPath = (p, file) => `${repoPath(p)}/contents/${file.split('/').map(enc).join('/')}?ref=${enc(BRANCH_HASIL)}`;
 
+  // Dashboard membaca dua skema: 1 (jalur Gemini lama) dan 2 (jalur prompt v2, alert diverifikasi model).
+  // schema_version yang dikenali tidak lagi dilempar sebagai galat format; yang tidak dikenali tetap ditolak.
+  const SKEMA_DIDUKUNG = [1, 2];
   const validasiHasil = (r) => {
-    if (!r || r.schema_version !== 1 || !r.run || !Array.isArray(r.findings) || !r.sonar_verification) {
-      throw new GhError('format', `Format results.json tidak dikenali (schema_version ${r?.schema_version ?? 'tidak ada'}). Dashboard ini membaca skema versi 1.`);
-    }
+    const v = r?.schema_version;
+    const salah = (sebab) => {
+      throw new GhError('format', `Format results.json tidak dikenali (${sebab}). Dashboard ini membaca skema versi ${SKEMA_DIDUKUNG.join(' dan ')}.`);
+    };
+    if (!r || !SKEMA_DIDUKUNG.includes(v) || !r.run) salah(`schema_version ${v ?? 'tidak ada'}`);
+    if (v === 1 && (!Array.isArray(r.findings) || !r.sonar_verification)) salah('skema 1 tanpa findings atau sonar_verification');
+    if (v === 2 && (!Array.isArray(r.findings) || !Array.isArray(r.alerts))) salah('skema 2 tanpa findings atau alerts');
     return r;
   };
 
@@ -255,15 +263,21 @@
     },
   };
 
+  // Mode demo punya dua kumpulan fixture: v1 (arsip pilot 10 Okt) dan v2 (eksperimen 19 Okt).
+  // Dipilih lewat hash #demo atau #demo-v2, bukan digabung, supaya jalur v1 tidak terganggu.
+  const basisDemo = () => (state.demoV2 ? 'fixtures/v2' : 'fixtures');
+
   const sumberDemo = {
     projects: () => jsonLokal('fixtures/projects.json'),
     cekProject: async (p) => (p.demo_tanpa_workflow ? { akses: true, workflow: false } : { akses: true, workflow: true }),
-    index: async (p) => (p.demo_tanpa_workflow ? { runs: [] } : jsonLokal('fixtures/index.json')),
+    index: async (p) => (p.demo_tanpa_workflow ? { runs: [] } : jsonLokal(`${basisDemo()}/index.json`)),
     hasil: async (p, entri) => {
       if (!pathAman(entri.path)) throw new GhError('format', 'Path hasil di index.json tidak valid.');
-      return validasiHasil(await jsonLokal(`fixtures/${entri.path}`));
+      return validasiHasil(await jsonLokal(`${basisDemo()}/${entri.path}`));
     },
     jobs: async (p, runId) => {
+      // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions, jadi tidak ada status job.
+      if (state.demoV2) return null;
       try {
         const data = await jsonLokal('fixtures/jobs.json');
         const run = data.runs?.[String(runId)];
@@ -308,8 +322,9 @@
     state.banner = null;
     if (state.demo) bannerDemo();
   };
-  const bannerDemo = () => tampilBanner('demo',
-    'Mode demo. Data diambil dari arsip eksperimen 10 Okt 2026 (eksperimen/seeded, commit 5cbf05c). Run #1 adalah contoh sintetis untuk state Gemini gagal, dan durasi job juga contoh.',
+  const bannerDemo = () => tampilBanner('demo', state.demoV2
+    ? 'Mode demo v2. Data nyata dari eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing. Alert Sonar diverifikasi model satu per satu. Run dijalankan dari CLI, bukan lewat pipeline.'
+    : 'Mode demo. Data diambil dari arsip eksperimen 10 Okt 2026 (eksperimen/seeded, commit 5cbf05c). Run #1 adalah contoh sintetis untuk state Gemini gagal, dan durasi job juga contoh.',
     { label: 'Keluar dari mode demo', fn: () => keluarDemo() });
 
   // ---------- Token ----------
@@ -409,10 +424,12 @@
     await muatProjects();
   };
 
-  const masukDemo = async () => {
+  const masukDemo = async (v2 = false) => {
     hentikanPantau();
     state.demo = true;
-    if (location.hash !== '#demo') history.replaceState(null, '', '#demo');
+    state.demoV2 = v2;
+    const hash = v2 ? '#demo-v2' : '#demo';
+    if (location.hash !== hash) history.replaceState(null, '', hash);
     $('demo-toggle').textContent = 'Keluar dari mode demo';
     bannerDemo();
     await muatProjects();
@@ -421,6 +438,7 @@
   const keluarDemo = () => {
     hentikanPantau();
     state.demo = false;
+    state.demoV2 = false;
     history.replaceState(null, '', location.pathname + location.search);
     $('banner').hidden = true;
     state.banner = null;
@@ -700,7 +718,8 @@
     const sonarTotal = f.filter((x) => x.sumber !== 'gemini').length;
     const diputuskan = Object.keys(state.keputusan).filter((id) => f.some((x) => x.id === id)).length;
     const per = { both: 0, gemini: 0, sonar: 0 };
-    for (const x of f) per[x.sumber] += 1;
+    // Nilai sumber di luar tiga yang dikenal tidak boleh menghasilkan NaN pada bar dan legenda.
+    for (const x of f) if (x.sumber in per) per[x.sumber] += 1;
 
     // Tanpa satu pun sumber yang berhasil, angka nol tidak bermakna: tampilkan tanda kosong.
     const tanpaSumber = sastTidakTersedia() && h.run.gemini?.status !== 'ok';
@@ -872,7 +891,109 @@
       blok('Longgar: lokasi cocok', m.longgar_cocok_lokasi));
   };
 
+  // ---------- Renderer v2 ----------
+  // Renderer terpisah, bukan tambalan di atas renderer v1: kosakata v2 berbeda mendasar (alert punya
+  // putusan model, temuan tidak punya severity). "uncertain" adalah putusan sah tersendiri, bukan kegagalan,
+  // dan tidak dihitung sebagai perlu tindakan.
+  const PUTUSAN_V2 = {
+    true_positive: { label: 'Dikonfirmasi model', kelas: 'tp' },
+    false_positive: { label: 'False positive', kelas: 'fp' },
+    uncertain: { label: 'Ragu-ragu', kelas: 'unc' },
+  };
+  const infoPutusan = (p) => PUTUSAN_V2[p] ?? { label: 'Tanpa putusan', kelas: 'none' };
+
+  const renderKepalaV2 = () => {
+    const p = state.proyek;
+    const r = state.hasil.run;
+    const repoLink = p.demo_tanpa_workflow || !r.repo
+      ? el('span', { text: `${p.owner} / ${p.repo}` })
+      : el('a', { href: urlGithub(p.owner, p.repo), target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` });
+    isi($('crumb'), repoLink, ` / ${r.objek_uji.branch ?? state.branch.name}`, ` · selesai ${waktu(r.selesai)}`);
+    $('run-title').textContent = `Run #${r.nomor} · ${r.vendor} · ${state.hasil.alerts.length} alert · ${state.hasil.findings.length} temuan`;
+
+    const sel = (label, nilai, opsi = {}) => el('div', {}, el('dt', { text: label }),
+      el('dd', { class: [opsi.data ? 'data' : '', opsi.warn ? 'warn' : ''].join(' ').trim() || null, title: opsi.title }, nilai));
+    const bedaModel = r.model_menjawab && r.model_menjawab !== r.model_diminta;
+    const commit = el('span', { text: pendek(r.objek_uji.commit) });
+    isi($('title-block'),
+      sel('Model menjawab', r.model_menjawab ?? '—', { warn: bedaModel, title: bedaModel ? `Diminta ${r.model_diminta}` : r.model_diminta }),
+      sel('Objek uji', commit, { data: true, title: r.objek_uji.commit }),
+      sel('Durasi', durasi(r.durasi_detik), { data: true }),
+      sel('Biaya', r.biaya_usd === null ? '—' : `US$${r.biaya_usd.toFixed(4).replace('.', ',')}`, { data: true }),
+      sel('Panggilan', `${r.status_panggilan.ok}/${r.status_panggilan.total} ok`, { data: true, warn: r.status_panggilan.ok !== r.status_panggilan.total }));
+  };
+
+  const renderRingkasanV2 = () => {
+    const h = state.hasil;
+    $('summary').hidden = false; // renderMemuat dan renderKosong menyembunyikannya
+    const n = (p) => h.alerts.filter((a) => a.putusan === p).length;
+    const kartu = (label, nilai, catatan) => el('div', { class: 'cell' },
+      el('p', { class: 'cell-label', text: label }), el('p', { class: 'cell-num', text: String(nilai) }),
+      catatan ? el('p', { class: 'cell-note', text: catatan }) : null);
+    isi($('summary'),
+      kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
+      kartu('Dikonfirmasi model', n('true_positive'), 'putusan true_positive'),
+      kartu('False positive', n('false_positive'), 'putusan false_positive'),
+      kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan'),
+      kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal'),
+      kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'));
+  };
+
+  const renderAlertV2 = () => {
+    const alerts = state.hasil.alerts;
+    $('verif-h').textContent = 'Verifikasi alert Sonar';
+    isi($('verif'), [
+      ...alerts.map((a) => {
+        const inf = infoPutusan(a.putusan);
+        return el('div', { class: 'kv' },
+          el('span', { text: `${a.id} · ${a.severity_sonar ?? '—'}` }),
+          el('b', { class: `putusan p-${inf.kelas}`, text: inf.label }));
+      }),
+      el('p', { class: 'note', text: 'Putusan berasal dari panggilan verifikasi model per alert, bukan dari pencocokan lokasi dan CWE.' }),
+    ]);
+  };
+
+  const renderTemuanV2 = () => {
+    const f = state.hasil.findings;
+    isi($('filters'));
+    isi($('findings-body'), f.length
+      ? el('ul', { class: 'flist' }, f.map((t) => el('li', {},
+        el('div', { class: 'frow frow-v2' },
+          el('span', { class: 'fid', text: t.id }),
+          el('span', { class: 'ftitle', text: t.jenis }),
+          el('span', { class: 'floc', text: t.file ? `${t.file}:${t.baris ?? '?'}` : '—' }),
+          el('span', { class: 'fsrc', text: `${t.sifat} · ${t.keyakinan}` })))))
+      : el('div', { class: 'state' }, el('p', { text: 'Panggilan deteksi tidak melaporkan temuan.' })));
+  };
+
+  const renderSampingV2 = () => {
+    const daftar = entriBranch();
+    isi($('history'), daftar.length
+      ? daftar.slice(0, 12).map((e) => el('button', {
+        class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
+        'aria-label': `Run ${e.nomor}, ${e.vendor}, ${e.jumlah?.temuan ?? 0} temuan`, onclick: () => muatRun(e),
+      }, el('span', { class: 'hnum', text: `#${e.nomor}` }),
+      el('span', { class: 'hmeta', text: `${e.vendor ?? '—'} · ${waktu(e.selesai)}` }),
+      el('span', { class: 'htotal', text: String(e.jumlah?.temuan ?? 0) })))
+      : el('p', { class: 'note', text: 'Belum ada run di branch ini.' }));
+    $('metrics-box').hidden = true; // Blok riset pindah ke tab Eksperimen (S5)
+  };
+
+  const renderSemuaV2 = () => {
+    renderKepalaV2();
+    // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions.
+    $('pipeline-title').textContent = 'Dijalankan dari CLI, tidak lewat pipeline';
+    $('pipeline-total').textContent = '—';
+    isi($('nodes'));
+    renderRingkasanV2();
+    renderTemuanV2();
+    renderAlertV2();
+    renderSampingV2();
+    perbaruiTombolJalankan();
+  };
+
   const renderSemua = () => {
+    if (state.hasil?.schema_version === 2) return renderSemuaV2();
     renderKepala();
     renderPipeline();
     renderRingkasan();
@@ -1027,7 +1148,8 @@
     if (location.protocol === 'file:') {
       tampilBanner('error', 'Dashboard dibuka langsung dari file. Jalankan lewat server lokal (lihat README) supaya projects.json dan mode demo bisa dibaca.');
     }
-    if (location.hash === '#demo') masukDemo();
+    if (location.hash === '#demo-v2') masukDemo(true);
+    else if (location.hash === '#demo') masukDemo();
     else if (state.token) masukLive();
     else tampilStart();
   };

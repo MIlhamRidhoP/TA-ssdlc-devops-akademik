@@ -514,3 +514,29 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .start .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
 nav:has(.projects:empty) { display: none; }
 .notice-sast { font-size: 0.875rem; color: var(--ink); background: var(--high-soft); border-radius: var(--radius-ctl); padding: var(--s-2) var(--s-3); max-width: 80ch; }
+
+/* ---------- Jalur v2 ---------- */
+/* Putusan verifikasi model. Warna selalu disertai teks label, tidak pernah jadi satu-satunya pembeda. */
+.putusan {
+  font-family: var(--font-data); font-weight: 500; font-size: 0.8125rem;
+  padding: 0.05rem var(--s-2); border-radius: 4px; white-space: nowrap;
+}
+.putusan.p-tp { background: var(--crit-soft); color: var(--crit); }
+.putusan.p-fp { background: var(--ok-soft); color: var(--ok); }
+.putusan.p-unc { background: var(--high-soft); color: var(--high); }
+.putusan.p-none { background: var(--paper-3); color: var(--ink-2); }
+
+/* Baris temuan v2: tanpa kolom severity dan tanpa kolom keputusan. */
+.frow-v2 {
+  display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) max-content;
+  grid-template-areas: "fid title src" "fid loc src";
+  gap: var(--s-1) var(--s-3); align-items: center;
+  width: 100%; padding: var(--s-3) var(--s-1);
+}
+.frow-v2 .fid { grid-area: fid; }
+.frow-v2 .ftitle { grid-area: title; }
+.frow-v2 .floc { grid-area: loc; }
+.frow-v2 .fsrc { grid-area: src; }
+@media (max-width: 40rem) {
+  .frow-v2 { grid-template-columns: 4.5rem minmax(0, 1fr); grid-template-areas: "fid title" "fid loc" "fid src"; }
+}
