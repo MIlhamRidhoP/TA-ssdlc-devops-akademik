@@ -195,6 +195,19 @@ test('triase konservatif: teoretis ikut FP; tp_di_luar_seeded/informasional/dupl
   }
 });
 
+test('infoKodeScoring: HEAD repo alat, branch, status bersih, dan lingkup; tidak melempar walau belum bersih', () => {
+  const { infoKodeScoring } = require('../scripts/llm-score');
+  const i = infoKodeScoring();
+  assert.match(i.head, /^[0-9a-f]{40}$/);
+  assert.equal(typeof i.branch, 'string');
+  assert.ok(i.branch.length > 0);
+  assert.equal(typeof i.bersih, 'boolean');
+  assert.ok(Array.isArray(i.berubah));
+  assert.equal(i.bersih, i.berubah.length === 0); // bersih konsisten dengan daftar perubahan
+  // Lingkup kebersihan sama dengan yang dipakai saat run, supaya kedua field dapat dibandingkan.
+  assert.deepEqual(i.lingkup, require('../scripts/llm/lanjut').LINGKUP_KODE);
+});
+
 test('petakanTriaseGabungan: sub-pohon per vendor, tolak vendor asing dan bentuk salah', () => {
   const { petakanTriaseGabungan } = require('../scripts/llm-score');
   const gabungan = { entri: { google: { 'run-1.json': { 2: { kategori: 'teoretis', lokasi: 'src/lain.js:2' } } }, openai: {} } };

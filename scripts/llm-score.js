@@ -16,11 +16,24 @@
 // menambah TP, jadi recall tetap. FP ketat (tanpa triase) tetap dilaporkan berdampingan di setiap run.
 // --triase-konservatif memakai varian konservatif: kategori "teoretis" ikut dihitung FP (tp_di_luar_seeded, informasional,
 // duplikat tetap keluar). Laporan mencatat triase_varian: "utama" (default) atau "konservatif".
+//
+// Laporan mencatat commit_kode_scoring: HEAD repo alat yang menjalankan scoring beserta status bersih file dalam lingkup.
+// Field ini berbeda dari commit_kode di tiap folder run, yang mencatat kode alat saat panggilan LLM dijalankan.
 const fs = require('fs');
 const path = require('path');
 const { periksaObjek } = require('./llm-scan');
 const { execFileSync } = require('child_process');
 const { bacaBeku } = require('./llm/sonar-beku');
+const { infoKodeAlat } = require('./llm/lanjut');
+
+const ROOT = path.resolve(__dirname, '..');
+
+// HEAD repo alat yang menjalankan scoring, dicatat di laporan. Berbeda dengan commit_kode di tiap folder run, yang
+// mencatat kode alat saat panggilan LLM dijalankan. Scoring tidak menolak repo alat yang belum bersih, hanya mencatat.
+const infoKodeScoring = () => {
+  const i = infoKodeAlat(ROOT);
+  return { head: i.head, branch: i.branch, bersih: i.bersih, berubah: i.berubah, lingkup: i.lingkup };
+};
 
 const ambilArg = (nama) => {
   const arg = process.argv.find((a) => a.startsWith(`--${nama}=`));
@@ -156,6 +169,7 @@ const main = () => {
   const ablasi = data.filter((d) => d.summary.kondisi !== 'utama');
   const laporan = {
     dinilai_pada: new Date().toISOString(),
+    commit_kode_scoring: infoKodeScoring(),
     aturan_hardening: score.ATURAN_HARDENING,
     objek_uji: objekFolder,
     ground_truth_seeded: groundTruthSeeded,
@@ -246,4 +260,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { periksaSumberSonar, periksaObjekFolder, periksaGroundTruth, petakanTriaseGabungan };
+module.exports = { periksaSumberSonar, periksaObjekFolder, periksaGroundTruth, petakanTriaseGabungan, infoKodeScoring };
