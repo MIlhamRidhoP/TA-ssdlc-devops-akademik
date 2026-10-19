@@ -15,16 +15,16 @@ Bukti lengkap tiap item ada di `hasil-eksperimen/20261010/SKENARIO_SERANGAN.md`.
 
 | ID | File | Fungsi | Kelas | CWE | OWASP | Tingkat | Status |
 |----|------|--------|-------|-----|-------|---------|--------|
-| S1 | src/models/mahasiswaModel.js | listFrom, list | SQL Injection | CWE-89 | A03 | Mudah | terbukti |
-| S2 | src/models/cutiModel.js | listAdmin | SQL Injection (ORDER BY) | CWE-89 | A03 | Sedang | jebakan FP |
-| S3 | src/controllers/nilaiController.js, src/models/nilaiModel.js | khs, publishedBySemester | SQL Injection | CWE-89 | A03 | Sulit | terbukti |
-| S4 | src/controllers/nilaiController.js | halamanKhs | Stored XSS | CWE-79 | A03 | Sedang | terbukti |
-| S5 | src/controllers/nilaiController.js | khs | Reflected XSS | CWE-79 | A03 | Mudah | jebakan FP |
+| S1 | src/models/mahasiswaModel.js | listFrom, list | SQL Injection | CWE-89 | A05 | Mudah | terbukti |
+| S2 | src/models/cutiModel.js | listAdmin | SQL Injection (ORDER BY) | CWE-89 | A05 | Sedang | jebakan FP |
+| S3 | src/controllers/nilaiController.js, src/models/nilaiModel.js | khs, publishedBySemester | SQL Injection | CWE-89 | A05 | Sulit | terbukti |
+| S4 | src/controllers/nilaiController.js | halamanKhs | Stored XSS | CWE-79 | A05 | Sedang | terbukti |
+| S5 | src/controllers/nilaiController.js | khs | Reflected XSS | CWE-79 | A05 | Mudah | jebakan FP |
 | S6 | src/controllers/dokumenController.js | kirimFile | Path Traversal | CWE-22 | A01 | Sedang | laten |
 | S7 | src/models/cutiModel.js | findOwned | IDOR | CWE-639 | A01 | Sedang | terbukti |
 | S8 | src/models/profilModel.js | removeEmail | IDOR | CWE-639 | A01 | Sulit | terbukti |
-| S9 | src/controllers/mahasiswaController.js, src/models/mahasiswaModel.js | updateMe, updateByUserId | Mass Assignment | CWE-915 | A01 | Sedang | terbukti |
-| S10 | src/controllers/cutiController.js, src/models/cutiModel.js | create | Mass Assignment | CWE-915 | A01 | Mudah | terbukti |
+| S9 | src/controllers/mahasiswaController.js, src/models/mahasiswaModel.js | updateMe, updateByUserId | Mass Assignment | CWE-915 | A08 | Sedang | terbukti |
+| S10 | src/controllers/cutiController.js, src/models/cutiModel.js | create | Mass Assignment | CWE-915 | A08 | Mudah | terbukti |
 | S11 | src/routes/cutiRoutes.js | route PUT /:id/status | Missing Authorization | CWE-862 | A01 | Mudah | terbukti |
 | S12 | src/models/cutiModel.js | listAdmin | Sensitive Data Exposure | CWE-359 | A01 | Sulit | terbukti |
 
