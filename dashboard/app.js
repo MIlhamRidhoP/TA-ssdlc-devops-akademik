@@ -113,6 +113,7 @@
   const state = {
     demo: false,
     demoV2: false,
+    nav: 'ringkasan',
     tab: 'operasional',
     eksLabel: 'utama',
     token: null,
@@ -856,6 +857,7 @@
     $('verif-box').hidden = false;
     $('catatan-alat').hidden = true;
     $('tabs').hidden = true;
+    $('railnav-box').hidden = true;
     $('panel-operasional').hidden = false;
     $('panel-eksperimen').hidden = true;
     $('verif-h').textContent = 'Verifikasi temuan Sonar';
@@ -935,20 +937,60 @@
       sel('Panggilan', `${r.status_panggilan.ok}/${r.status_panggilan.total} ok`, { data: true, warn: r.status_panggilan.ok !== r.status_panggilan.total }));
   };
 
+  // Kartu dikelompokkan tiga baris berlabel supaya keparahan, proses, dan sumber tidak tercampur.
   const renderRingkasanV2 = () => {
     const h = state.hasil;
     $('summary').hidden = false; // renderMemuat dan renderKosong menyembunyikannya
     const n = (p) => h.alerts.filter((a) => a.putusan === p).length;
-    const kartu = (label, nilai, catatan) => el('div', { class: 'cell' },
+    const kartu = (label, nilai, catatan, kelas) => el('div', { class: `cell${kelas ? ` ${kelas}` : ''}` },
       el('p', { class: 'cell-label', text: label }), el('p', { class: 'cell-num', text: String(nilai) }),
       catatan ? el('p', { class: 'cell-note', text: catatan }) : null);
+    const grup = (judul, ...kartuAnak) => el('div', { class: 'kartu-grup' },
+      el('h3', { text: judul }), el('div', { class: 'kartu-baris' }, kartuAnak));
+
+    const sev = (daftar) => h.alerts.filter((a) => daftar.includes(String(a.severity_sonar).toUpperCase())).length;
+    const ditinjau = (v) => h.findings.filter((t) => state.keputusan[t.fingerprint]?.v === v).length;
+
     isi($('summary'),
-      kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
-      kartu('Dikonfirmasi model', n('true_positive'), 'putusan true_positive'),
-      kartu('False positive', n('false_positive'), 'putusan false_positive'),
-      kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan'),
-      kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal'),
-      kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'));
+      grup('Keparahan alert Sonar',
+        kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
+        kartu('Critical', sev(['CRITICAL']), 'severity apa adanya dari Sonar', 'high'),
+        kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
+        kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar')),
+      grup('Proses',
+        kartu('Ditolak model', n('false_positive'), 'putusan false_positive'),
+        kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan'),
+        kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal'),
+        kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal, hanya di browser ini')),
+      grup('Sumber',
+        kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
+        kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
+        kartu('Dikonfirmasi model', n('true_positive'), 'putusan true_positive')));
+  };
+
+  // ---------- Navigasi rail ----------
+  const NAV = [
+    { key: 'ringkasan', label: 'Ringkasan', tab: 'operasional', sel: '#summary' },
+    { key: 'temuan', label: 'Temuan', tab: 'operasional', sel: '#temuan' },
+    { key: 'verifikasi', label: 'Verifikasi', tab: 'operasional', sel: '#alerts-box' },
+    { key: 'riwayat', label: 'Riwayat', tab: 'operasional', sel: '#history' },
+    { key: 'eksperimen', label: 'Eksperimen', tab: 'eksperimen', sel: '#panel-eksperimen' },
+  ];
+  const renderNav = () => {
+    const v2 = state.hasil?.schema_version === 2;
+    $('railnav-box').hidden = !v2;
+    if (!v2) return;
+    const adaEks = Boolean(state.hasil.eksperimen);
+    isi($('railnav'), NAV.filter((x) => x.key !== 'eksperimen' || adaEks).map((x) => el('li', {}, el('button', {
+      type: 'button', 'aria-current': state.nav === x.key ? 'true' : 'false',
+      onclick: () => {
+        state.nav = x.key;
+        if (state.tab !== x.tab) pilihTab(x.tab);
+        renderNav();
+        const n = document.querySelector(x.sel);
+        if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      },
+    }, x.label))));
   };
 
   // Satu baris per alert: severity Sonar (dengan sumbernya), putusan model, keyakinan, dan alasan
@@ -1102,15 +1144,49 @@
     }
   };
 
+  // Batang riwayat memakai putusan model. Warna selalu disertai tooltip teks, dan run gagal
+  // ditandai bentuk (tanda seru), bukan hanya warna.
+  const SEG_RIWAYAT = [
+    ['true_positive', 'Dikonfirmasi model', 'var(--crit)'],
+    ['false_positive', 'False positive', 'var(--ok)'],
+    ['uncertain', 'Ragu-ragu', 'var(--high)'],
+    ['tanpa_putusan', 'Tanpa putusan', 'var(--rule-2)'],
+  ];
   const renderSampingV2 = () => {
     const daftar = entriBranch();
     isi($('history'), daftar.length
-      ? daftar.slice(0, 12).map((e) => el('button', {
-        class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
-        'aria-label': `Run ${e.nomor}, ${e.vendor}, ${e.jumlah?.temuan ?? 0} temuan`, onclick: () => muatRun(e),
-      }, el('span', { class: 'hnum', text: `#${e.nomor}` }),
-      el('span', { class: 'hmeta', text: `${e.vendor ?? '—'} · ${waktu(e.selesai)}` }),
-      el('span', { class: 'htotal', text: String(e.jumlah?.temuan ?? 0) })))
+      ? [
+        ...daftar.slice(0, 12).map((e) => {
+          const j = e.jumlah ?? {};
+          const tot = SEG_RIWAYAT.reduce((s, [k]) => s + (j[k] ?? 0), 0);
+          const rincian = SEG_RIWAYAT.map(([k, label]) => `${label} ${j[k] ?? 0}`).join(', ');
+          const bar = el('span', { class: 'hbar', 'aria-hidden': 'true', title: rincian },
+            SEG_RIWAYAT.map(([k, , warna]) => {
+              const i = el('i', { title: `${k}: ${j[k] ?? 0}` });
+              i.style.setProperty('width', `${tot ? ((j[k] ?? 0) / tot) * 100 : 0}%`);
+              i.style.setProperty('background', warna);
+              return i;
+            }));
+          const gagal = e.status === 'gagal';
+          return el('button', {
+            class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
+            'aria-label': `Run ${e.nomor}, ${e.vendor}, ${j.temuan ?? 0} temuan, ${rincian}${gagal ? ', run gagal' : ''}`,
+            onclick: () => muatRun(e),
+          },
+          el('span', { class: 'hnum' }, `#${e.nomor}`, gagal ? el('span', { class: 'hgagal', title: 'Run gagal', text: '!' }) : null),
+          el('span', { class: 'hmeta', text: `${e.vendor ?? '—'} · ${waktu(e.selesai)}` }),
+          bar,
+          el('span', { class: 'htotal', text: String(j.temuan ?? 0) }));
+        }),
+        el('div', { class: 'hist-legenda' }, [
+          ...SEG_RIWAYAT.map(([, label, warna]) => {
+            const i = el('i', { 'aria-hidden': 'true' });
+            i.style.setProperty('background', warna);
+            return el('span', {}, i, label);
+          }),
+          el('span', {}, el('b', { class: 'hgagal', text: '!' }), 'run gagal'),
+        ]),
+      ]
       : el('p', { class: 'note', text: 'Belum ada run di branch ini.' }));
     $('metrics-box').hidden = true; // Blok riset pindah ke tab Eksperimen (S5)
   };
@@ -1319,6 +1395,7 @@
     renderAlertV2();
     renderSampingV2();
     pilihTab(state.tab);
+    renderNav();
     perbaruiTombolJalankan();
   };
 

@@ -626,3 +626,24 @@ table.eks tr:last-child td { border-bottom: 0; }
 .drawer-head h2 { margin: 0; font-size: 1.125rem; }
 .drawer-panel .field > label, .drawer-panel .field > legend { color: var(--ink-2); }
 @media (max-width: 30rem) { .drawer-panel { width: 100%; border-left: 0; } }
+
+/* Navigasi rail */
+.railnav { list-style: none; margin: 0 0 var(--s-5); padding: 0; display: grid; gap: 1px; }
+.railnav button {
+  width: 100%; text-align: left; border: 0; background: none; cursor: pointer; color: var(--ink-2);
+  font: inherit; font-size: 0.875rem; padding: var(--s-2) var(--s-3); border-radius: var(--radius-ctl);
+}
+.railnav button:hover { background: var(--paper-2); color: var(--ink); }
+.railnav button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.railnav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Kartu ringkasan berkelompok */
+.kartu-grup { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+.kartu-grup > h3 { font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 0; font-weight: 600; }
+.kartu-baris { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--s-3); }
+
+/* Legenda riwayat dan penanda run gagal */
+.hist-legenda { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); padding-top: var(--s-3); font-size: 0.75rem; color: var(--muted); }
+.hist-legenda span { display: inline-flex; align-items: center; gap: var(--s-1); }
+.hist-legenda i { width: 0.625rem; height: 0.625rem; border-radius: 2px; display: inline-block; }
+.hgagal { font-weight: 700; color: var(--crit); margin-left: var(--s-1); }
