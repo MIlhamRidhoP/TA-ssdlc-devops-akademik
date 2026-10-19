@@ -1,0 +1,125 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 1,
+    "nomor": 1,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "vendor": "google",
+    "model_diminta": "gemini-3.1-pro-preview",
+    "model_menjawab": "gemini-3.1-pro-preview",
+    "kondisi": "utama",
+    "mulai": "2026-10-19T23:44:44.040Z",
+    "selesai": "2026-10-19T23:48:22.777Z",
+    "durasi_detik": 219,
+    "objek_uji": {
+      "commit": "97a3f47e568340fa3109bd661c4fb0eb3635e349",
+      "branch": "feat/prompt-v2",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "commit_kode": {
+      "head": "97a3f47e568340fa3109bd661c4fb0eb3635e349",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "4391e630a966de687eafd051072f41f6f0674cec9170386c825c53680ddaf050"
+    },
+    "sumber_sonar": "api",
+    "analisis_sonar": {
+      "tanggal": "2026-10-10T08:00:24+0000",
+      "revisi": "fe97d23b7c4b20c575d746d9e4df9a8bd2443b32",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "sonar_beku": null,
+    "biaya_usd": 0.508244,
+    "status_panggilan": {
+      "total": 2,
+      "ok": 2,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0
+    },
+    "pipeline": null
+  },
+  "alerts": [
+    {
+      "id": "SONAR-01",
+      "rule": "javascript:S5122",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "pesan": "Make sure that enabling CORS is safe here.",
+      "severity_sonar": "MAJOR",
+      "severity_asal": "sonar",
+      "putusan": "true_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Pemanggilan middleware `cors()` tanpa argumen pada `src/app.js` akan menggunakan konfigurasi bawaan yang mengizinkan semua origin (`Access-Control-Allow-Origin: *`). Untuk sistem informasi akademik yang memproses data pribadi, kebijakan CORS yang terlalu longgar ini berisiko karena memungkinkan sembarang domain eksternal untuk berinteraksi dengan API. Oleh karena itu, peringatan mengenai konfigurasi CORS yang tidak dibatasi ini adalah benar.",
+      "tanda": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/controllers/krsController.js",
+      "baris": 70,
+      "fungsi": "exports.addItem",
+      "jenis": "Race Condition (TOCTOU)",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Validasi status KRS (harus berupa 'draft') dilakukan pada query terpisah sebelum proses insert item mata kuliah. Jika terdapat request `submit` yang berjalan secara konkuren, status KRS dapat berubah menjadi 'submitted' tepat setelah pengecekan tersebut namun sebelum item ditambahkan. Celah ini memungkinkan mahasiswa untuk menambahkan mata kuliah di luar batas kuota SKS ke dalam KRS yang sudah terkunci atau berstatus submitted.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "b49261c43cb6b032",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 67,
+        "baris": [
+          "    throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');",
+          "  }",
+          "",
+          "  const id = await model.addItem(header.id, mataKuliahId);",
+          "  res.status(201).json({",
+          "    success: true,",
+          "    data: { id, krs_semester_id: header.id, mata_kuliah_id: mataKuliahId },"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "file": "src/app.js",
+      "baris": 17,
+      "fungsi": "",
+      "jenis": "Missing Rate Limiting",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Aplikasi tidak mengimplementasikan pembatasan jumlah percobaan akses (rate limiting) pada endpoint autentikasi seperti login. Hal ini memberikan kesempatan bagi penyerang untuk melakukan serangan brute force atau credential stuffing secara leluasa tanpa batasan. Disarankan untuk menggunakan middleware tambahan seperti `express-rate-limit` khusus pada rute autentikasi.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "0172ece2118bcbb3",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 14,
+        "baris": [
+          "  res.json({ status: 'ok' });",
+          "});",
+          "",
+          "app.use('/api/auth', require('./routes/authRoutes'));",
+          "app.use('/api/mahasiswa/:id/konsen', require('./routes/konsenRoutes'));",
+          "app.use('/api/mahasiswa', require('./routes/mahasiswaRoutes'));",
+          "app.use('/api/mata-kuliah', require('./routes/mataKuliahRoutes'));"
+        ]
+      }
+    }
+  ]
+}
