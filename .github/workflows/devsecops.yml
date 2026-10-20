@@ -48,6 +48,13 @@ on:
         type: choice
         options: [ikut-branch-run, main]
         default: ikut-branch-run
+      rekomendasi_ai:
+        description: >-
+          Tambahkan saran perbaikan dari AI (lapis 2) untuk temuan vulnerability dan alert yang
+          dikonfirmasi. Satu panggilan berbayar tambahan per run. Panduan umum per CWE (lapis 1)
+          selalu tampil tanpa input ini.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -484,6 +491,23 @@ jobs:
             exit 1
           fi
           node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --nomor="$GITHUB_RUN_NUMBER" --id="$GITHUB_RUN_ID" --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
+
+      # Lapis 2 opt-in. Tanpa input rekomendasi_ai bernilai true, langkah ini dilewati dan field
+      # rekomendasi_ai tidak pernah ditulis ke results.json, jadi run lama maupun run biasa tetap
+      # berbentuk sama persis seperti sebelumnya.
+      #
+      # Secret yang dipakai sama dengan langkah llm-scan di atas; tidak ada secret baru dan tidak
+      # ada permission yang ditambahkan. Langkah ini tidak pernah menggagalkan job: skrip keluar
+      # dengan 0 walau panggilannya gagal, karena menjatuhkan job berarti membuang hasil deteksi
+      # dan verifikasi yang sudah sah.
+      - name: Rekomendasi perbaikan AI (lapis 2)
+        if: inputs.rekomendasi_ai
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VENDOR: ${{ inputs.vendor_v2 }}
+        run: node scripts/llm-remediasi.js --vendor="$VENDOR" --results=results.json
 
       - name: Unggah output v2
         if: always()
