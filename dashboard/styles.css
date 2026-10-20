@@ -560,8 +560,6 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .fdec-empty { color: var(--muted); }
 
 .fdetail { padding: 0 var(--s-1) var(--s-4); display: grid; gap: var(--s-3); }
-.fdetail-grid { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
-@container (min-width: 46rem) { .fdetail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5); } }
 .block-h { font: 600 0.8125rem/1.3 var(--font-body); color: var(--muted); margin-bottom: var(--s-1); display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 .fdetail p { max-width: 68ch; overflow-wrap: anywhere; }
 .code {
@@ -572,7 +570,14 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .code span { display: block; padding: 0 var(--s-3); white-space: pre; }
 .code span::before { content: attr(data-ln); display: inline-block; min-width: 3ch; margin-right: var(--s-3); color: var(--muted); text-align: right; user-select: none; }
 .code span.hit { background: var(--crit-soft); }
-.facts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); font-size: 0.8125rem; color: var(--muted); }
+/* Fakta dibaca berpasangan. Sebagai deretan flex, dt dan dd menyatu jadi satu kalimat panjang
+   yang sulit dipindai: "CWE CWE-89 OWASP A05 Sifat vulnerability". */
+.facts {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-1) var(--s-3);
+  font-size: 0.8125rem; color: var(--muted); margin: 0;
+}
+.facts dt { font-family: var(--font-data); font-size: 0.6875rem; letter-spacing: 0.03em; text-transform: uppercase; padding-top: 0.1rem; }
+.facts dd { color: var(--ink-2); margin: 0; overflow-wrap: anywhere; }
 .facts b { color: var(--ink); font-weight: 500; }
 .decide { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding-top: var(--s-3); border-top: 1px dashed var(--rule); }
 
@@ -648,6 +653,8 @@ nav:has(.projects:empty) { display: none; }
 .flist > li { border-bottom: 0; }
 @media (hover: hover) { .frow-v2:hover { border-color: var(--accent); background: var(--paper-2); } }
 .frow-v2:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Detailnya ada di panel terpisah, jadi kartu yang sedang dibuka harus menandai dirinya. */
+.frow-v2.terpilih { border-color: var(--accent); box-shadow: inset 2px 0 0 var(--accent); }
 .frow-v2 .fid { grid-area: fid; align-self: start; }
 .frow-v2 .fmeta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
 .frow-v2 .ftitle { grid-area: title; display: block; font-weight: 600; font-size: 0.9375rem; color: var(--ink); }
@@ -820,10 +827,38 @@ table.eks tr:last-child td { border-bottom: 0; }
   background: var(--paper-2); border-left: 1px solid var(--rule); padding: var(--s-5);
   display: grid; gap: var(--s-4); align-content: start;
 }
-.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.drawer-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3);
+  position: sticky; top: calc(var(--s-5) * -1); z-index: 2;
+  background: var(--paper-2); padding-top: var(--s-1); margin-top: calc(var(--s-1) * -1);
+  border-bottom: 1px solid var(--rule); padding-bottom: var(--s-3);
+}
 .drawer-head h2 { margin: 0; font-size: 1.125rem; }
+.drawer-judul { display: grid; gap: var(--s-2); min-width: 0; }
+.drawer-eyebrow {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2);
+  font-family: var(--font-data); font-size: 0.6875rem; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted); margin: 0;
+}
+.drawer-isi { display: grid; gap: var(--s-3); align-content: start; }
+.drawer-isi .fdetail { border: 0; background: transparent; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+
+/* Lokasi sumber kode: panel sendiri dengan aksi membuka berkasnya di GitHub. */
+.lokasi-kotak {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2);
+  padding: var(--s-3); border: 1px solid var(--rule); border-radius: var(--radius-ctl);
+  background: var(--paper-3);
+}
+.lokasi-kotak .block-h { margin: 0 0 var(--s-1); }
+.kode-kosong {
+  padding: var(--s-4); border: 1px dashed var(--rule-2); border-radius: var(--radius-ctl);
+  background: var(--paper-3); display: grid; gap: var(--s-1);
+}
+.kode-kosong .block-h { margin: 0; }
 .drawer-panel .field > label, .drawer-panel .field > legend { color: var(--ink-2); }
 @media (max-width: 30rem) { .drawer-panel { width: 100%; border-left: 0; } }
+/* Panel detail temuan memuat potongan kode, jadi butuh lebih lebar daripada panel jalankan. */
+#drawer-temuan .drawer-panel { width: min(40rem, 100%); }
 
 /* Navigasi rail */
 .railnav { list-style: none; margin: 0 0 var(--s-5); padding: 0; display: grid; gap: 1px; }

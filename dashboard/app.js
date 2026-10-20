@@ -731,6 +731,7 @@
   };
 
   const muatRun = async (entri) => {
+    if (drawerAktif && drawerAktif.panel === $('drawer-temuan')) tutupDrawerAktif();
     state.entri = entri;
     state.terbuka = null;
     state.simpulTerbuka = null;
@@ -1210,6 +1211,7 @@
     renderRingkasanV2();
     // Tidak memindahkan fokus: pengguna keyboard sedang berada di dalam panel detail.
     renderTemuanV2();
+    if (state.terbuka === t.fingerprint) renderDetailTemuan();
     const lagi = document.getElementById(`${t.fingerprint}-${v}`);
     if (lagi) lagi.focus();
   };
@@ -1252,13 +1254,37 @@
       'Buka ', ...teksLokasi(t.file, t.baris), ' di GitHub');
   };
 
+  // Drawer detail temuan. Dibuka dari kartu temuan; isinya seluruhnya dari data run, termasuk
+  // potongan kode objek uji bila berkas hasil memuatnya.
+  const bukaTemuan = (fp) => {
+    state.terbuka = fp;
+    renderDetailTemuan();
+    renderTemuanV2();
+    bukaPanel($('drawer-temuan'), { tutupId: 'temuan-tutup' });
+  };
+
+  const renderDetailTemuan = () => {
+    const t = state.hasil?.findings.find((x) => x.fingerprint === state.terbuka);
+    if (!t) { isi($('temuan-isi')); return; }
+    const putusan = state.keputusan[t.fingerprint]?.v ?? null;
+    isi($('temuan-eyebrow'),
+      el('span', { text: `Temuan deteksi mandiri LLM \u00b7 ${t.id}` }),
+      el('span', { class: `lencana ${putusan === 'ok' ? 'l-crit' : (putusan === 'fp' ? 'l-ok' : 'l-netral')}` },
+        el('i', { 'aria-hidden': 'true' }),
+        putusan === 'ok' ? 'Dikonfirmasi developer' : (putusan === 'fp' ? 'Ditandai false positive' : 'Belum ditinjau')));
+    $('temuan-drawer-h').textContent = t.jenis;
+    isi($('temuan-isi'), detailTemuanV2(t));
+  };
+
   const detailTemuanV2 = (t) => {
     const pk = t.potongan_kode;
     const kode = pk && pk.baris?.length
       ? el('pre', { class: 'code', tabindex: '0', role: 'region', 'aria-label': `Kode di sekitar baris ${t.baris ?? '?'} pada ${t.file ?? 'berkas'}` }, pk.baris.map((b, i) => el('span', {
         class: pk.mulai + i === t.baris ? 'hit' : null, 'data-ln': String(pk.mulai + i), text: `${b}\n`,
       })))
-      : el('p', { class: 'note', text: 'Potongan kode tidak tersedia untuk temuan ini. Hasil ini dibuat tanpa akses ke worktree objek uji.' });
+      : el('div', { class: 'kode-kosong' },
+        el('p', { class: 'block-h', text: 'Potongan kode tidak tersedia' }),
+        el('p', { class: 'note', text: 'Berkas hasil run ini dibuat tanpa akses ke worktree objek uji, jadi tidak ada baris kode yang bisa ditampilkan. Tautan di atas membuka berkasnya di GitHub pada commit objek uji.' }));
     const fakta = [
       t.cwe.length ? ['CWE', t.cwe.join(', ')] : null,
       t.kategori_owasp ? ['OWASP', t.kategori_owasp] : null,
@@ -1271,18 +1297,26 @@
       class: 'btn btn-sm', type: 'button', id: `${t.fingerprint}-${v}`,
       'aria-pressed': putusan === v ? 'true' : 'false', onclick: () => putuskanV2(t, v),
     }, label);
+    const chip = (teks, kelas) => el('span', { class: `chip ${kelas}`, text: teks });
     return el('div', { class: 'fdetail', id: `d-${t.fingerprint}` },
-      el('div', { class: 'fdetail-grid' },
-        el('div', {},
-          el('p', { class: 'block-h', text: 'Penjelasan model' }),
-          el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan.' }),
-          el('p', { class: 'block-h', text: 'Kode di sekitar baris' }), kode,
-          tautanGithub(t)),
-        el('div', {},
-          el('p', { class: 'block-h', text: 'Fakta' }),
-          el('dl', { class: 'facts' }, fakta.map(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
-          el('p', { class: 'block-h', text: 'Catatan lokal' }),
-          el('div', { class: 'decide' }, tombol('ok', 'Konfirmasi rentan'), tombol('fp', 'Tandai false positive')))));
+      el('div', { class: 'fmeta' },
+        chip(t.sifat, t.sifat === 'hardening' ? 'chip-hardening' : 'chip-vuln'),
+        ...t.cwe.map(tautanCwe),
+        t.kategori_owasp ? chip(t.kategori_owasp === 'Other' ? 'OWASP lainnya' : `${t.kategori_owasp}:2025`, 'chip-owasp') : null,
+        chip(`keyakinan ${t.keyakinan}`, 'chip-keyakinan')),
+      el('p', { class: 'note data', text: labelModelId(state.hasil.run.model_menjawab ?? state.hasil.run.model_diminta) }),
+      el('div', { class: 'lokasi-kotak' },
+        el('div', {}, el('p', { class: 'block-h', text: 'Lokasi sumber kode' }),
+          el('p', { class: 'floc' }, teksLokasi(t.file, t.baris))),
+        tautanGithub(t)),
+      el('div', { class: 'alasan-kotak' },
+        el('p', { class: 'alasan-kepala' }, ikon(IKON.bolt), el('b', { text: 'Penjelasan dan analisis model' })),
+        el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan untuk temuan ini.' })),
+      el('p', { class: 'block-h', text: 'Kode di sekitar baris' }), kode,
+      el('p', { class: 'block-h', text: 'Fakta' }),
+      el('dl', { class: 'facts' }, fakta.map(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+      el('p', { class: 'block-h', text: 'Catatan lokal' }),
+      el('div', { class: 'decide' }, tombol('ok', 'Konfirmasi rentan'), tombol('fp', 'Tandai false positive')));
   };
 
   const renderTemuanV2 = (fokusFp) => {
@@ -1294,9 +1328,9 @@
         const terbuka = state.terbuka === t.fingerprint;
         const putusan = state.keputusan[t.fingerprint]?.v ?? null;
         const baris = el('button', {
-          class: 'frow frow-v2', type: 'button', 'aria-expanded': terbuka ? 'true' : 'false',
-          'aria-controls': `d-${t.fingerprint}`,
-          onclick: () => { state.terbuka = terbuka ? null : t.fingerprint; renderTemuanV2(t.fingerprint); },
+          class: `frow frow-v2${terbuka ? ' terpilih' : ''}`, type: 'button', 'aria-haspopup': 'dialog',
+          onclick: () => bukaTemuan(t.fingerprint),
+          dataset: { fp: t.fingerprint },
         },
         el('span', { class: 'fid', text: t.id }),
         el('span', { class: 'fmeta' },
@@ -1312,12 +1346,12 @@
           ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai false positive' })
           : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }),
         el('span', { class: 'buka' }, el('small', { text: terbuka ? 'Tutup detail' : 'Detail' }), ikon(IKON.panah)));
-        return el('li', {}, baris, terbuka ? detailTemuanV2(t) : null);
+        return el('li', {}, baris);
       }))
       : el('div', { class: 'state' }, el('p', { text: semua.length ? 'Tidak ada temuan yang cocok dengan saringan ini.' : 'Panggilan deteksi tidak melaporkan temuan.' })));
     // Sidik jari berasal dari berkas hasil; hanya pola yang sah boleh masuk selector.
     if (fokusFp && /^[0-9a-f]{16}$/.test(fokusFp)) {
-      const n = document.querySelector(`[aria-controls="d-${fokusFp}"]`);
+      const n = document.querySelector(`.frow-v2[data-fp="${fokusFp}"]`);
       if (n) n.focus();
     }
   };
@@ -1374,37 +1408,49 @@
   // ---------- Drawer "Jalankan analisis" ----------
   // Memisahkan menjalankan dari melihat: header hanya menjelaskan run yang sedang dibuka.
   // Fokus dikurung di dalam panel, Escape menutup, dan fokus kembali ke tombol pembuka.
-  let fokusSebelumDrawer = null;
-  const elemenFokus = () => [...$('drawer').querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
-    .filter((n) => n.offsetParent !== null);
+  // Dua panel memakai mekanik yang sama: fokus dikurung di dalamnya, Escape menutup, dan fokus
+  // kembali ke elemen yang membukanya. Ditulis sekali supaya keduanya tidak pernah berbeda
+  // perilaku, karena perbedaan seperti itu baru terasa oleh pengguna keyboard.
+  let drawerAktif = null;
+  const elemenFokus = (n) => [...n.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((x) => x.offsetParent !== null);
   const kurungFokus = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); tutupDrawer(); return; }
+    if (!drawerAktif) return;
+    if (e.key === 'Escape') { e.preventDefault(); tutupDrawerAktif(); return; }
     if (e.key !== 'Tab') return;
-    const f = elemenFokus();
+    const f = elemenFokus(drawerAktif.panel);
     if (!f.length) return;
     const awal = f[0];
     const akhir = f[f.length - 1];
     if (e.shiftKey && document.activeElement === awal) { e.preventDefault(); akhir.focus(); }
     else if (!e.shiftKey && document.activeElement === akhir) { e.preventDefault(); awal.focus(); }
   };
+  function bukaPanel(panel, { pemicu = null, tutupId }) {
+    if (drawerAktif) tutupDrawerAktif();
+    drawerAktif = { panel, fokusSebelum: document.activeElement, pemicu, tutupId };
+    panel.hidden = false;
+    if (pemicu) pemicu.setAttribute('aria-expanded', 'true');
+    document.addEventListener('keydown', kurungFokus, true);
+    const f = elemenFokus(panel);
+    (f[0] ?? $(tutupId)).focus();
+  }
+  function tutupDrawerAktif() {
+    if (!drawerAktif) return;
+    const { panel, fokusSebelum, pemicu, tutupId } = drawerAktif;
+    drawerAktif = null;
+    panel.hidden = true;
+    if (pemicu) pemicu.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('keydown', kurungFokus, true);
+    if (fokusSebelum && document.contains(fokusSebelum) && fokusSebelum.offsetParent !== null) fokusSebelum.focus();
+    else $(tutupId).focus();
+  }
   function bukaDrawer() {
     // Persetujuan biaya berlaku untuk satu run, jadi tidak boleh terbawa ke pembukaan berikutnya.
     $('f-konfirmasi-v2').checked = false;
     renderDrawer();
-    fokusSebelumDrawer = document.activeElement;
-    $('drawer').hidden = false;
-    $('buka-drawer').setAttribute('aria-expanded', 'true');
-    document.addEventListener('keydown', kurungFokus, true);
-    const f = elemenFokus();
-    (f[0] ?? $('drawer-tutup')).focus();
+    bukaPanel($('drawer'), { pemicu: $('buka-drawer'), tutupId: 'drawer-tutup' });
   }
-  function tutupDrawer() {
-    $('drawer').hidden = true;
-    $('buka-drawer').setAttribute('aria-expanded', 'false');
-    document.removeEventListener('keydown', kurungFokus, true);
-    if (fokusSebelumDrawer && document.contains(fokusSebelumDrawer)) fokusSebelumDrawer.focus();
-    else $('buka-drawer').focus();
-  }
+  function tutupDrawer() { tutupDrawerAktif(); }
 
   // ---------- Tab Eksperimen ----------
   // Angka ditampilkan apa adanya beserta variannya. Tidak ada peringkat, tidak ada penilaian
@@ -1574,6 +1620,7 @@
       $('catatan-info').textContent = `${n} catatan diimpor. Hanya di browser ini, tidak tersinkron.`;
       renderRingkasanV2();
       renderTemuanV2();
+      if (state.terbuka) renderDetailTemuan();
     } catch (err) {
       $('catatan-info').textContent = `Berkas catatan tidak bisa dibaca (${err.message}).`;
     }
@@ -1780,8 +1827,10 @@
     $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
     $('buka-drawer').addEventListener('click', bukaDrawer);
-    $('drawer-tutup').addEventListener('click', tutupDrawer);
-    $('drawer-tirai').addEventListener('click', tutupDrawer);
+    $('drawer-tutup').addEventListener('click', tutupDrawerAktif);
+    $('drawer-tirai').addEventListener('click', tutupDrawerAktif);
+    $('temuan-tutup').addEventListener('click', tutupDrawerAktif);
+    $('drawer-temuan-tirai').addEventListener('click', tutupDrawerAktif);
     $('tab-operasional').addEventListener('click', () => pilihTab('operasional'));
     $('tab-eksperimen').addEventListener('click', () => pilihTab('eksperimen'));
     $('catatan-ekspor').addEventListener('click', eksporCatatan);
