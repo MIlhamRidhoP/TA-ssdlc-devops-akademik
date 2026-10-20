@@ -1385,14 +1385,29 @@
   };
 
   // Skema 2 menaruh status job di run.pipeline; null berarti run dijalankan dari CLI, bukan lewat pipeline.
+  // Pemetaan status job dari rekaman `run.pipeline` di berkas hasil. Dipisahkan sebagai fungsi
+  // murni supaya bisa diuji langsung tanpa browser; tests/pipeline.test.js mengambilnya apa adanya
+  // dari berkas ini.
+  //
+  // Tidak ada nilai bawaan "selesai" di sini, dan itu disengaja. Dua keadaan sama-sama berarti
+  // TIDAK ADA DATA: node yang tidak punya kunci hasil sama sekali (rencana, terbit-v2), dan node
+  // yang kuncinya tidak tercatat di rekaman. Sebelumnya yang pertama dipetakan ke "selesai", jadi
+  // job yang belum tentu pernah berjalan tampil bercentang hijau — klaim yang tidak punya dasar
+  // apa pun di data. Keduanya kini "tidak diketahui".
+  //
+  // Bentuk `run.pipeline` sengaja TIDAK ditebak lebih jauh dari ini: belum ada satu pun penulis
+  // yang mengisinya di jalur v2, jadi menambahkan aturan untuk kunci yang belum pernah ada berarti
+  // mengarang.
+  const STATUS_PIPELINE = { success: 'done', skipped: 'skip', failure: 'fail', cancelled: 'fail' };
+  const statusDariPipeline = (pipeline, node) => Object.fromEntries(node.map((n) => {
+    const nilai = n.hasil ? (pipeline ?? {})[n.hasil] : undefined;
+    return [n.key, { s: STATUS_PIPELINE[nilai] ?? 'tak-tahu', durasi: null }];
+  }));
+
   const statusNodeDariHasil = () => {
     const pipeline = state.hasil?.run?.pipeline;
     if (!pipeline) return null;
-    return Object.fromEntries(nodeJalur(jalurAktif()).map((n) => {
-      if (!n.hasil) return [n.key, { s: 'done', durasi: null }];
-      const v = pipeline[n.hasil];
-      return [n.key, { s: { success: 'done', skipped: 'skip', failure: 'fail', cancelled: 'fail' }[v] ?? 'wait', durasi: null }];
-    }));
+    return statusDariPipeline(pipeline, nodeJalur(jalurAktif()));
   };
 
   // ---------- Graf pipeline ----------
@@ -1441,7 +1456,7 @@
     return Array.from({ length: maks + 1 }, (_, i) => PIPELINE.filter((n) => dalamSimpul(n.key) === i));
   };
 
-  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi', absen: 'tidak ada di run ini' };
+  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi', absen: 'tidak ada di run ini', 'tak-tahu': 'status tidak diketahui' };
 
   // Ketergantungan yang perlu DIGAMBAR, bukan yang tercatat. `perlu` menyalin `needs` di workflow
   // apa adanya, dan `needs` memuat banyak ketergantungan yang sudah tersirat: `terbit-v2` menunggu

@@ -15,13 +15,16 @@ const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'devsecops.ym
 // browser, dan tes tidak perlu menjalankannya untuk memeriksa bentuk datanya.
 const bacaPipeline = () => {
   const blok = app.slice(app.indexOf('const PIPELINE = ['), app.indexOf('\n  ];', app.indexOf('const PIPELINE = [')));
-  const pola = /\{ key: '([^']+)', id: '([^']+)', job: '([^']+)', nama: '[^']*', hasil: [^,]+, perlu: \[([^\]]*)\], jalur: '([^']+)' \}/g;
+  const pola = /\{ key: '([^']+)', id: '([^']+)', job: '([^']+)', nama: '[^']*', hasil: ([^,]+), perlu: \[([^\]]*)\], jalur: '([^']+)' \}/g;
   return [...blok.matchAll(pola)].map((m) => ({
     key: m[1],
     id: m[2],
     job: m[3],
-    perlu: m[4].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean),
-    jalur: m[5],
+    // `hasil` adalah kunci status di run.pipeline, atau null untuk node yang tidak punya satu pun.
+    // Perbedaan itu yang menentukan apakah statusnya bisa diketahui dari berkas hasil.
+    hasil: m[4].trim() === 'null' ? null : m[4].trim().replace(/^'|'$/g, ''),
+    perlu: m[5].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean),
+    jalur: m[6],
   }));
 };
 
@@ -153,5 +156,62 @@ test('rekaman run CI tidak memuat token, URL, atau rahasia', () => {
   for (const v of nilai) {
     if (/^[0-9a-f]{40}$/.test(v)) continue; // SHA commit
     assert.doesNotMatch(v, /(github_pat_|ghs_|ghp_|gho_|Bearer |https?:\/\/|X-Amz|[A-Za-z0-9_-]{40,})/, `nilai mencurigakan: ${v}`);
+  }
+});
+
+// ---------- Status node dari rekaman run.pipeline ----------
+// Fungsinya hidup di dalam IIFE dashboard/app.js, jadi diambil apa adanya dari berkas itu lalu
+// dijalankan di sini — yang diuji benar-benar kode yang dimuat browser.
+const statusDariPipeline = (() => {
+  const i = app.indexOf('  const STATUS_PIPELINE = {');
+  const j = app.indexOf('\n  }));', i);
+  assert.ok(i > 0 && j > i, 'statusDariPipeline tidak ditemukan di dashboard/app.js');
+  // eslint-disable-next-line no-new-func
+  return new Function(`${app.slice(i, j + 7)}\n  return statusDariPipeline;`)();
+})();
+
+test('node tanpa data di run.pipeline tidak pernah tampil selesai', () => {
+  // Inti aturannya: "selesai" adalah klaim, dan klaim itu hanya boleh dibuat kalau rekamannya
+  // benar-benar menyebut success. Sebelumnya node tanpa kunci hasil dipetakan ke "selesai" begitu
+  // saja, sehingga job yang belum tentu pernah berjalan tampil bercentang hijau.
+  const node = bacaPipeline();
+  const tanpaKunci = node.filter((n) => !n.hasil);
+  assert.ok(tanpaKunci.length > 0, 'graf harus punya node tanpa kunci hasil, kalau tidak tes ini tidak menguji apa pun');
+
+  // Rekaman kosong: tidak ada satu pun yang boleh "selesai".
+  const kosong = statusDariPipeline({}, node);
+  for (const n of node) {
+    assert.notEqual(kosong[n.key].s, 'done', `node ${n.key} mengaku selesai tanpa data`);
+    assert.equal(kosong[n.key].s, 'tak-tahu', `node ${n.key} tanpa data harus "tak-tahu"`);
+  }
+
+  // Rekaman terisi: hanya yang kuncinya tercatat success yang boleh "selesai", dan node tanpa
+  // kunci hasil tetap tidak diketahui walau rekamannya penuh.
+  const rekamanPenuh = Object.fromEntries(node.filter((n) => n.hasil).map((n) => [n.hasil, 'success']));
+  const terisi = statusDariPipeline(rekamanPenuh, node);
+  for (const n of node) {
+    assert.equal(terisi[n.key].s, n.hasil ? 'done' : 'tak-tahu', `status node ${n.key}`);
+  }
+
+  // Nilai yang tidak dikenali, dan null, juga bukan "selesai".
+  for (const nilai of [null, undefined, 'neutral', 'timed_out', 'in_progress', '']) {
+    const satu = statusDariPipeline({ build_test: nilai }, node);
+    const build = node.find((n) => n.hasil === 'build_test');
+    assert.ok(build, 'node build_test ada di graf');
+    assert.notEqual(satu[build.key].s, 'done', `nilai ${JSON.stringify(nilai)} tidak boleh jadi selesai`);
+  }
+
+  // Dan pemetaan yang sah tetap bekerja.
+  const build = node.find((n) => n.hasil === 'build_test');
+  assert.equal(statusDariPipeline({ build_test: 'skipped' }, node)[build.key].s, 'skip');
+  assert.equal(statusDariPipeline({ build_test: 'failure' }, node)[build.key].s, 'fail');
+  assert.equal(statusDariPipeline({ build_test: 'cancelled' }, node)[build.key].s, 'fail');
+});
+
+test('setiap status node punya teks yang bisa dibaca', () => {
+  // Status tanpa entri di TEKS_SIMPUL dirender sebagai "undefined" di kartu grafnya.
+  const blok = app.slice(app.indexOf('const TEKS_SIMPUL = {'), app.indexOf('};', app.indexOf('const TEKS_SIMPUL = {')));
+  for (const s of ['wait', 'run', 'done', 'fail', 'skip', 'fail-diharapkan', 'absen', 'tak-tahu']) {
+    assert.match(blok, new RegExp(`['"]?${s.replace('-', '\-')}['"]?\s*:`), `TEKS_SIMPUL tidak memuat ${s}`);
   }
 });

@@ -637,6 +637,10 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .simpul[data-s="fail"] .simpul-status { color: var(--crit); }
 .simpul[data-s="fail-diharapkan"] .simpul-mark { background: var(--high-soft); color: var(--high); }
 .simpul[data-s="fail-diharapkan"] .simpul-status { color: var(--high); }
+/* Status yang tidak tercatat di berkas hasil. Dibedakan dari "menunggu" lewat teksnya DAN lewat
+   bentuk tanda lingkarannya yang putus-putus, bukan lewat warna saja: keduanya sama-sama lingkaran
+   kosong, dan yang satu berarti "belum", yang lain berarti "tidak tahu". */
+.simpul[data-s="tak-tahu"] .simpul-mark { border-style: dashed; }
 /* Job yang belum ada di pipeline saat run itu berjalan. Bukan "menunggu", bukan juga "dilewati":
    ia tidak pernah punya kesempatan. Diredupkan seperti jalur mati, tetapi TIDAK dicoret, karena
    tidak ada yang digantikan di sini. */
