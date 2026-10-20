@@ -635,21 +635,30 @@ nav:has(.projects:empty) { display: none; }
 .putusan.p-unc { background: var(--high-soft); color: var(--high); }
 .putusan.p-none { background: var(--paper-3); color: var(--ink-2); }
 
-/* Baris temuan v2: tanpa kolom severity dan tanpa kolom keputusan. */
+/* Baris temuan v2 berbentuk kartu: chip dulu, lalu judul tebal, lalu lokasi. Urutannya mengikuti
+   cara temuan dibaca: apa jenisnya, apa namanya, di mana. */
 .frow-v2 {
-  display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) max-content max-content;
-  grid-template-areas: "fid title dec buka" "fid loc dec buka";
+  display: grid; grid-template-columns: 3.25rem minmax(0, 1fr) max-content max-content;
+  grid-template-areas: "fid meta dec buka" "fid title dec buka" "fid loc dec buka";
   gap: var(--s-1) var(--s-3); align-items: center;
-  width: 100%; padding: var(--s-3) var(--s-1);
+  width: 100%; padding: var(--s-3);
+  border: 1px solid var(--rule); border-radius: var(--radius-ctl); background: var(--paper-2);
 }
-.frow-v2 .fid { grid-area: fid; }
-.frow-v2 .ftitle { grid-area: title; }
+.flist { border-top: 0; display: grid; gap: var(--s-2); }
+.flist > li { border-bottom: 0; }
+@media (hover: hover) { .frow-v2:hover { border-color: var(--accent); background: var(--paper-2); } }
+.frow-v2:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.frow-v2 .fid { grid-area: fid; align-self: start; }
+.frow-v2 .fmeta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+.frow-v2 .ftitle { grid-area: title; display: block; font-weight: 600; font-size: 0.9375rem; color: var(--ink); }
 .frow-v2 .floc { grid-area: loc; }
 .frow-v2 .buka { grid-area: buka; }
+.frow-v2 .fdec, .frow-v2 .fdec-empty { grid-area: dec; align-self: center; }
+.fdetail { border: 1px solid var(--rule); border-top: 0; border-radius: 0 0 var(--radius-ctl) var(--radius-ctl); background: var(--paper-2); margin-top: -1px; }
 @media (max-width: 40rem) {
   .frow-v2 {
-    grid-template-columns: 4.5rem minmax(0, 1fr) max-content;
-    grid-template-areas: "fid title title" "fid loc loc" "fid dec buka";
+    grid-template-columns: 3.25rem minmax(0, 1fr) max-content;
+    grid-template-areas: "fid meta meta" "fid title title" "fid loc loc" "fid dec buka";
   }
 }
 
@@ -698,7 +707,24 @@ nav:has(.projects:empty) { display: none; }
 [aria-expanded="true"] > .buka .icon { transform: rotate(90deg); }
 @media (hover: hover) { .arow:hover .buka, .frow-v2:hover .buka { color: var(--accent); } }
 .adetail { padding: 0 var(--s-1) var(--s-4) 5.5rem; display: grid; gap: var(--s-2); }
-.adetail .alasan { font-size: 0.875rem; color: var(--ink-2); line-height: 1.55; }
+/* Alasan model adalah isi terpenting saat baris dibuka, jadi ia panel tersendiri dengan kepala,
+   bukan paragraf yang menempel di bawah baris. */
+.alasan-kotak {
+  background: var(--paper-3); border: 1px solid var(--rule); border-radius: var(--radius-ctl);
+  padding: var(--s-3); display: grid; gap: var(--s-2);
+}
+.alasan-kepala {
+  display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap;
+  font-size: 0.8125rem; color: var(--accent);
+}
+.alasan-kepala b { font-weight: 600; }
+.alasan-model { margin-left: auto; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.adetail .alasan { font-size: 0.875rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
+.afakta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
+.apesan { font-size: 0.8125rem; color: var(--muted); overflow-wrap: anywhere; }
+.chip-rule { background: var(--netral-soft); color: var(--netral); border: 1px solid var(--netral-rule); }
+a.chip-cwe { text-decoration: none; }
+@media (hover: hover) { a.chip-cwe:hover { border-color: var(--accent); color: var(--accent); } }
 /* Di layar sempit kolom id dan penanda buka pindah ke barisnya sendiri. */
 @media (max-width: 52rem) {
   .arow { grid-template-columns: 5.5rem minmax(0, 1fr); }
@@ -709,12 +735,14 @@ nav:has(.projects:empty) { display: none; }
 /* Chip temuan v2 */
 .chip {
   display: inline-flex; align-items: center; font-family: var(--font-data); font-size: 0.6875rem;
-  padding: 0.05rem 0.4rem; border-radius: 999px; white-space: nowrap; font-weight: 500;
+  letter-spacing: 0.03em; padding: 0.1rem 0.35rem; border-radius: var(--radius-chip);
+  white-space: nowrap; font-weight: 500;
 }
-.chip-cwe { background: var(--paper-3); color: var(--ink-2); }
-.chip-owasp { background: var(--accent-soft); color: var(--accent); }
-.chip-vuln { background: var(--crit-soft); color: var(--crit); }
-.chip-hardening { background: var(--paper-3); color: var(--ink-2); }
+/* Chip memakai radius kecil supaya terbaca teknis, bukan seperti pil. */
+.chip-cwe { background: var(--paper-3); color: var(--ink-2); border: 1px solid var(--rule); }
+.chip-owasp { background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; }
+.chip-vuln { background: var(--crit-soft); color: var(--crit); border: 1px solid var(--crit-rule); }
+.chip-hardening { background: var(--netral-soft); color: var(--netral); border: 1px solid var(--netral-rule); }
 .chip-keyakinan { border: 1px solid var(--rule-2); color: var(--muted); }
 .catatan-alat { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: 0 var(--s-1) var(--s-3); }
 

@@ -1158,9 +1158,20 @@
       ? el('ul', { class: 'alist' }, alerts.map((a) => {
         const inf = infoPutusan(a.putusan);
         const idDetail = `ad-${a.id}`;
+        const r = state.hasil.run;
+        const hash = r.hash_prompt?.user_deteksi ?? null;
         const detail = el('div', { class: 'adetail', id: idDetail, hidden: true },
-          el('p', { class: 'alasan', text: a.alasan ?? 'Model tidak memberi alasan untuk alert ini.' }),
-          el('p', { class: 'note', text: [a.rule, a.cwe.join(', ') || null, a.pesan].filter(Boolean).join(' · ') }));
+          el('div', { class: 'alasan-kotak' },
+            el('p', { class: 'alasan-kepala' },
+              ikon(IKON.bolt),
+              el('b', { text: 'Alasan dan analisis model' }),
+              el('span', { class: 'alasan-model', text: labelModelId(r.model_menjawab ?? r.model_diminta) })),
+            el('p', { class: 'alasan', text: a.alasan ?? 'Model tidak memberi alasan untuk alert ini.' })),
+          el('div', { class: 'afakta' },
+            a.rule ? el('span', { class: 'chip chip-rule', text: a.rule }) : null,
+            ...a.cwe.map(tautanCwe),
+            a.pesan ? el('span', { class: 'apesan', text: a.pesan }) : null),
+          hash ? el('p', { class: 'note data', title: 'Sidik jari prompt yang dikirim ke model, dari berkas hasil', text: `prompt ${hash.slice(0, 12)}` }) : null);
         const labelBuka = el('small', { text: 'Lihat alasan' });
         const tombol = el('button', {
           class: 'arow', type: 'button', 'aria-expanded': 'false', 'aria-controls': idDetail,
@@ -1221,6 +1232,17 @@
     }, x.label, ' ', el('span', { class: 'count', text: String(f.filter(x.cocok).length) }))));
   };
 
+  // CWE ditautkan ke definisi resmi MITRE. Ini tautan biasa, bukan permintaan jaringan: CSP
+  // connect-src tetap hanya 'self' dan api.github.com.
+  const tautanCwe = (kode) => {
+    const n = String(kode).match(/^CWE-(\d+)$/);
+    if (!n) return el('span', { class: 'chip chip-cwe', text: String(kode) });
+    return el('a', {
+      class: 'chip chip-cwe', href: `https://cwe.mitre.org/data/definitions/${n[1]}.html`,
+      target: '_blank', rel: 'noopener noreferrer', title: `Buka definisi ${kode} di cwe.mitre.org`,
+    }, String(kode));
+  };
+
   const tautanGithub = (t) => {
     const p = state.proyek;
     const r = state.hasil.run;
@@ -1277,11 +1299,14 @@
           onclick: () => { state.terbuka = terbuka ? null : t.fingerprint; renderTemuanV2(t.fingerprint); },
         },
         el('span', { class: 'fid', text: t.id }),
-        el('span', { class: 'ftitle' }, t.jenis,
-          t.cwe.length ? chip(t.cwe[0], 'chip-cwe') : null,
-          t.kategori_owasp ? chip(t.kategori_owasp, 'chip-owasp') : null,
+        el('span', { class: 'fmeta' },
           chip(t.sifat, t.sifat === 'hardening' ? 'chip-hardening' : 'chip-vuln'),
-          chip(t.keyakinan, 'chip-keyakinan')),
+          ...t.cwe.map((c) => chip(c, 'chip-cwe')),
+          // Taksonomi yang diminta prompt v2 adalah OWASP Top 10:2025; tahunnya ditulis supaya
+          // tidak tertukar dengan daftar 2021 yang kodenya berbeda arti.
+          t.kategori_owasp ? chip(t.kategori_owasp === 'Other' ? 'OWASP lainnya' : `${t.kategori_owasp}:2025`, 'chip-owasp') : null,
+          chip(`keyakinan ${t.keyakinan}`, 'chip-keyakinan')),
+        el('span', { class: 'ftitle', text: t.jenis }),
         el('span', { class: 'floc' }, teksLokasi(t.file, t.baris)),
         putusan
           ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai false positive' })
