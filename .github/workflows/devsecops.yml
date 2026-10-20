@@ -30,7 +30,7 @@ on:
         description: 'Jalur analisis. v1 = gemini-scan (satu panggilan). v2 = llm-scan (deteksi + verifikasi per alert).'
         type: choice
         options: [v1, v2]
-        default: v1
+        default: v2
       vendor_v2:
         description: 'Vendor untuk jalur v2'
         type: choice
@@ -263,8 +263,13 @@ jobs:
   analisis:
     name: Analisis temuan (Sonar dan Gemini)
     needs: [rencana, sonarcloud]
-    # inputs.jalur kosong pada push; jalur v2 mematikan job ini supaya tidak ada dua panggilan berbayar.
-    if: needs.sonarcloud.result == 'success' && inputs.jalur != 'v2'
+    # inputs.jalur kosong pada push; jalur v2 mematikan job ini supaya tidak ada dua panggilan
+    # berbayar. Pengecualian mode=sast: jalur itu tidak memanggil LLM sama sekali dan hanya menarik
+    # temuan Sonar, jadi tetap dijalankan agar dispatch sast tetap menghasilkan sesuatu sejak jalur
+    # bawaan menjadi v2.
+    if: >-
+      needs.sonarcloud.result == 'success'
+      && (inputs.jalur != 'v2' || needs.rencana.outputs.mode == 'sast')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -331,8 +336,11 @@ jobs:
     needs: [rencana, sonarcloud]
     # llm-scan menolak run bila hash tree src/ pada revisi analisis Sonar berbeda dengan commit yang
     # di-checkout, jadi job ini baru boleh jalan setelah analisis commit ini benar-benar ada di server.
+    # mode wajib sast-llm: sejak jalur bawaan menjadi v2, dispatch mode=sast tanpa menyentuh input
+    # jalur akan ikut memenuhi syarat lain di bawah, dan tanpa baris ini justru memanggil LLM.
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
+      && needs.rencana.outputs.mode == 'sast-llm'
       && needs.sonarcloud.result == 'success' && needs.sonarcloud.outputs.analisis_siap == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -475,7 +483,7 @@ jobs:
             echo "Folder keluaran llm-scan untuk vendor $VENDOR tidak ditemukan." >&2
             exit 1
           fi
-          node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --nomor="$GITHUB_RUN_NUMBER" --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
+          node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --nomor="$GITHUB_RUN_NUMBER" --id="$GITHUB_RUN_ID" --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
 
       - name: Unggah output v2
         if: always()
@@ -520,7 +528,7 @@ jobs:
     # menimpa hasil skema 2 dari job analisis-v2. Karena itu job ini dilewati seluruhnya di jalur v2,
     # dan analisis-v2 menjadi satu-satunya penerbit ke branch security-results.
     if: >-
-      always() && inputs.jalur != 'v2'
+      always() && (inputs.jalur != 'v2' || needs.rencana.outputs.mode == 'sast')
       && (needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm')
     runs-on: ubuntu-latest
     timeout-minutes: 10

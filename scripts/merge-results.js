@@ -365,7 +365,9 @@ const mergeV2 = () => {
   const objek = ambilArg('objek') ? path.resolve(ambilArg('objek')) : null;
   if (objek && !fs.existsSync(objek)) throw new Error(`--objek ${objek} tidak ada`);
   const potongan = objek ? ((file, baris) => potonganKode(objek, file, baris)) : null;
-  const hasil = susunHasilV2({ summary, run, nomor, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen, potongan });
+  // --id adalah run id GitHub (bukan run number); dipakai dashboard untuk menarik status job.
+  const idRun = ambilArg('id') ? Number(ambilArg('id')) : null;
+  const hasil = susunHasilV2({ summary, run, nomor, id: idRun, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen, potongan });
   tulisJson(ambilArg('out') || 'results-v2.json', hasil);
   console.log(`results v2: ${hasil.findings.length} temuan, ${hasil.alerts.length} alert, vendor ${hasil.run.vendor}, eksperimen ${eksperimen ? 'ada' : 'tidak'}`);
 };

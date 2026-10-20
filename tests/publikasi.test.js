@@ -104,11 +104,39 @@ test('workflow meneruskan nomor run GitHub ke penyusunan results.json v2', () =>
   const perintah = langkah.slice(0, langkah.indexOf('- name: Unggah output v2'));
   assert.match(perintah, /merge-results\.js merge --v2/);
   assert.match(perintah, /--nomor="\$GITHUB_RUN_NUMBER"/);
+  // id run GitHub berbeda dari nomor run; dashboard memakainya untuk menarik status job.
+  assert.match(perintah, /--id="\$GITHUB_RUN_ID"/);
 });
 
-test('job hasil tidak ikut berjalan di jalur v2, supaya hasil tidak diterbitkan dua kali', () => {
+test('id run v2 terpisah dari nomor, dan ikut ke entri index', () => {
+  const { susunHasilV2, entriIndexV2 } = require('../scripts/llm/results-v2');
+  const sumber = {
+    summary: {
+      vendor: 'google', model_diminta: 'gemini-3.1-pro-preview', kondisi: 'utama',
+      objek_uji: { commit: 'a'.repeat(40), branch: 'feat/prompt-v2', tree_src: 'b'.repeat(40) },
+    },
+    run: { deteksi: {}, verifikasi: [], temuan: [] },
+    alert: [],
+    parseCwe: () => [],
+  };
+  const dengan = susunHasilV2({ ...sumber, nomor: 46, id: 39343292014 });
+  assert.equal(dengan.run.nomor, 46);
+  assert.equal(dengan.run.id, 39343292014);
+  assert.equal(entriIndexV2(dengan, 'a/46.json').id, 39343292014);
+  // Dari CLI tidak ada run id GitHub; id ikut nomor seperti sebelumnya.
+  assert.equal(susunHasilV2({ ...sumber, nomor: 3 }).run.id, 3);
+});
+
+test('job hasil mundur saat analisis-v2 yang menerbitkan, supaya tidak terbit dua kali', () => {
   const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'devsecops.yml'), 'utf8');
-  const job = wf.slice(wf.indexOf('\n  hasil:'));
-  const kondisi = job.slice(0, job.indexOf('runs-on:'));
-  assert.match(kondisi, /inputs\.jalur != 'v2'/);
+  const kondisi = (nama) => {
+    const job = wf.slice(wf.indexOf(`\n  ${nama}:`));
+    return job.slice(0, job.indexOf('runs-on:')).replace(/\s+/g, ' ');
+  };
+  // Jalur v2 berbiaya menerbitkan sendiri; mode sast tidak memanggil LLM dan tetap lewat job hasil.
+  const kecuali = /inputs\.jalur != 'v2' \|\| needs\.rencana\.outputs\.mode == 'sast'/;
+  assert.match(kondisi('hasil'), kecuali);
+  assert.match(kondisi('analisis'), kecuali);
+  // Tanpa syarat mode ini, dispatch mode=sast dengan jalur bawaan v2 akan memanggil LLM.
+  assert.match(kondisi('analisis-v2'), /needs\.rencana\.outputs\.mode == 'sast-llm'/);
 });

@@ -10,6 +10,11 @@
           "dispatch": true
         },
         {
+          "name": "feat/prompt-v2",
+          "dispatch": true,
+          "catatan": "Branch jalur v2 (prompt v2, llm-scan). Analisis SonarCloud yang dipakai berasal dari main karena paket Free hanya menganalisis main; kecocokannya diperiksa lewat hash tree src/."
+        },
+        {
           "name": "feat/security-dashboard",
           "dispatch": true,
           "catatan": "Branch pengembangan dashboard; workflow-nya sudah memuat input mode, model, dan label."

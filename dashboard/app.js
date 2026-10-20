@@ -24,12 +24,24 @@
     return GAGAL_DIHARAPKAN.find((x) => x.branch === branch && x.job === keyNode) ?? null;
   };
 
-  const NODE = [
+  // Pipeline kedua jalur berbeda bentuk: di jalur v2 job "Gabung dan terbitkan hasil" sengaja
+  // dilewati (analisis-v2 menerbitkan sendiri), jadi menampilkannya akan selamanya "menunggu".
+  const NODE_V1 = [
     { key: 'build', nama: 'Build dan uji', job: 'Build dan uji API', hasil: 'build_test' },
     { key: 'sonar', nama: 'SonarCloud', job: 'Analisis SonarCloud', hasil: 'sonarcloud' },
     { key: 'analisis', nama: 'Analisis LLM', job: 'Analisis temuan (Sonar dan Gemini)', hasil: 'analisis' },
     { key: 'hasil', nama: 'Gabung hasil', job: 'Gabung dan terbitkan hasil', hasil: null },
   ];
+  const NODE_V2 = [
+    { key: 'build', nama: 'Build dan uji', job: 'Build dan uji API', hasil: 'build_test' },
+    { key: 'sonar', nama: 'SonarCloud', job: 'Analisis SonarCloud', hasil: 'sonarcloud' },
+    { key: 'analisis', nama: 'Deteksi dan verifikasi', job: 'Analisis LLM v2 (deteksi dan verifikasi)', hasil: 'analisis' },
+  ];
+  const jalurTerpilih = () => $('f-jalur')?.value ?? 'v2';
+  // Saat run sudah dimuat, jalurnya ditentukan isi hasil; saat menyiapkan run baru, oleh form.
+  const jalurAktif = (live) => live?.jalur
+    ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
+  const nodeJalur = (jalur) => (jalur === 'v2' ? NODE_V2 : NODE_V1);
   const TEKS_STATUS = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati' };
   const KUNCI = { token: 'sd.token', tema: 'sd.tema', padat: 'sd.kepadatan', terakhir: 'sd.terakhir', keputusan: 'sd.keputusan.', keputusanV2: 'sd.keputusan.v2.' };
 
@@ -229,7 +241,7 @@
     return { s, durasi: s === 'skip' ? null : lama };
   };
 
-  const jobsDariApi = (daftar) => Object.fromEntries(NODE.map((n) => [n.key, statusJobApi(daftar.find((j) => j.name === n.job))]));
+  const jobsDariApi = (daftar, node = nodeJalur(jalurAktif())) => Object.fromEntries(node.map((n) => [n.key, statusJobApi(daftar.find((j) => j.name === n.job))]));
 
   const sumberLive = {
     projects: () => jsonLokal('projects.json'),
@@ -489,7 +501,7 @@
 
   // ---------- Daftar model ----------
   // dashboard/models.json adalah satu-satunya sumber daftar model, dipakai bersama workflow.
-  // Jalur v2 sengaja dinonaktifkan di UI sampai pemilik repo menjalankan uji cobanya sendiri.
+  // Jalur v2 terbuka sejak uji coba run #46 berhasil; v1 tetap bisa dipilih untuk pembanding.
   const muatModels = async () => {
     try {
       const d = await jsonLokal('models.json');
@@ -498,9 +510,10 @@
       state.models = [];
     }
   };
-  const modelJalur = () => state.models.filter((m) => m.jalur === ($('f-jalur')?.value ?? 'v1'));
+  const modelJalur = () => state.models.filter((m) => m.jalur === jalurTerpilih());
   const renderModels = () => {
     const daftar = modelJalur();
+    $('konfirmasi-v2-field').hidden = jalurTerpilih() !== 'v2';
     const sel = $('f-model');
     const sebelum = sel.value;
     isi(sel, daftar.map((m) => el('option', { value: m.id, selected: m.bawaan ? true : null }, m.label)));
@@ -525,6 +538,10 @@
 
   const modeTerpilih = () => document.querySelector('input[name="mode"]:checked')?.value ?? 'sast-llm';
 
+  // Jalur v2 memanggil API berbayar per alert. Workflow menolak run tanpa input konfirmasi_v2,
+  // dan dashboard tidak boleh mengisinya diam-diam: centang di bawah inilah persetujuan itu.
+  const konfirmasiV2 = () => jalurTerpilih() !== 'v2' || Boolean($('f-konfirmasi-v2')?.checked);
+
   const alasanTidakBisa = () => {
     const st = state.statusProject.get(state.proyek) ?? {};
     if (!state.demo && !state.token) return 'Masukkan token GitHub dulu.';
@@ -534,8 +551,13 @@
     return null;
   };
 
+  // Dipisahkan dari alasanTidakBisa(): ini keadaan form untuk satu run, bukan halangan tingkat
+  // branch atau token. Tanpa pemisahan, panel kosong ikut menjelaskan "belum ada run" dengan
+  // centang yang bahkan tidak terlihat saat drawer tertutup.
+  const alasanFormBelumSiap = () => (konfirmasiV2() ? null : 'Centang persetujuan biaya dulu: jalur v2 memanggil API berbayar.');
+
   const perbaruiTombolJalankan = (pesan, jenis) => {
-    const alasan = alasanTidakBisa();
+    const alasan = alasanTidakBisa() ?? alasanFormBelumSiap();
     const btn = $('run-btn');
     btn.disabled = state.sibuk || Boolean(alasan);
     if (state.sibuk) btn.dataset.busy = ''; else btn.removeAttribute('data-busy');
@@ -641,7 +663,8 @@
       if (!state.demo) aksi = el('button', { class: 'btn btn-sm btn-line', type: 'button', text: 'Buka mode demo', onclick: () => masukDemo() });
     } else {
       judul = 'Belum ada run untuk branch ini';
-      teks = alasanTidakBisa() ?? 'Tekan Jalankan analisis untuk membuat run pertama. Hasilnya muncul di sini setelah job Gabung hasil selesai.';
+      const jobTerakhir = nodeJalur(jalurTerpilih()).slice(-1)[0].nama;
+      teks = alasanTidakBisa() ?? `Tekan Jalankan analisis untuk membuat run pertama. Hasilnya muncul di sini setelah job ${jobTerakhir} selesai.`;
     }
     isi($('findings-body'), el('div', { class: 'state' }, el('h3', { text: judul }), el('p', { text: teks }), aksi));
   };
@@ -650,7 +673,7 @@
   const statusNodeDariHasil = () => {
     const pipeline = state.hasil?.run?.pipeline;
     if (!pipeline) return null;
-    return Object.fromEntries(NODE.map((n) => {
+    return Object.fromEntries(nodeJalur(jalurAktif()).map((n) => {
       if (!n.hasil) return [n.key, { s: 'done', durasi: null }];
       const v = pipeline[n.hasil];
       return [n.key, { s: { success: 'done', skipped: 'skip', failure: 'fail', cancelled: 'fail' }[v] ?? 'wait', durasi: null }];
@@ -658,6 +681,7 @@
   };
 
   const renderPipeline = (live) => {
+    const node = nodeJalur(jalurAktif(live));
     const mode = live?.mode ?? state.hasil?.run?.mode ?? modeTerpilih();
     const status = live?.jobs ?? state.jobs ?? statusNodeDariHasil() ?? {};
     // Skema 2 tidak punya run.gemini; kegagalan LLM terbaca dari status panggilan.
@@ -665,7 +689,7 @@
     $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Pipeline run #${state.hasil.run.nomor}` : 'Status pipeline');
     const total = Object.values(status).reduce((s, j) => s + (Number.isFinite(j?.durasi) ? j.durasi : 0), 0);
     $('pipeline-total').textContent = total ? `total ${durasi(total)}` : '';
-    isi($('nodes'), NODE.map((n) => {
+    isi($('nodes'), node.map((n) => {
       let st = status[n.key] ?? { s: 'wait', durasi: null };
       let teks = TEKS_STATUS[st.s];
       if (n.key === 'analisis' && llmGagal && st.s === 'done') { st = { ...st, s: 'fail' }; teks = 'Analisis LLM gagal'; }
@@ -993,6 +1017,8 @@
     else if (!e.shiftKey && document.activeElement === akhir) { e.preventDefault(); awal.focus(); }
   };
   function bukaDrawer() {
+    // Persetujuan biaya berlaku untuk satu run, jadi tidak boleh terbawa ke pembukaan berikutnya.
+    if ($('f-konfirmasi-v2').checked) { $('f-konfirmasi-v2').checked = false; perbaruiTombolJalankan(); }
     fokusSebelumDrawer = document.activeElement;
     $('drawer').hidden = false;
     $('buka-drawer').setAttribute('aria-expanded', 'true');
@@ -1233,22 +1259,24 @@
 
   const jalankan = async (e) => {
     e.preventDefault();
-    if (state.sibuk || alasanTidakBisa()) return;
+    if (state.sibuk || alasanTidakBisa() || alasanFormBelumSiap()) return;
     const mode = modeTerpilih();
+    const jalur = jalurTerpilih();
     const model = $('f-model').value;
     const p = state.proyek;
     const branch = state.branch.name;
     const pantau = { batal: false };
     state.pantau = pantau;
     state.sibuk = true;
-    const awal = Object.fromEntries(NODE.map((n) => [n.key, { s: 'wait', durasi: null }]));
+    const node = nodeJalur(jalur);
+    const awal = Object.fromEntries(node.map((n) => [n.key, { s: 'wait', durasi: null }]));
     // Begitu analisis berjalan, fokus pindah ke melihat: drawer ditutup supaya pipeline terlihat.
     if (!$('drawer').hidden) tutupDrawer();
-    renderPipeline({ mode, jobs: awal });
+    renderPipeline({ mode, jalur, jobs: awal });
     perbaruiTombolJalankan(state.demo ? 'Simulasi dimulai.' : 'Mengirim permintaan ke GitHub…');
     try {
-      if (state.demo) await simulasi(mode, pantau);
-      else await dispatchLive(p, branch, mode, model, pantau);
+      if (state.demo) await simulasi(mode, jalur, pantau);
+      else await dispatchLive(p, branch, mode, model, pantau, jalur);
     } catch (err) {
       if (pantau.batal) return;
       state.sibuk = false;
@@ -1257,17 +1285,18 @@
     }
   };
 
-  const simulasi = async (mode, pantau) => {
-    const jobs = Object.fromEntries(NODE.map((n) => [n.key, { s: 'wait', durasi: null }]));
-    const lama = { build: 104, sonar: 51, analisis: mode === 'sast' ? 9 : 241, hasil: 22 };
-    for (const n of NODE) {
+  const simulasi = async (mode, jalur, pantau) => {
+    const node = nodeJalur(jalur);
+    const jobs = Object.fromEntries(node.map((n) => [n.key, { s: 'wait', durasi: null }]));
+    const lama = { build: 104, sonar: 51, analisis: mode === 'sast' ? 9 : (jalur === 'v2' ? 219 : 241), hasil: 22 };
+    for (const n of node) {
       if (pantau.batal) return;
       jobs[n.key] = { s: 'run', durasi: null };
-      renderPipeline({ mode, jobs, nomor: null });
+      renderPipeline({ mode, jalur, jobs, nomor: null });
       perbaruiTombolJalankan(`Simulasi: ${n.key === 'analisis' && mode === 'sast' ? 'Ambil temuan Sonar' : n.nama} berjalan.`);
       await tunggu(1100);
       jobs[n.key] = { s: 'done', durasi: lama[n.key] };
-      renderPipeline({ mode, jobs, nomor: null });
+      renderPipeline({ mode, jalur, jobs, nomor: null });
     }
     if (pantau.batal) return;
     state.sibuk = false;
@@ -1277,7 +1306,11 @@
       arsip ? el('button', { class: 'btn-text', type: 'button', text: `Lihat contoh hasil di ${arsip.name}`, onclick: () => { state.branch = arsip; renderFormBranch(); muatIndex(); } }) : null));
   };
 
-  const dispatchLive = async (p, branch, mode, model, pantau) => {
+  // Paket Free SonarCloud hanya menganalisis main, jadi run di branch lain memakai analisis main.
+  // Kecocokannya dijamin pemeriksaan hash tree src/ di workflow, bukan oleh nama branch.
+  const sonarBranchV2 = (branch) => (branch === 'main' ? 'ikut-branch-run' : 'main');
+
+  const dispatchLive = async (p, branch, mode, model, pantau, jalur) => {
     const label = `sd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const dikirim = Date.now();
     // Dispatch memakai workflow di branch tujuan; branch yang belum di-push menghasilkan 422 yang membingungkan.
@@ -1287,7 +1320,13 @@
       if (err.jenis === 'notfound') throw new GhError('invalid', `Branch ${branch} belum ada di GitHub. Push branch itu dulu, lalu jalankan lagi.`);
       throw err;
     }
-    await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs: { mode, model, label } } });
+    const inputs = { mode, model, label, jalur };
+    if (jalur === 'v2') {
+      const m = modelJalur().find((x) => x.id === model);
+      if (!m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
+      Object.assign(inputs, { vendor_v2: m.vendor, konfirmasi_v2: 'JALANKAN', sonar_branch_v2: sonarBranchV2(branch) });
+    }
+    await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
     perbaruiTombolJalankan('Permintaan diterima. Menunggu GitHub membuat run…');
 
     let run = null;
@@ -1302,7 +1341,7 @@
     while (!pantau.batal) {
       const [dataJobs, info] = await Promise.all([gh(`${repoPath(p)}/actions/runs/${run.id}/jobs?per_page=50`), gh(`${repoPath(p)}/actions/runs/${run.id}`)]);
       if (pantau.batal) return;
-      renderPipeline({ mode, jobs: jobsDariApi(dataJobs.jobs || []), nomor: info.run_number });
+      renderPipeline({ mode, jalur, jobs: jobsDariApi(dataJobs.jobs || [], nodeJalur(jalur)), nomor: info.run_number });
       perbaruiTombolJalankan(el('span', {}, linkRun(info.html_url, `Run #${info.run_number}`), info.status === 'completed' ? ' selesai.' : ' berjalan.'));
       if (info.status === 'completed') { run = info; break; }
       await tunggu(JEDA_JOB);
@@ -1340,7 +1379,9 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
-    $('f-jalur').addEventListener('change', renderModels);
+    $('f-jalur').addEventListener('change', () => { renderModels(); perbaruiTombolJalankan(); });
+    // Tanpa pembungkus, objek Event ikut terkirim sebagai argumen `pesan` dan tercetak di hint.
+    $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
     $('buka-drawer').addEventListener('click', bukaDrawer);
     $('drawer-tutup').addEventListener('click', tutupDrawer);

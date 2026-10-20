@@ -117,8 +117,8 @@
               <div class="field">
                 <label for="f-jalur">Jalur analisis</label>
                 <select class="select" id="f-jalur">
-                  <option value="v1" selected>v1 — satu panggilan deteksi</option>
-                  <option value="v2" disabled>v2 — deteksi + verifikasi per alert (menunggu uji coba)</option>
+                  <option value="v2" selected>v2 — deteksi + verifikasi per alert</option>
+                  <option value="v1">v1 — satu panggilan deteksi</option>
                 </select>
               </div>
               <div class="field">
@@ -126,6 +126,13 @@
                 <select class="select" id="f-model"></select>
               </div>
               <p class="go-hint" id="biaya-perkiraan"></p>
+              <div class="field wide" id="konfirmasi-v2-field" hidden>
+                <label class="check" for="f-konfirmasi-v2">
+                  <input type="checkbox" id="f-konfirmasi-v2">
+                  <span>Saya setuju menjalankan panggilan berbayar untuk run ini.</span>
+                </label>
+                <p class="go-hint">Jalur v2 mengirim satu panggilan deteksi ditambah satu panggilan verifikasi per alert SonarCloud. Di branch selain main, analisis Sonar yang dipakai berasal dari main; kecocokannya diperiksa lewat hash tree <code>src/</code> sebelum ada panggilan berbayar.</p>
+              </div>
               <fieldset class="field wide">
                 <legend>Mode</legend>
                 <div class="seg">

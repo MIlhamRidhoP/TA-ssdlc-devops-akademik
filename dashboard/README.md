@@ -134,7 +134,12 @@ artifact. Itu konsekuensi izin dispatch; perlakukan token seperti kata sandi.
 ## Cara kerja dispatch
 
 1. `POST /repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches` dengan input `mode`, `model`,
-   dan `label` unik.
+   `jalur`, dan `label` unik. Jalur bawaan adalah **v2**; untuk v2 dashboard ikut mengirim
+   `vendor_v2` (dari model terpilih), `konfirmasi_v2`, dan `sonar_branch_v2`. `konfirmasi_v2` hanya
+   terisi kalau centang persetujuan biaya di drawer dicentang: jalur v2 memanggil API berbayar, dan
+   persetujuan itu berlaku untuk satu run saja (ikut dikosongkan setiap drawer dibuka).
+   `sonar_branch_v2` diisi `main` untuk branch selain main, karena paket Free SonarCloud hanya
+   menganalisis main; kecocokan datanya diperiksa workflow lewat hash tree `src/`.
 2. Mencari run hasil dispatch lewat `run-name` yang memuat `[label]`.
 3. Memantau `GET .../actions/runs/{id}/jobs` tiap 5 detik sampai run selesai.
 4. Menunggu entri run muncul di `index.json` branch `security-results`, lalu memuat hasilnya.

@@ -74,13 +74,15 @@ const detik = (mulai, selesai) => {
   return Number.isFinite(d) ? Math.round(d) : null;
 };
 
-const susunRun = ({ summary, run, nomor, repo = null, pipeline = null }) => {
+// id dipisahkan dari nomor: di CI keduanya berbeda (id = run id GitHub, nomor = run number), dan
+// dashboard memakai id untuk mengambil status job. Dari CLI id tidak ada, jadi ikut nomor.
+const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null }) => {
   const d = run.deteksi ?? {};
   const panggilan = [d, ...(run.verifikasi ?? []).map((v) => v.metadata ?? {})];
   const hitung = (f) => panggilan.filter(f).length;
   const biaya = panggilan.reduce((s, p) => s + (typeof p.biaya_usd === 'number' ? p.biaya_usd : 0), 0);
   return {
-    id: nomor,
+    id: id ?? nomor,
     nomor,
     repo,
     vendor: summary.vendor,
@@ -233,9 +235,9 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sensitivitas, 
   };
 };
 
-const susunHasilV2 = ({ summary, run, nomor, alert, parseCwe, repo = null, pipeline = null, eksperimen = null, potongan = null }) => ({
+const susunHasilV2 = ({ summary, run, nomor, id = null, alert, parseCwe, repo = null, pipeline = null, eksperimen = null, potongan = null }) => ({
   schema_version: SCHEMA_VERSION,
-  run: susunRun({ summary, run, nomor, repo, pipeline }),
+  run: susunRun({ summary, run, nomor, id, repo, pipeline }),
   alerts: petakanAlert(alert, run.verifikasi),
   findings: petakanTemuan(run.temuan ?? [], parseCwe, potongan),
   ...(eksperimen ? { eksperimen } : {}),
