@@ -118,29 +118,42 @@
           <div class="drawer-tirai" id="drawer-tirai"></div>
           <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="runner-h">
             <div class="drawer-head">
-              <h2 id="runner-h">Jalankan analisis</h2>
+              <div class="drawer-judul">
+                <p class="drawer-eyebrow">Konfigurasi eksekusi pipeline</p>
+                <h2 id="runner-h">Jalankan analisis</h2>
+              </div>
               <button class="btn btn-sm" type="button" id="drawer-tutup">Tutup</button>
             </div>
             <form class="run-form" id="run-form" novalidate>
-              <fieldset class="field">
-                <legend>Mode</legend>
+              <fieldset class="field bagian">
+                <div class="bagian-kepala"><legend><span class="bagian-no">1</span>Mode</legend></div>
                 <div class="seg">
-                  <label><input type="radio" name="mode" value="sast"><span>SAST saja</span></label>
-                  <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span></label>
+                  <label><input type="radio" name="mode" value="sast"><span>SAST saja</span><small>tanpa biaya</small></label>
+                  <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span><small>berbayar</small></label>
                   <label><input type="radio" name="mode" value="dast" disabled><span>DAST</span><small>di luar batasan TA</small></label>
                 </div>
                 <p class="go-hint" id="mode-hint"></p>
               </fieldset>
-              <div class="field">
-                <label for="f-branch">Branch</label>
+              <div class="field bagian">
+                <div class="bagian-kepala">
+                  <label for="f-branch"><span class="bagian-no">2</span>Branch tujuan run</label>
+                  <span class="bagian-meta" id="branch-meta"></span>
+                </div>
                 <select class="select" id="f-branch"></select>
                 <p class="go-hint" id="branch-hint"></p>
               </div>
-              <div class="field" id="model-field">
-                <label for="f-model">Model (vendor)</label>
+              <div class="field bagian" id="model-field">
+                <div class="bagian-kepala">
+                  <label for="f-model"><span class="bagian-no">3</span>Model (vendor)</label>
+                  <span class="bagian-meta">jalur v2</span>
+                </div>
                 <select class="select" id="f-model"></select>
               </div>
-              <div class="field" id="biaya-field">
+              <div class="biaya-kotak" id="biaya-field">
+                <div class="biaya-kepala">
+                  <span class="biaya-judul">Perkiraan biaya satu run</span>
+                  <b class="biaya-angka data" id="biaya-angka"></b>
+                </div>
                 <p class="go-hint" id="biaya-perkiraan"></p>
                 <p class="go-hint go-hint-kecil" id="biaya-sumber"></p>
               </div>
@@ -151,7 +164,8 @@
                 </label>
               </div>
               <div class="go">
-                <button class="btn btn-run" type="submit" id="run-btn"><span class="spin" aria-hidden="true"></span><span id="run-btn-label">Jalankan analisis</span></button>
+                <button class="btn btn-sm" type="button" id="run-batal">Tutup</button>
+                <button class="btn btn-run btn-utama" type="submit" id="run-btn"><span class="spin" aria-hidden="true"></span><span id="run-btn-label">Jalankan analisis</span></button>
                 <p class="go-hint" id="run-hint" role="status" aria-live="polite"></p>
               </div>
             </form>

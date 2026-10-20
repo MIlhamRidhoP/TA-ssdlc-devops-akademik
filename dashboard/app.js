@@ -593,18 +593,27 @@
     const teks = $('biaya-perkiraan');
     const sumber = $('biaya-sumber');
     const m = modelTerpilih();
-    if (!m) { teks.textContent = ''; sumber.textContent = ''; return; }
+    if (!m) { teks.textContent = ''; sumber.textContent = ''; $('biaya-angka').textContent = ''; return; }
     const p = perkiraanBiaya(m, alertTerakhir());
     if (!p) {
+      $('biaya-angka').textContent = '\u2014';
       teks.textContent = 'Biaya model ini belum pernah diukur.';
       sumber.textContent = 'Angka akan muncul setelah ada run yang biayanya tercatat.';
       return;
     }
     const a = p.titik[0];
     const b = p.titik[p.titik.length - 1];
-    if (p.jenis === 'hitung') teks.textContent = `Perkiraan biaya satu run: ${usd(p.usd)} untuk ${p.alert} alert Sonar di branch ini.`;
-    else if (p.jenis === 'satu-titik') teks.textContent = `Perkiraan biaya satu run: ${usd(a.usd)}, diukur pada ${a.alert} alert Sonar.`;
-    else teks.textContent = `Perkiraan biaya satu run: sekitar ${usd(a.usd)} (${a.alert} alert) sampai ${usd(b.usd)} (${b.alert} alert).`;
+    const angka = $('biaya-angka');
+    if (p.jenis === 'hitung') {
+      angka.textContent = usd(p.usd);
+      teks.textContent = `Untuk ${p.alert} alert Sonar di branch tujuan run.`;
+    } else if (p.jenis === 'satu-titik') {
+      angka.textContent = usd(a.usd);
+      teks.textContent = `Diukur pada ${a.alert} alert Sonar; belum ada titik ukur kedua, jadi angkanya belum ikut jumlah alert.`;
+    } else {
+      angka.textContent = `${usd(a.usd)} \u2013 ${usd(b.usd)}`;
+      teks.textContent = `Jumlah alert branch tujuan belum diketahui: rentangnya ${a.alert} sampai ${b.alert} alert.`;
+    }
     sumber.textContent = `Titik ukur: ${p.titik.map((x) => `${usd(x.usd)} pada ${x.alert} alert, ${x.sumber}`).join('; ')}. Perkiraan, bukan tarif.`;
   };
 
@@ -667,6 +676,9 @@
     renderFormBranch();
     renderModels();
     // Keterangan sumber analisis Sonar hanya relevan untuk branch yang memang bisa dijalankan.
+    const bisa = state.proyek.branches.filter(branchSesuai).length;
+    const semua = state.proyek.branches.filter((b) => b.dispatch).length;
+    $('branch-meta').textContent = `${bisa} dari ${semua} bisa dipicu`;
     $('branch-hint').textContent = llm && branchSesuai(branchJalan()) && branchJalan()?.name !== 'main'
       ? 'Analisis Sonar diambil dari main; kecocokan kode diperiksa lewat hash tree src/ sebelum ada panggilan berbayar.'
       : '';
@@ -1912,6 +1924,7 @@
     $('drawer-tutup').addEventListener('click', tutupDrawerAktif);
     $('drawer-tirai').addEventListener('click', tutupDrawerAktif);
     $('temuan-tutup').addEventListener('click', tutupDrawerAktif);
+    $('run-batal').addEventListener('click', tutupDrawerAktif);
     $('drawer-temuan-tirai').addEventListener('click', tutupDrawerAktif);
     $('tab-operasional').addEventListener('click', () => pilihTab('operasional'));
     $('tab-eksperimen').addEventListener('click', () => pilihTab('eksperimen'));
