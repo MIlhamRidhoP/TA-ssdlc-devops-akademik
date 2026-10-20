@@ -125,6 +125,7 @@ panel detail temuan dan alert terbuka, branch tanpa run, dan rail terbuka di lay
 | Sidebar tidak terpotong | untuk tiap elemen sidebar: `scrollIntoView({ block: 'nearest' })` lebih dulu, lalu `getBoundingClientRect` harus berada di dalam viewport **dan** di dalam kotak penggulung terdekatnya, pada lebar 375/768/1280 x tinggi 700/900/1100 x kedua tema, dengan daftar repo dan formulir token dalam keadaan terbuka |
 | Lencana dan status koneksi | bandingkan isi lencana navigasi dengan berkas fixture yang sedang dibaca, dan baris status dengan keadaan demo / live bertoken / live tanpa token |
 | Drawer detail | screenshot **viewport**, bukan `fullPage`; ukur bahwa panel menempel di kanan setinggi layar dan tautan lewati-ke-konten tersembunyi selama drawer terbuka |
+| Pemberitahuan setelah dispatch | cegat dispatch, kembalikan `display_title` yang memuat label yang baru dikirim, lalu periksa bahwa teks hasilnya memuat `<a>` ke `html_url` run itu dengan `rel="noopener noreferrer"` |
 
 Enam jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
 melaporkan cacat yang tidak ada:
