@@ -1,0 +1,208 @@
+{
+  "versi": 1,
+  "tanggal_disusun": "2026-10-20",
+  "catatan": "Panduan umum per CWE untuk lapis 1 rekomendasi perbaikan. Langkah diturunkan dari bagian Potential Mitigations di cwe.mitre.org, atau dari OWASP Cheat Sheet Series bila CWE itu tidak punya bagian tersebut. Bersifat umum: pola perbaikan, bukan analisis atas kode tertentu, dan tidak memuat cara mengeksploitasi. Entri bertanda perlu_dicek butuh ditinjau manusia sebelum dipercaya.",
+  "sumber_diizinkan": ["cwe.mitre.org", "cheatsheetseries.owasp.org"],
+  "cwe": {
+    "CWE-20": {
+      "id": "CWE-20",
+      "judul": "Validasi input yang tidak memadai",
+      "langkah": [
+        "Pakai strategi \"terima yang diketahui baik\": tolak atau ubah input yang tidak persis sesuai spesifikasi, bukan menyaring daftar pola berbahaya.",
+        "Ubah input langsung ke tipe data yang diharapkan, lalu periksa rentang nilainya dan konsistensi antar-field.",
+        "Dekode dan kanonikalisasi input sebelum divalidasi, dan jangan mendekode input yang sama dua kali.",
+        "Ulangi setiap pemeriksaan sisi klien di sisi server, karena pemeriksaan di klien bisa dilewati."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/20.html"]
+    },
+    "CWE-79": {
+      "id": "CWE-79",
+      "judul": "Cross-site scripting: input tidak dinetralkan saat halaman disusun",
+      "langkah": [
+        "Tentukan konteks tempat data akan dipakai (badan HTML, atribut, URI, JavaScript, atau CSS), lalu lakukan encoding keluaran sesuai konteks itu; aturannya berbeda di tiap konteks.",
+        "Pakai pustaka atau framework encoding yang sudah teruji, bukan penyaring buatan sendiri.",
+        "Pakai mekanisme terstruktur yang memisahkan data dari kode, dan validasi input dengan pendekatan \"terima yang diketahui baik\".",
+        "Setel cookie sesi sebagai HttpOnly sebagai pertahanan berlapis, bukan sebagai solusi utuh."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/79.html"]
+    },
+    "CWE-89": {
+      "id": "CWE-89",
+      "judul": "SQL injection: elemen khusus tidak dinetralkan di perintah SQL",
+      "langkah": [
+        "Jalankan query lewat prepared statement, parameterized query, atau stored procedure; jangan merangkai string query secara dinamis.",
+        "Pakai pustaka atau framework akses data yang sudah teruji.",
+        "Jalankan aplikasi dengan hak sekecil mungkin, dan beri akun basis data hanya izin yang benar-benar dibutuhkan.",
+        "Jaga pesan error tetap minim supaya struktur query dan detail internal tidak ikut terungkap."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/89.html"]
+    },
+    "CWE-285": {
+      "id": "CWE-285",
+      "judul": "Otorisasi yang tidak tepat",
+      "langkah": [
+        "Tegakkan pemeriksaan otorisasi di sisi server untuk setiap permintaan, bukan di sisi klien.",
+        "Pisahkan area anonim, biasa, istimewa, dan administratif, lalu tegakkan batasnya dengan kontrol akses berbasis peran.",
+        "Lakukan pemeriksaan sesuai logika bisnis, bukan hanya pemeriksaan umum atas berkas atau baris basis data.",
+        "Pakai pustaka otorisasi yang sudah teruji, dan terapkan kebijakan tolak-secara-bawaan."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/285.html"]
+    },
+    "CWE-307": {
+      "id": "CWE-307",
+      "judul": "Percobaan autentikasi berlebih tidak dibatasi",
+      "langkah": [
+        "Batasi jumlah percobaan masuk yang gagal, misalnya dengan memutus sesi setelah beberapa kegagalan berturut-turut.",
+        "Tambahkan jeda waktu yang meningkat, atau penguncian pada akun yang sedang disasar.",
+        "Minta tugas komputasi tambahan dari sisi pengguna setelah beberapa kegagalan.",
+        "Pakai pustaka autentikasi yang sudah teruji, bukan mekanisme buatan sendiri."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/307.html"]
+    },
+    "CWE-346": {
+      "id": "CWE-346",
+      "judul": "Kesalahan validasi asal permintaan",
+      "langkah": [
+        "Izinkan hanya domain tepercaya yang disebut eksplisit di header Access-Control-Allow-Origin, dan jangan memakai wildcard \"*\".",
+        "Jangan memantulkan kembali isi header Origin tanpa diperiksa lebih dulu.",
+        "Jangan menjadikan header Origin satu-satunya dasar kontrol akses, karena nilainya bisa dipalsukan di luar browser.",
+        "Pasang header lintas-asal hanya pada URL yang memang perlu diakses lintas domain, bukan di seluruh domain."
+      ],
+      "sumber": ["https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html"],
+      "perlu_dicek": true,
+      "alasan_perlu_dicek": "Halaman CWE-346 di cwe.mitre.org tidak punya bagian Potential Mitigations. Langkah di atas diturunkan dari bagian Cross Origin Resource Sharing di OWASP HTML5 Security Cheat Sheet, yang cocok untuk kemunculan CWE-346 di repo ini (alert CORS javascript:S5122) tetapi belum tentu untuk kemunculan CWE-346 bentuk lain."
+    },
+    "CWE-359": {
+      "id": "CWE-359",
+      "judul": "Data pribadi terpapar ke pihak yang tidak berwenang",
+      "langkah": [
+        "Identifikasi regulasi privasi yang berlaku untuk jenis data yang ditangani, lalu ikuti ketentuannya.",
+        "Timbang kebutuhan keamanan dan privasi bersama-sama; penyimpanan yang aksesnya dibatasi tidak otomatis aman.",
+        "Hapus atau samarkan data pribadi dari dokumen dan keluaran yang tidak membutuhkannya.",
+        "Saat dokumen dibuat atau dikonversi oleh program lain, pilih opsi yang tidak menulis metadata sensitif."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/359.html"]
+    },
+    "CWE-362": {
+      "id": "CWE-362",
+      "judul": "Race condition: sumber daya bersama tanpa sinkronisasi memadai",
+      "langkah": [
+        "Lindungi bagian kritis dengan primitif sinkronisasi, dipasang hanya di sekitar kode yang memang perlu.",
+        "Kurangi pemakaian sumber daya bersama supaya jumlah sinkronisasi yang dibutuhkan ikut berkurang.",
+        "Pakai operasi atomik untuk variabel bersama; operasi yang tampak sederhana pun belum tentu atomik.",
+        "Pakai fungsi dan kemampuan yang memang aman untuk banyak alur eksekusi."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/362.html"]
+    },
+    "CWE-367": {
+      "id": "CWE-367",
+      "judul": "TOCTOU: jarak antara pemeriksaan dan pemakaian",
+      "langkah": [
+        "Ambil kunci sebelum pemeriksaan, bukan sesudahnya, supaya sumber daya yang diperiksa sama dengan yang dipakai.",
+        "Hindari memeriksa keadaan sumber daya lalu memakainya sebagai dua langkah terpisah; pemeriksaan seperti itu memberi rasa aman yang palsu.",
+        "Kalau operasinya tidak bisa dibuat atomik, perkecil jarak antara pemeriksaan dan pemakaian.",
+        "Periksa ulang sumber daya setelah dipakai untuk memastikan tindakannya memang selesai dengan benar."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/367.html"]
+    },
+    "CWE-400": {
+      "id": "CWE-400",
+      "judul": "Konsumsi sumber daya tanpa kendali",
+      "langkah": [
+        "Rancang pembatasan laju ke dalam arsitektur, dan batasi sumber daya yang bisa dihabiskan pengguna tak berwenang.",
+        "Tetapkan batas skala yang spesifik pada protokol dan titik masuk.",
+        "Pilih antara menahan pengguna yang melewati ambang atau membatasi laju semua permintaan secara seragam.",
+        "Pastikan setiap kegagalan alokasi sumber daya meninggalkan sistem dalam keadaan aman."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/400.html"]
+    },
+    "CWE-639": {
+      "id": "CWE-639",
+      "judul": "Otorisasi dilewati lewat kunci yang dikendalikan pengguna",
+      "langkah": [
+        "Periksa hak akses pengguna pada setiap permintaan data, bukan hanya saat sesi dibuat.",
+        "Jangan biarkan kunci pencarian dikendalikan penuh dari luar, atau pastikan perubahannya bisa dideteksi.",
+        "Samarkan atau tandatangani kunci sehingga nilai yang sah sulit ditebak dan perubahannya terdeteksi di server."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/639.html"]
+    },
+    "CWE-770": {
+      "id": "CWE-770",
+      "judul": "Alokasi sumber daya tanpa batas atau pembatasan laju",
+      "langkah": [
+        "Tetapkan batas sumber daya per pengguna, dan jelaskan bagaimana sistem berperilaku saat batas itu tercapai.",
+        "Rancang pembatasan laju: catat laju permintaan dan tahan pengguna yang melewati ambang.",
+        "Pakai validasi \"terima yang diketahui baik\" untuk input yang menentukan ukuran atau frekuensi alokasi.",
+        "Buat program gagal secara tertutup dan rapi saat alokasi sumber daya gagal."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/770.html"]
+    },
+    "CWE-799": {
+      "id": "CWE-799",
+      "judul": "Frekuensi interaksi tidak dikendalikan",
+      "langkah": [
+        "Terapkan pembatasan laju di tingkat aplikasi atau infrastruktur untuk mengendalikan laju permintaan.",
+        "Tetapkan batas jumlah pengguna yang boleh mengakses satu sumber daya pada saat bersamaan.",
+        "Batasi umur sesi berdasarkan ketidakaktifan dan batas akhir, serta jaga data per sesi tetap kecil.",
+        "Perhatikan bahwa penguncian pengguna setelah kegagalan dapat dipakai untuk menimbulkan penolakan layanan."
+      ],
+      "sumber": ["https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"],
+      "perlu_dicek": true,
+      "alasan_perlu_dicek": "Halaman CWE-799 di cwe.mitre.org tidak punya bagian Potential Mitigations. Langkah di atas diturunkan dari OWASP Denial of Service Cheat Sheet, yang membahas pembatasan laju tetapi tidak menyebut kuota per pengguna secara eksplisit."
+    },
+    "CWE-862": {
+      "id": "CWE-862",
+      "judul": "Otorisasi tidak ada",
+      "langkah": [
+        "Tegakkan kontrol akses di sisi server untuk setiap halaman dan titik akhir.",
+        "Pisahkan area anonim, biasa, istimewa, dan administratif, lalu tegakkan batasnya dengan kontrol akses berbasis peran.",
+        "Lakukan pemeriksaan sesuai logika bisnis, bukan hanya pemeriksaan umum atas sumber daya.",
+        "Wajibkan sesi terautentikasi dengan izin yang diperlukan, dan jangan menyimpan halaman sensitif di cache."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/862.html"]
+    },
+    "CWE-863": {
+      "id": "CWE-863",
+      "judul": "Otorisasi dilakukan tetapi keliru",
+      "langkah": [
+        "Lakukan pemeriksaan otorisasi berdasarkan logika bisnis, bukan hanya pemeriksaan umum atas berkas atau baris basis data.",
+        "Pisahkan area anonim, biasa, istimewa, dan administratif, lalu tegakkan batasnya dengan kontrol akses berbasis peran.",
+        "Tegakkan kontrol akses di sisi server untuk setiap halaman, dan jangan menyimpan halaman sensitif di cache.",
+        "Pakai pustaka otorisasi yang sudah teruji, dengan kebijakan tolak-secara-bawaan."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/863.html"]
+    },
+    "CWE-915": {
+      "id": "CWE-915",
+      "judul": "Atribut objek yang ditentukan dinamis bisa diubah tanpa kendali",
+      "langkah": [
+        "Daftar-putihkan atribut atau field yang boleh diubah, dan hindari pendekatan daftar-hitam.",
+        "Periksa input eksternal terhadap daftar-putih atribut internal yang memang boleh diubah.",
+        "Susun ulang kode supaya atribut tidak ditentukan secara dinamis, dan sediakan hanya getter dan setter untuk atribut yang dimaksudkan.",
+        "Kalau data diserialkan, pakai penandatanganan atau penyegelan untuk memastikan isinya tidak diubah."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/915.html"]
+    },
+    "CWE-942": {
+      "id": "CWE-942",
+      "judul": "Kebijakan lintas-domain terlalu permisif terhadap domain tak tepercaya",
+      "langkah": [
+        "Tetapkan kebijakan lintas-domain yang ketat, bukan yang permisif.",
+        "Hindari wildcard di kebijakan lintas-domain, karena setiap domain yang cocok otomatis ikut dipercaya.",
+        "Batasi kebijakan hanya pada sumber daya yang memang perlu diakses lintas domain."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/942.html"]
+    },
+    "CWE-1333": {
+      "id": "CWE-1333",
+      "judul": "Ekspresi reguler dengan kompleksitas tidak efisien",
+      "langkah": [
+        "Pakai ekspresi reguler yang tidak bergantung pada backtracking, misalnya dengan menghilangkan kuantifier bersarang.",
+        "Hindari menjalankan ekspresi reguler pada input tak tepercaya; kalau terpaksa, hilangkan backtracking dari polanya.",
+        "Batasi panjang input yang diproses ekspresi reguler.",
+        "Setel batas backtracking atau batas waktu eksekusi pada implementasi regex yang dipakai."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/1333.html"]
+    }
+  }
+}
