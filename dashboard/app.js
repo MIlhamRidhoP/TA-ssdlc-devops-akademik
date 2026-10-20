@@ -480,6 +480,20 @@
   };
 
   // ---------- Project ----------
+  // Branch yang paling berguna dibuka pertama kali adalah yang punya hasil terbaru, bukan branch
+  // pertama di daftar. Index dibaca sekali di sini supaya pilihan itu bisa diambil sebelum render.
+  const branchRunTerbaru = async (p) => {
+    try {
+      const index = await sumber().index(p);
+      state.index = index;
+      const urut = (index.runs ?? []).slice().sort((a, b) => String(b.selesai ?? '').localeCompare(String(a.selesai ?? '')));
+      const nama = urut.find((e) => p.branches.some((b) => b.name === e.branch))?.branch ?? null;
+      return nama;
+    } catch {
+      return null;
+    }
+  };
+
   const muatProjects = async () => {
     $('start').hidden = true;
     $('workspace').hidden = false;
@@ -497,7 +511,8 @@
     state.statusProject = new Map(await Promise.all(state.projects.map(async (p) => [p, await sumber().cekProject(p)])));
     const terakhir = state.demo ? { repo: `${state.projects[0].owner}/${state.projects[0].repo}`, branch: 'eksperimen/seeded' } : bacaJsonLokal(KUNCI.terakhir, {});
     const awal = state.projects.find((p) => `${p.owner}/${p.repo}` === terakhir.repo) ?? state.projects[0];
-    pilihProyek(awal, terakhir.branch);
+    const disukai = terakhir.branch ?? await branchRunTerbaru(awal);
+    pilihProyek(awal, disukai);
   };
 
   const keteranganProject = (p) => {
@@ -1853,6 +1868,15 @@
     } catch (err) {
       if (err.jenis === 'notfound') throw new GhError('invalid', `Branch ${branch} belum ada di GitHub. Push branch itu dulu, lalu jalankan lagi.`);
       throw err;
+    }
+    // Tampilan pindah ke branch tujuan run: yang dipantau dan yang dibaca harus sama, kalau tidak
+    // pengguna menunggu hasil di halaman branch lain.
+    const tujuan = p.branches.find((b) => b.name === branch);
+    if (tujuan && state.branch !== tujuan) {
+      state.branch = tujuan;
+      renderRailBranch();
+      await muatIndex();
+      state.sibuk = true;
     }
     const inputs = { mode, model, label, jalur };
     if (jalur === 'v2') {

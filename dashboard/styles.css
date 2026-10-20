@@ -561,6 +561,9 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
 @media (min-width: 68rem) {
   .body { grid-template-columns: minmax(0, 1fr) 20rem; }
+  /* Kolom kanan jauh lebih pendek daripada kolom utama. Dibiarkan diam, sisanya jadi ruang kosong
+     panjang; menempel membuat riwayat tetap terbaca selama menggulir daftar temuan. */
+  .side { position: sticky; top: var(--s-4); }
   /* Tabel alert dan daftar temuan sama-sama di kolom utama; sidebar menempati kolom kanan
      sepanjang keduanya. Tanpa ini, anak ketiga grid jatuh ke kolom sempit 20rem. */
   #alerts-box, #temuan { grid-column: 1; }
