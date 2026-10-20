@@ -5,14 +5,14 @@
 //
 // Keyword yang didukung: $ref (hanya "#/$defs/<nama>"), $defs, type (string atau array, termasuk "null"),
 // required, properties, additionalProperties (false atau skema), items, enum (boleh memuat null), const,
-// pattern, minimum, minItems, maxItems.
+// pattern, minimum, maximum, minItems, maxItems.
 // Keyword lain ($schema, $id, title, description, format) sengaja diabaikan: dokumentatif, bukan batasan.
 // Kalau skema kelak memakai keyword di luar daftar ini, validasiSkema melempar supaya tidak diam-diam lolos.
 
 const DIDUKUNG = new Set([
   '$schema', '$id', '$ref', '$defs', 'title', 'description', 'format',
   'type', 'required', 'properties', 'additionalProperties', 'items',
-  'enum', 'const', 'pattern', 'minimum', 'minItems', 'maxItems',
+  'enum', 'const', 'pattern', 'minimum', 'maximum', 'minItems', 'maxItems',
 ]);
 
 const jenis = (n) => {
@@ -73,6 +73,9 @@ const telusuri = (skema, data, jalur, akar, galat) => {
   }
   if (typeof data === 'number' && skema.minimum !== undefined && data < skema.minimum) {
     galat.push(`${jalur}: minimum ${skema.minimum}, dapat ${data}`);
+  }
+  if (typeof data === 'number' && skema.maximum !== undefined && data > skema.maximum) {
+    galat.push(`${jalur}: maximum ${skema.maximum}, dapat ${data}`);
   }
 
   if (Array.isArray(data)) {
