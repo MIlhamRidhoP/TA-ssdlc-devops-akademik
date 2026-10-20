@@ -600,7 +600,10 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .pipeline-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); font-size: 0.8125rem; color: var(--muted); }
 .pipeline-h b { color: var(--ink); font-weight: 500; }
 
-.alur { position: relative; display: flex; gap: var(--s-5); align-items: center; overflow-x: auto; padding: var(--s-1) 0; }
+/* Ruang di bawah kartu bukan sisa, melainkan jalur garis. Ketergantungan yang melompati kolom
+   (build-test ke job terbit, misalnya) dirutekan lewat situ, karena menariknya lurus berarti
+   menembus kartu-kartu di antaranya. 1,375rem cukup untuk lengkung turun-naiknya. */
+.alur { position: relative; display: flex; gap: var(--s-5); align-items: center; overflow-x: auto; padding: var(--s-1) 0 1.375rem; }
 .alur[data-arah="tegak"] { flex-direction: column; align-items: stretch; gap: var(--s-4); overflow-x: visible; }
 /* Graf bisa lebih lebar dari panelnya, jadi wadahnya harus bisa difokus dan digulir keyboard. */
 .alur:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-ctl); }
@@ -634,6 +637,12 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .simpul[data-s="fail"] .simpul-status { color: var(--crit); }
 .simpul[data-s="fail-diharapkan"] .simpul-mark { background: var(--high-soft); color: var(--high); }
 .simpul[data-s="fail-diharapkan"] .simpul-status { color: var(--high); }
+/* Job yang belum ada di pipeline saat run itu berjalan. Bukan "menunggu", bukan juga "dilewati":
+   ia tidak pernah punya kesempatan. Diredupkan seperti jalur mati, tetapi TIDAK dicoret, karena
+   tidak ada yang digantikan di sini. */
+.simpul[data-s="absen"] { border-style: dashed; background: transparent; }
+.simpul[data-s="absen"] .simpul-nama { color: var(--muted); }
+.simpul[data-s="absen"] .simpul-mark { background: transparent; border: 1px dashed var(--rule-2); color: var(--muted); }
 /* Jalur yang tidak dipakai tetap digambar: ia bagian dari cerita pipeline, bukan sesuatu yang
    hilang. Dicoret dan diredupkan, bukan dihapus. */
 .simpul.mati { border-style: dashed; background: transparent; }

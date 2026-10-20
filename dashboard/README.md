@@ -144,7 +144,7 @@ npm install playwright @axe-core/playwright
 npx playwright install chromium
 ```
 
-Jalankan dashboard lebih dulu (`python -m http.server 8765` di folder `dashboard/`), lalu
+Jalankan dashboard lebih dulu dengan server keep-alive (lihat jebakan pertama), lalu
 arahkan skrip Playwright ke `http://127.0.0.1:8765/?demo=1#<tampilan>`. Yang perlu diperiksa:
 
 Setiap pemeriksaan dijalankan atas **seluruh kombinasi keadaan x lebar x tema**, bukan satu
@@ -154,19 +154,20 @@ panel detail temuan dan alert terbuka, branch tanpa run, dan rail terbuka di lay
 | Pemeriksaan | Cara |
 |---|---|
 | Error konsol dan respons gagal | kumpulkan event `console` bertipe `error`, `pageerror`, dan `response` berstatus >= 400 (kecualikan `/favicon.ico`, diminta otomatis browser) |
-| Overflow horizontal | `document.documentElement.scrollWidth > clientWidth` di 375, 768, dan 1280 px |
+| Overflow horizontal | `document.documentElement.scrollWidth > clientWidth` di 375, 768, 1280, dan 1920 px |
 | Aksesibilitas | `new AxeBuilder({ page }).analyze()`, tidak boleh ada pelanggaran `serious` atau `critical` |
 | Kontras | rasio dihitung dari piksel sungguhan, ambang 4,5:1 (3:1 untuk teks besar) |
 | Tumpang tindih | uji titik dengan `document.elementFromPoint` pada tiap elemen berteks |
+| Garis graf menembus kartu | susuri tiap `.alur-tepi` dengan `getPointAtLength`, uji titiknya terhadap kotak tiap `.simpul`. Pemeriksaan tumpang tindih di atas tidak melihat SVG |
 | Teks terpotong | `scrollWidth > clientWidth` pada elemen yang `overflow` tersembunyi dan tidak bisa digulir |
 | Font | tidak boleh ada permintaan ke host selain `127.0.0.1` saat halaman dimuat |
 | Isi dispatch | cegat `**api.github.com/**` dengan `page.route`, jawab tiruan, lalu periksa body `POST .../dispatches` untuk tiap kombinasi mode x branch x vendor |
-| Sidebar tidak terpotong | untuk tiap elemen sidebar: `scrollIntoView({ block: 'nearest' })` lebih dulu, lalu `getBoundingClientRect` harus berada di dalam viewport **dan** di dalam kotak penggulung terdekatnya, pada lebar 375/768/1280 x tinggi 700/900/1100 x kedua tema, dengan daftar repo dan formulir token dalam keadaan terbuka |
+| Sidebar tidak terpotong | untuk tiap elemen sidebar: `scrollIntoView({ block: 'nearest' })` lebih dulu, lalu `getBoundingClientRect` harus berada di dalam viewport **dan** di dalam kotak penggulung terdekatnya, pada lebar 375/768/1280/1920 x tinggi 700/900/1100 x kedua tema, dengan daftar repo dan formulir token dalam keadaan terbuka |
 | Lencana dan status koneksi | bandingkan isi lencana navigasi dengan berkas fixture yang sedang dibaca, dan baris status dengan keadaan demo / live bertoken / live tanpa token |
 | Drawer detail | screenshot **viewport**, bukan `fullPage`; ukur bahwa panel menempel di kanan setinggi layar dan tautan lewati-ke-konten tersembunyi selama drawer terbuka |
 | Pemberitahuan setelah dispatch | cegat dispatch, kembalikan `display_title` yang memuat label yang baru dikirim, lalu periksa bahwa teks hasilnya memuat `<a>` ke `html_url` run itu dengan `rel="noopener noreferrer"` |
 
-Delapan jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
+Sepuluh jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
 melaporkan cacat yang tidak ada:
 
 - **Drawer harus dibuka.** Isi `#drawer` tersembunyi saat halaman dimuat, jadi axe maupun
@@ -209,6 +210,13 @@ melaporkan cacat yang tidak ada:
   panel tembus pandang membuat teks terbaca menumpuk, dan itu cacat sungguhan. Jadi yang
   dikecualikan adalah elemen penutup yang punya leluhur sticky **berlatar masif**, bukan semua
   sticky.
+- **Pemeriksaan tumpang tindih hanya melihat elemen berteks.** Ia bekerja dengan `elementFromPoint`
+  pada titik tengah baris teks, jadi sebuah `<path>` SVG yang melintasi kotak kartu tidak pernah
+  terlihat olehnya. Graf alur dengan garis yang melompati tiga kolom lolos seluruh gerbang sampai
+  dilaporkan manusia. Garis graf harus diperiksa tersendiri, dengan menyusuri `getPointAtLength`
+  dan menguji tiap titiknya terhadap kotak kartu.
+- **Gerbang yang berhenti di 1280px tidak melihat layar lebar.** Cacat graf di atas muncul di
+  sekitar 1900px, lebar yang tidak pernah diuji. Lebar uji sekarang 375, 768, 1280, dan 1920.
 - **Latar masif belum tentu terbaca sebagai `rgba()`.** Chromium menyerahkan `backgroundColor`
   dalam notasi yang ditulis CSS-nya, dan berkas ini memakai `oklch()`. Pemeriksaan yang mencari
   pola `rgba(...)` untuk menebak alpha membaca SELURUH latar sebagai tembus pandang, dan

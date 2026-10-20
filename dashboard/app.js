@@ -311,8 +311,14 @@
     const b = Date.parse(selesai);
     return ((Number.isFinite(b) ? b : Date.now()) - a) / 1000;
   };
-  const statusJobApi = (job) => {
-    if (!job) return { s: 'wait', durasi: null, langkah: null, id: null };
+  // `selesai` menandai bahwa daftar job ini sudah final, bukan potret run yang masih berjalan.
+  // Bedanya penting: job yang tidak ada di daftar run yang MASIH BERJALAN memang belum berjalan,
+  // tetapi job yang tidak ada di daftar run yang SUDAH SELESAI tidak akan pernah berjalan — ia
+  // tidak ada di pipeline saat run itu dijalankan. Menampilkan keduanya sebagai "menunggu"
+  // membuat run lama seolah masih punya pekerjaan tersisa; run #54 berjalan sebelum job terbit-v2
+  // ada, dan grafnya menyatakan "Satukan dan terbitkan: menunggu" selamanya.
+  const statusJobApi = (job, selesai = false) => {
+    if (!job) return { s: selesai ? 'absen' : 'wait', durasi: null, langkah: null, id: null };
     const s = bacaStatus(job.status, job.conclusion);
     return {
       s,
@@ -329,7 +335,8 @@
     };
   };
 
-  const jobsDariApi = (daftar, node = nodeJalur(jalurAktif())) => Object.fromEntries(node.map((n) => [n.key, statusJobApi(daftar.find((j) => j.name === n.job))]));
+  const jobsDariApi = (daftar, node = nodeJalur(jalurAktif()), selesai = false) => Object.fromEntries(
+    node.map((n) => [n.key, statusJobApi(daftar.find((j) => j.name === n.job), selesai)]));
 
   const sumberLive = {
     projects: () => jsonLokal('projects.json'),
@@ -366,7 +373,9 @@
     jobs: async (p, runId) => {
       try {
         const data = await gh(`${repoPath(p)}/actions/runs/${enc(runId)}/jobs?per_page=50`);
-        return { jobs: jobsDariApi(data.jobs || []), rekaman: null };
+        // Run yang dibuka dari riwayat sudah selesai: job yang tidak ada di daftarnya memang
+        // tidak pernah ada di pipeline run itu.
+        return { jobs: jobsDariApi(data.jobs || [], undefined, true), rekaman: null };
       } catch {
         return null;
       }
@@ -396,7 +405,7 @@
     jobs: async (p, runId) => {
       const r = await rekamanDemo();
       if (!r || r.run.id !== runId) return null;
-      return { jobs: jobsDariApi(r.jobs), rekaman: r.run };
+      return { jobs: jobsDariApi(r.jobs, undefined, true), rekaman: r.run };
     },
   };
 
@@ -1411,20 +1420,54 @@
 
   // Kolom = kedalaman topologis. Dihitung dari `perlu`, bukan ditulis tangan, supaya menambah
   // ketergantungan di PIPELINE langsung memindahkan nodenya.
-  const kolomPipeline = () => {
-    const dalam = new Map();
+  // Kedalaman simpul: jalur terpanjang dari simpul tanpa ketergantungan. Dipakai bersama oleh tata
+  // letak kolom dan penggambar garis, supaya keduanya tidak bisa berbeda pendapat soal simpul mana
+  // ada di kolom mana.
+  const DALAM = (() => {
+    const d = new Map();
     const hitung = (n) => {
-      if (dalam.has(n.key)) return dalam.get(n.key);
-      const d = n.perlu.length ? 1 + Math.max(...n.perlu.map((k) => hitung(PIPELINE.find((x) => x.key === k)))) : 0;
-      dalam.set(n.key, d);
-      return d;
+      if (d.has(n.key)) return d.get(n.key);
+      const v = n.perlu.length ? 1 + Math.max(...n.perlu.map((k) => hitung(PIPELINE.find((x) => x.key === k)))) : 0;
+      d.set(n.key, v);
+      return v;
     };
     PIPELINE.forEach(hitung);
-    const maks = Math.max(...dalam.values());
-    return Array.from({ length: maks + 1 }, (_, i) => PIPELINE.filter((n) => dalam.get(n.key) === i));
+    return d;
+  })();
+  const dalamSimpul = (key) => DALAM.get(key) ?? 0;
+
+  const kolomPipeline = () => {
+    const maks = Math.max(...DALAM.values());
+    return Array.from({ length: maks + 1 }, (_, i) => PIPELINE.filter((n) => dalamSimpul(n.key) === i));
   };
 
-  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi' };
+  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi', absen: 'tidak ada di run ini' };
+
+  // Ketergantungan yang perlu DIGAMBAR, bukan yang tercatat. `perlu` menyalin `needs` di workflow
+  // apa adanya, dan `needs` memuat banyak ketergantungan yang sudah tersirat: `terbit-v2` menunggu
+  // rencana, sonar, dan analisis-v2, padahal analisis-v2 sendiri sudah menunggu rencana dan sonar.
+  // Menggambar ketiganya berarti menarik dua garis sepanjang tiga kolom yang menembus kartu di
+  // antaranya, tanpa menambah satu pun keterangan baru.
+  //
+  // Yang dihapus hanyalah garisnya. Data `perlu` tidak disentuh, jadi tests/pipeline.test.js tetap
+  // membandingkannya utuh dengan `needs` di workflow.
+  const tepiLangsung = (n) => {
+    const simpul = new Map(PIPELINE.map((x) => [x.key, x]));
+    // Apakah `dari` sudah bisa dicapai dari `lewat` tanpa melalui garis langsung ini?
+    const terjangkau = (awal, sasaran) => {
+      const antre = [...(simpul.get(awal)?.perlu ?? [])];
+      const sudah = new Set();
+      while (antre.length) {
+        const k = antre.shift();
+        if (k === sasaran) return true;
+        if (sudah.has(k)) continue;
+        sudah.add(k);
+        antre.push(...(simpul.get(k)?.perlu ?? []));
+      }
+      return false;
+    };
+    return n.perlu.filter((k) => !n.perlu.some((lain) => lain !== k && terjangkau(lain, k)));
+  };
 
   // Garis antar node digambar sebagai SVG di belakang kartunya, setelah tata letak selesai, supaya
   // posisinya mengikuti pembungkusan dan lebar layar apa pun.
@@ -1441,17 +1484,29 @@
     svg.setAttribute('width', String(Math.max(induk.width, 1)));
     svg.setAttribute('height', String(Math.max(induk.height, 1)));
     const tegak = kotak.dataset.arah === 'tegak';
+    // Tepi bawah kartu terendah. Jalur garis lompat berada tepat di bawahnya, di dalam padding
+    // yang disediakan .alur, jadi ia tidak pernah terpotong wadahnya.
+    const bawahTerjauh = Math.max(0, ...[...titik.values()].map((t) => t.bawah));
     const anak = [];
     for (const n of PIPELINE) {
       const ke = titik.get(n.key);
       if (!ke) continue;
-      for (const kKey of n.perlu) {
+      for (const kKey of tepiLangsung(n)) {
         const dari = titik.get(kKey);
         if (!dari) continue;
         const p = document.createElementNS(NS, 'path');
+        // Garis yang melompati kolom tidak bisa ditarik lurus: di antaranya ada kartu, dan garis
+        // yang menembus kartu membuat graf terbaca sebagai kusut, bukan sebagai urutan. Garis
+        // seperti itu diturunkan ke jalur di bawah kartu, menyusur, lalu naik ke sasarannya.
+        const melompat = !tegak && (dalamSimpul(n.key) - dalamSimpul(kKey)) > 1;
+        const jalur = bawahTerjauh + 9;
         const d = tegak
           ? `M ${dari.tengahX} ${dari.bawah} C ${dari.tengahX} ${dari.bawah + 14}, ${ke.tengahX} ${ke.atas - 14}, ${ke.tengahX} ${ke.atas}`
-          : `M ${dari.kanan} ${dari.tengahY} C ${dari.kanan + 18} ${dari.tengahY}, ${ke.kiri - 18} ${ke.tengahY}, ${ke.kiri} ${ke.tengahY}`;
+          : (melompat
+            ? `M ${dari.kanan} ${dari.tengahY} C ${dari.kanan + 14} ${dari.tengahY}, ${dari.kanan + 14} ${jalur}, ${dari.kanan + 28} ${jalur}`
+              + ` L ${ke.kiri - 28} ${jalur}`
+              + ` C ${ke.kiri - 14} ${jalur}, ${ke.kiri - 14} ${ke.tengahY}, ${ke.kiri} ${ke.tengahY}`
+            : `M ${dari.kanan} ${dari.tengahY} C ${dari.kanan + 18} ${dari.tengahY}, ${ke.kiri - 18} ${ke.tengahY}, ${ke.kiri} ${ke.tengahY}`);
         p.setAttribute('d', d);
         p.setAttribute('class', `alur-tepi${simpulAktif(n, jalurAktif()) && simpulAktif(PIPELINE.find((x) => x.key === kKey), jalurAktif()) ? '' : ' mati'}`);
         anak.push(p);
@@ -1499,7 +1554,7 @@
       const bisaDibuka = aktif && Array.isArray(langkah) && langkah.length > 0;
       // Node yang belum berjalan hanya lingkaran kosong. Tanda centang di sana terbaca sebagai
       // "sudah selesai" padahal statusnya menunggu.
-      const TANDA = { fail: IKON.silang, 'fail-diharapkan': IKON.seru, skip: IKON.minus, done: IKON.cek, run: IKON.titik };
+      const TANDA = { fail: IKON.silang, 'fail-diharapkan': IKON.seru, skip: IKON.minus, done: IKON.cek, run: IKON.titik, absen: IKON.minus };
       const tanda = TANDA[st.s] ?? null;
       const isiSimpul = [
         el('span', { class: 'simpul-mark', 'aria-hidden': 'true' }, tanda ? ikon(tanda) : null),

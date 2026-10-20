@@ -122,7 +122,7 @@ node --test $(git ls-files 'tests/*.test.js' | grep -vE 'api|cuti|khs|profil|lis
 
 Di luar repo: gerbang tampilan, kontras, aksesibilitas, sidebar, drawer, dan dispatch dijalankan
 dengan Playwright dan axe-core yang **sengaja tidak dijadikan dependensi repo**. Cara menyusunnya
-beserta delapan jebakan yang pernah meloloskan cacat nyata ada di `dashboard/README.md` bagian
+beserta sepuluh jebakan yang pernah meloloskan cacat nyata ada di `dashboard/README.md` bagian
 "Pemeriksaan". Menyalin repo ke mesin lain berarti menulis ulang perkakas itu dari tabel di sana.
 
 Dashboard dibuka lewat server lokal, bukan `file://`:
