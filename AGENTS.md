@@ -90,11 +90,17 @@ npm test                                   # node --test
 node --check dashboard/app.js
 cd prompts/v2 && sha256sum -c HASHES.txt            # harus 8/8 OK
 cd prompts/remediasi-v1 && sha256sum -c HASHES.txt  # harus 3/3 OK
-node scripts/validasi-skema.js             # fixture v2 terhadap skema
+node --test tests/results-v2.test.js       # fixture v2 terhadap skema v2, fixture v1 terhadap skema v1
 ```
 
 `sha256sum -c` hanya separuh aturannya; separuh lainnya, yaitu tidak ada berkas di luar daftar,
 diperiksa `tests/kunci-prompt.test.js` dan ikut berjalan di `npm test`. Lihat batas keras nomor 5.
+
+`scripts/validasi-skema.js` **bukan** CLI: ia cuma mengekspor `validasiSkema` dan tidak punya blok
+main, jadi `node scripts/validasi-skema.js` keluar 0 tanpa memeriksa satu berkas pun. Baris itu
+pernah tercantum di sini dan membuat validasi fixture tampak sudah dijalankan padahal belum. Yang
+benar-benar memvalidasi adalah berkas tes yang memanggilnya, dan `tests/results-v2.test.js`
+mencakup fixture v2 maupun v1 sekaligus.
 
 Catatan jujur tentang `npm test`: sebagian berkas tes memanggil server API lewat HTTP dan **gagal
 dengan `ECONNREFUSED` kalau server tidak jalan**. Itu keadaan lingkungan, bukan cacat kode. Untuk
