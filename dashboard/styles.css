@@ -1022,6 +1022,9 @@ a.chip-cwe { text-decoration: none; }
 }
 .panduan-cek .icon { width: 0.875rem; height: 0.875rem; margin-top: 0.1rem; flex: none; }
 .panduan-kosong { background: transparent; border-style: dashed; }
+/* Catatan verifikasi: netral, sejajar dengan baris sumber. Entri yang sudah diperiksa manusia
+   tidak boleh terlihat seperti peringatan. */
+.panduan-catatan { margin: 0; font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
 
 /* Lapis 2: saran dari model. Dibedakan dari panduan lapis 1 lewat garis tepi beraksen, supaya
    batas antara "pola baku yang bersumber" dan "saran yang belum diverifikasi" terlihat sekilas. */

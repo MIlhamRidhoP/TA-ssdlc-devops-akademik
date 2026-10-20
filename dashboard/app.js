@@ -771,7 +771,11 @@
         g.sumber.map((u) => el('a', {
           href: u, target: '_blank', rel: 'noopener noreferrer',
           'aria-label': `Buka sumber panduan ${g.id} di ${new URL(u).hostname}, tab baru`,
-        }, new URL(u).hostname, ikon(IKON.luar)))));
+        }, new URL(u).hostname, ikon(IKON.luar)))),
+      // Entri yang sudah diverifikasi manusia mendapat catatan netral, bukan peringatan: warna
+      // amber dipakai khusus untuk yang memang masih perlu ditinjau, dan kalau dipakai untuk
+      // keduanya ia berhenti berarti apa-apa.
+      g.catatan_verifikasi ? el('p', { class: 'panduan-catatan', text: g.catatan_verifikasi }) : null);
   };
 
   // Saran lapis 2. Hanya digambar kalau field-nya memang ada di berkas hasil: run yang tidak

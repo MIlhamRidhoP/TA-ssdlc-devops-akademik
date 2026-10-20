@@ -68,13 +68,26 @@ test('setiap entri CWE berbentuk benar', () => {
     assert.equal(new Set(e.langkah).size, e.langkah.length, `${kunci}: ada langkah yang terduplikasi`);
 
     assert.ok(Array.isArray(e.sumber) && e.sumber.length >= 1, `${kunci}: tanpa sumber`);
-    // perlu_dicek wajib disertai alasannya; tanda tanpa keterangan tidak menolong siapa pun.
+    // Tiga keadaan, masing-masing dengan keterangan wajibnya sendiri:
+    //   perlu_dicek tidak ada   -> entri biasa, sumbernya langsung dari MITRE
+    //   perlu_dicek true        -> belum ditinjau manusia, wajib menyebut alasannya
+    //   perlu_dicek false       -> sudah ditinjau manusia, wajib menyebut hasil verifikasinya
+    // Tanda tanpa keterangan tidak menolong siapa pun, ke arah mana pun.
     if ('perlu_dicek' in e) {
-      assert.equal(e.perlu_dicek, true, `${kunci}: perlu_dicek hanya boleh bernilai true atau tidak ada`);
-      assert.equal(typeof e.alasan_perlu_dicek, 'string', `${kunci}: perlu_dicek tanpa alasan`);
-      assert.ok(e.alasan_perlu_dicek.length > 40, `${kunci}: alasan perlu_dicek terlalu pendek`);
+      assert.equal(typeof e.perlu_dicek, 'boolean', `${kunci}: perlu_dicek harus boolean atau tidak ada`);
+      if (e.perlu_dicek) {
+        assert.equal(typeof e.alasan_perlu_dicek, 'string', `${kunci}: perlu_dicek true tanpa alasan`);
+        assert.ok(e.alasan_perlu_dicek.length > 40, `${kunci}: alasan perlu_dicek terlalu pendek`);
+        assert.ok(!('catatan_verifikasi' in e), `${kunci}: perlu_dicek true tidak boleh membawa catatan_verifikasi`);
+      } else {
+        assert.equal(typeof e.catatan_verifikasi, 'string', `${kunci}: perlu_dicek false tanpa catatan_verifikasi`);
+        assert.ok(e.catatan_verifikasi.length > 40, `${kunci}: catatan_verifikasi terlalu pendek`);
+        assert.match(e.catatan_verifikasi, /Diverifikasi manual \d{4}-\d{2}-\d{2}/, `${kunci}: catatan_verifikasi tidak menyebut tanggal verifikasinya`);
+        assert.ok(!('alasan_perlu_dicek' in e), `${kunci}: perlu_dicek false masih membawa alasan_perlu_dicek`);
+      }
     } else {
       assert.ok(!('alasan_perlu_dicek' in e), `${kunci}: ada alasan_perlu_dicek tanpa perlu_dicek`);
+      assert.ok(!('catatan_verifikasi' in e), `${kunci}: ada catatan_verifikasi tanpa perlu_dicek`);
     }
   }
 });
@@ -92,6 +105,19 @@ test('seluruh sumber berasal dari domain yang diizinkan dan memakai https', () =
         assert.equal(url.pathname, `/data/definitions/${n}.html`, `${kunci}: tautan MITRE menunjuk halaman lain: ${u}`);
       }
     }
+  }
+});
+
+test('entri yang sumbernya bukan MITRE selalu menerangkan sebabnya', () => {
+  // Halaman MITRE tanpa Potential Mitigations adalah satu-satunya alasan memakai OWASP. Entri
+  // seperti itu harus menyatakan keadaan itu, entah sebagai alasan yang belum ditinjau atau
+  // sebagai hasil verifikasi manual.
+  for (const [kunci, e] of Object.entries(peta.cwe)) {
+    const adaMitre = e.sumber.some((u) => new URL(u).hostname === 'cwe.mitre.org');
+    if (adaMitre) continue;
+    const keterangan = e.alasan_perlu_dicek ?? e.catatan_verifikasi;
+    assert.equal(typeof keterangan, 'string', `${kunci}: memakai sumber non-MITRE tanpa keterangan`);
+    assert.match(keterangan, /Potential Mitigations/, `${kunci}: keterangan tidak menyebut sebab tidak memakai MITRE`);
   }
 });
 

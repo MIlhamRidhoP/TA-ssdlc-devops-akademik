@@ -335,6 +335,13 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
   itu apa adanya, dan setiap entri membawa tautan sumbernya sehingga bisa diperiksa sendiri.
   Field `rekomendasi` di berkas hasil tetap kosong: prompt eksperimen tidak memintanya dan tidak
   boleh diubah.
+- **Entri yang sumbernya bukan MITRE selalu menerangkan sebabnya**, karena satu-satunya alasan
+  memakai OWASP adalah halaman CWE-nya tidak punya bagian Potential Mitigations. Ada dua penanda,
+  dan dashboard membedakan keduanya dengan sengaja: `perlu_dicek: true` berarti belum ditinjau
+  manusia dan tampil sebagai peringatan amber beserta `alasan_perlu_dicek`; `perlu_dicek: false`
+  berarti sudah ditinjau dan tampil sebagai catatan kecil netral di bawah baris sumber, berisi
+  `catatan_verifikasi` lengkap dengan tanggalnya. Memakai warna peringatan untuk keduanya akan
+  membuat warna itu berhenti berarti apa-apa.
 - **Status alert berasal dari putusan verifikasi model** (`true_positive`, `false_positive`,
   `uncertain`), bukan dari pencocokan file, baris, dan CWE seperti skema 1. Putusan yang tidak sah
   (panggilan gagal, parse gagal, enum tidak valid) ditampilkan sebagai "Tanpa putusan", tidak ditebak.

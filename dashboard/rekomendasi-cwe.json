@@ -1,7 +1,7 @@
 {
   "versi": 1,
   "tanggal_disusun": "2026-10-20",
-  "catatan": "Panduan umum per CWE untuk lapis 1 rekomendasi perbaikan. Langkah diturunkan dari bagian Potential Mitigations di cwe.mitre.org, atau dari OWASP Cheat Sheet Series bila CWE itu tidak punya bagian tersebut. Bersifat umum: pola perbaikan, bukan analisis atas kode tertentu, dan tidak memuat cara mengeksploitasi. Entri bertanda perlu_dicek butuh ditinjau manusia sebelum dipercaya.",
+  "catatan": "Panduan umum per CWE untuk lapis 1 rekomendasi perbaikan. Langkah diturunkan dari bagian Potential Mitigations di cwe.mitre.org, atau dari OWASP Cheat Sheet Series bila CWE itu tidak punya bagian tersebut. Bersifat umum: pola perbaikan, bukan analisis atas kode tertentu, dan tidak memuat cara mengeksploitasi. Entri dengan perlu_dicek true belum ditinjau manusia dan membawa alasan_perlu_dicek. Entri dengan perlu_dicek false sudah ditinjau dan membawa catatan_verifikasi berisi hasilnya.",
   "sumber_diizinkan": ["cwe.mitre.org", "cheatsheetseries.owasp.org"],
   "cwe": {
     "CWE-20": {
@@ -61,7 +61,7 @@
     },
     "CWE-346": {
       "id": "CWE-346",
-      "judul": "Kesalahan validasi asal permintaan",
+      "judul": "Kesalahan validasi asal permintaan (konteks CORS)",
       "langkah": [
         "Izinkan hanya domain tepercaya yang disebut eksplisit di header Access-Control-Allow-Origin, dan jangan memakai wildcard \"*\".",
         "Jangan memantulkan kembali isi header Origin tanpa diperiksa lebih dulu.",
@@ -69,8 +69,8 @@
         "Pasang header lintas-asal hanya pada URL yang memang perlu diakses lintas domain, bukan di seluruh domain."
       ],
       "sumber": ["https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html"],
-      "perlu_dicek": true,
-      "alasan_perlu_dicek": "Halaman CWE-346 di cwe.mitre.org tidak punya bagian Potential Mitigations. Langkah di atas diturunkan dari bagian Cross Origin Resource Sharing di OWASP HTML5 Security Cheat Sheet, yang cocok untuk kemunculan CWE-346 di repo ini (alert CORS javascript:S5122) tetapi belum tentu untuk kemunculan CWE-346 bentuk lain."
+      "perlu_dicek": false,
+      "catatan_verifikasi": "Diverifikasi manual 2026-10-20. Halaman MITRE tanpa Potential Mitigations; langkah dicocokkan dengan bagian Cross Origin Resource Sharing di OWASP HTML5 Security Cheat Sheet. Cakupan khusus CORS, tidak mencakup CWE-940 dan CWE-1385."
     },
     "CWE-359": {
       "id": "CWE-359",
@@ -147,8 +147,8 @@
         "Perhatikan bahwa penguncian pengguna setelah kegagalan dapat dipakai untuk menimbulkan penolakan layanan."
       ],
       "sumber": ["https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"],
-      "perlu_dicek": true,
-      "alasan_perlu_dicek": "Halaman CWE-799 di cwe.mitre.org tidak punya bagian Potential Mitigations. Langkah di atas diturunkan dari OWASP Denial of Service Cheat Sheet, yang membahas pembatasan laju tetapi tidak menyebut kuota per pengguna secara eksplisit."
+      "perlu_dicek": false,
+      "catatan_verifikasi": "Diverifikasi manual 2026-10-20. Halaman MITRE tanpa Potential Mitigations; langkah dicocokkan dengan bagian Rate limiting, Session, dan User lockout di OWASP Denial of Service Cheat Sheet."
     },
     "CWE-862": {
       "id": "CWE-862",
