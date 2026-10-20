@@ -3,6 +3,13 @@
 //
 // Pemakaian:
 //   node scripts/llm-scan.js --vendor=google|anthropic|openai --kondisi=utama|sonar_di_deteksi|komentar_menyesatkan
+//                            [--skenario=B|C]
+//
+// Skenario adalah sumbu TERPISAH dari kondisi. Kondisi adalah variabel eksperimen TA (apa yang
+// diberikan ke model); skenario adalah bentuk analisisnya:
+//   B (bawaan) = deteksi LLM + verifikasi tiap alert SonarCloud. Perilaku yang sudah ada.
+//   C          = deteksi LLM saja. Tidak ada panggilan verifikasi dan tidak ada alert di hasil.
+// Skenario A tidak punya panggilan LLM sama sekali, jadi tidak pernah sampai ke skrip ini.
 //                            --objek=<worktree commit yang dianalisis> [--runs=N]
 //
 //   node scripts/llm-scan.js ... --sonar-beku=<file>     alert Sonar dari file beku (wajib untuk data eksperimen)
@@ -65,6 +72,9 @@ const periksaObjek = (dir) => {
 };
 
 const BRANCH_FRAMING = 'eksperimen/framing';
+// Skenario A tidak memanggil LLM, jadi bukan urusan skrip ini; yang sah di sini hanya B dan C.
+const SKENARIO_ALAT = ['B', 'C'];
+
 const periksaBranchKondisi = (kondisi, branch) => {
   if (kondisi === 'komentar_menyesatkan' && branch !== BRANCH_FRAMING) {
     throw new Error(`Kondisi komentar_menyesatkan harus dijalankan pada branch ${BRANCH_FRAMING}, bukan ${branch}. Run ditolak`);
@@ -158,7 +168,7 @@ const kirim = (konteks, prompt, tugas) => panggilDenganUlang({
 class RunDibuang extends Error {}
 
 const jalankanSatuRun = async (konteks, n) => {
-  const { template, kode, alert, kondisi } = konteks;
+  const { template, kode, alert, kondisi, skenario } = konteks;
   const mentah = { deteksi: null, verifikasi: {} };
   const promptDeteksi = render.rakitPrompt({
     template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks: kondisi === 'sonar_di_deteksi' ? konteks.sonarTeks : null,
@@ -168,7 +178,7 @@ const jalankanSatuRun = async (konteks, n) => {
   mentah.deteksi = hasilDeteksi.percobaan;
   const validDeteksi = hasilDeteksi.status === 'ok' ? validasiDeteksi(hasilDeteksi.teks, kode.file) : { parse_ok: false, temuan: [] };
   const catatan = {
-    versi_prompt: render.VERSI_PROMPT, kondisi, vendor: konteks.vendor, model_diminta: konteks.model, run: n,
+    versi_prompt: render.VERSI_PROMPT, kondisi, skenario, vendor: konteks.vendor, model_diminta: konteks.model, run: n,
     commit_objek_uji: konteks.objek.commit, branch_objek_uji: konteks.objek.branch, tree_src_objek_uji: konteks.objek.tree_src,
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     sumber_sonar: konteks.sumberSonar, sonar_beku: konteks.infoBeku,
@@ -188,7 +198,9 @@ const jalankanSatuRun = async (konteks, n) => {
   }
   console.log(`  deteksi ${hasilDeteksi.status}, parse_ok ${validDeteksi.parse_ok}, ${validDeteksi.temuan.length} temuan`);
 
-  if (kondisi === 'utama') {
+  // Skenario C berhenti di deteksi: tidak ada panggilan verifikasi, dan karena itu tidak ada
+  // putusan alert sama sekali. Prompt deteksinya sendiri tidak berubah sedikit pun dari skenario B.
+  if (kondisi === 'utama' && skenario !== 'C') {
     for (const a of alert) {
       const promptVer = render.rakitPrompt({ template, kondisi, tugas: 'verifikasi', kodeSumber: kode.teks, alertTeks: a.teks });
       console.log(`Run ${n}: verifikasi ${a.id}...`);
@@ -265,10 +277,10 @@ const bekukanSonar = async (objek) => {
 };
 
 // --kering: rakit semua prompt satu run dan tampilkan hash-nya tanpa memanggil API LLM dan tanpa menulis file.
-const runKering = ({ template, kondisi, kode, alert, sonarTeks }) => {
+const runKering = ({ template, kondisi, kode, alert, sonarTeks, skenario = 'B' }) => {
   const deteksi = render.rakitPrompt({ template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks: kondisi === 'sonar_di_deteksi' ? sonarTeks : null });
   const hasil = [{ tugas: 'deteksi', id_alert: null, ...deteksi.hash }];
-  if (kondisi === 'utama') {
+  if (kondisi === 'utama' && skenario !== 'C') {
     for (const a of alert) {
       const v = render.rakitPrompt({ template, kondisi, tugas: 'verifikasi', kodeSumber: kode.teks, alertTeks: a.teks });
       hasil.push({ tugas: 'verifikasi', id_alert: a.id, ...v.hash });
@@ -289,6 +301,10 @@ const main = async () => {
   const kering = process.argv.includes('--kering');
   const vendor = ambilArg('vendor');
   const kondisi = ambilArg('kondisi');
+  // Bawaan B: dispatch dan pemanggilan lama yang tidak menyebut skenario tetap berperilaku persis
+  // seperti sebelumnya.
+  const skenario = (ambilArg('skenario') ?? 'B').toUpperCase();
+  if (!SKENARIO_ALAT.includes(skenario)) throw new Error(`--skenario harus ${SKENARIO_ALAT.join(' atau ')}`);
   if (!VENDOR[vendor]) throw new Error('--vendor harus google, anthropic, atau openai');
   if (!render.KONDISI.includes(kondisi)) throw new Error(`--kondisi harus ${render.KONDISI.join(', ')}`);
   if (!kering && !process.env[KUNCI_API[vendor]]) throw new Error(`${KUNCI_API[vendor]} tidak diset`);
@@ -319,7 +335,7 @@ const main = async () => {
     if (infoBeku) console.log(`  file beku ${infoBeku.path} (SHA-256 ${infoBeku.sha256_file}, revisi ${infoBeku.revisi})`);
     console.log(`  hash kode_sumber ${render.sha256(kode.teks)}`);
     if (sonarTeks !== null) console.log(`  hash laporan Sonar ${render.sha256(sonarTeks)}, ${alert.length} alert`);
-    for (const h of runKering({ template, kondisi, kode, alert, sonarTeks })) {
+    for (const h of runKering({ template, kondisi, kode, alert, sonarTeks, skenario })) {
       console.log(`  ${(h.id_alert ?? h.tugas).padEnd(9)} prompt_user_kanonik ${h.prompt_user_kanonik}`);
     }
     const kodeKering = infoKodeAlat(ROOT);
@@ -339,7 +355,7 @@ const main = async () => {
   const sidik = bentukSidik({
     versiPrompt: render.VERSI_PROMPT, vendor, model, kondisi, objek, sumberSonar, infoBeku,
     hashKodeSumber: render.sha256(kode.teks), hashLaporanSonar, hashPrompt: hashFilePrompt(render.PROMPT_DIR),
-    hashKering: runKering({ template, kondisi, kode, alert, sonarTeks }), pengaturan, sdk, kodeAlat,
+    hashKering: runKering({ template, kondisi, kode, alert, sonarTeks, skenario }), pengaturan, sdk, kodeAlat,
   });
 
   // Folder baru, atau folder lama untuk run berselang-seling (--lanjut). Folder lama hanya diterima kalau sidiknya
@@ -375,19 +391,19 @@ const main = async () => {
     fs.writeFileSync(path.join(folder, 'prompt-user-deteksi.txt'), contoh.user, 'utf8');
   }
   const konteks = {
-    vendor, model, kondisi, objek, kode, template, alert, sonarTeks, folder, sdk,
+    vendor, model, kondisi, skenario, objek, kode, template, alert, sonarTeks, folder, sdk,
     analisisSonar: sonar ? sonar.laporan.analisis.tanggal : null,
     revisiSonar: sonar ? sonar.laporan.analisis.revisi : null,
     sumberSonar, infoBeku, kodeAlat,
   };
-  console.log(`Vendor ${vendor} (${model}), kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, kode ${kodeAlat.head.slice(0, 7)}, `
+  console.log(`Vendor ${vendor} (${model}), skenario ${skenario}, kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, kode ${kodeAlat.head.slice(0, 7)}, `
     + `${kode.file.length} file, ${alert.length} alert, run ${nomor.join(', ')} dari ${target}${summaryLama ? ' (lanjut)' : ''}`);
 
   const ringkasan = [...(summaryLama?.runs ?? [])];
   let galat = summaryLama?.galat ?? null;
   const tulisSummary = () => tulisJson(path.join(folder, 'summary.json'), {
     dibuat: summaryLama?.dibuat ?? new Date().toISOString(), diperbarui: new Date().toISOString(),
-    versi_prompt: render.VERSI_PROMPT, vendor, model_diminta: model, kondisi,
+    versi_prompt: render.VERSI_PROMPT, vendor, model_diminta: model, kondisi, skenario,
     objek_uji: { commit: objek.commit, branch: objek.branch, tree_src: objek.tree_src },
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     tree_src_analisis_sonar: sonar ? sonar.tree_src_analisis : null,

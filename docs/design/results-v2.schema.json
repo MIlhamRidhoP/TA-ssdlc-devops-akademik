@@ -84,6 +84,14 @@
             "parse_gagal": { "type": "integer", "minimum": 0 }
           }
         },
+        "skenario": {
+          "enum": ["A", "B", "C"],
+          "description": "Skenario analisis TA. A = SAST saja (tanpa panggilan LLM), B = SAST + LLM dengan verifikasi alert, C = LLM saja tanpa SonarCloud. Tidak ada pada run lama; yang tidak menyebutkannya adalah B."
+        },
+        "mode_model": {
+          "enum": ["tunggal", "gabungan"],
+          "description": "Satu vendor, atau gabungan tiga vendor yang hasilnya disatukan. Tidak ada pada run lama; yang tidak menyebutkannya adalah tunggal."
+        },
         "pipeline": {
           "type": ["object", "null"],
           "description": "Status job GitHub Actions. null untuk run CLI yang tidak lewat pipeline.",

@@ -93,6 +93,11 @@ const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null
     model_diminta: run.model_diminta ?? summary.model_diminta,
     model_menjawab: d.model_menjawab ?? null,
     kondisi: run.kondisi ?? summary.kondisi,
+    // Skenario analisis, sumbu terpisah dari kondisi eksperimen. Run lama tidak memuatnya; yang
+    // tidak menyebutkan apa pun adalah skenario B satu vendor, karena itulah satu-satunya bentuk
+    // yang pernah dijalankan sebelum sumbu ini ada.
+    skenario: run.skenario ?? summary.skenario ?? 'B',
+    mode_model: run.mode_model ?? summary.mode_model ?? 'tunggal',
     mulai: d.waktu_mulai ?? null,
     selesai: panggilan.length ? (panggilan[panggilan.length - 1].waktu_selesai ?? null) : null,
     durasi_detik: detik(d.waktu_mulai, panggilan.length ? panggilan[panggilan.length - 1].waktu_selesai : null),
@@ -242,7 +247,9 @@ const susunEksperimen = ({ utama, triaseUtama, triaseKonservatif, sensitivitas, 
 const susunHasilV2 = ({ summary, run, nomor, id = null, alert, parseCwe, repo = null, pipeline = null, eksperimen = null, potongan = null }) => ({
   schema_version: SCHEMA_VERSION,
   run: susunRun({ summary, run, nomor, id, repo, pipeline }),
-  alerts: petakanAlert(alert, run.verifikasi),
+  // Skenario C tidak memakai SonarCloud sama sekali: alertnya tidak pernah dikirim ke model dan
+  // tidak punya putusan, jadi menampilkannya tanpa putusan akan menyesatkan. Himpunannya kosong.
+  alerts: (run.skenario ?? summary.skenario) === 'C' ? [] : petakanAlert(alert, run.verifikasi),
   findings: petakanTemuan(run.temuan ?? [], parseCwe, potongan),
   ...(eksperimen ? { eksperimen } : {}),
 });
