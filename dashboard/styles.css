@@ -679,6 +679,25 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   align-items: center; padding: var(--s-1) var(--s-2); border-radius: var(--radius-chip);
 }
 .langkah li:nth-child(odd) { background: var(--paper-3); }
+/* Nama langkah node bermatriks dibuka dengan nama vendornya, supaya "Jalankan llm-scan" milik
+   google tidak tertukar dengan milik openai di daftar yang sama. */
+.langkah-nama { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); }
+.langkah-varian { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
+/* Ringkasan per vendor di atas daftar langkah: saat satu node gagal, yang pertama ingin diketahui
+   adalah vendor mana yang gagal, bukan langkah ke berapa. */
+.per-vendor { display: grid; gap: var(--s-1); margin-bottom: var(--s-2); }
+.per-vendor li {
+  display: grid; grid-template-columns: 1rem minmax(0, 1fr) auto auto auto; gap: var(--s-2);
+  align-items: center; padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--rule); border-radius: var(--radius-chip);
+}
+.per-vendor .pv-nama { font-size: 0.8125rem; color: var(--ink); }
+.per-vendor li[data-s="done"] .langkah-mark { color: var(--ok); }
+.per-vendor li[data-s="fail"] .langkah-mark { color: var(--crit); }
+.per-vendor li[data-s="fail"] { border-color: var(--crit); }
+@media (max-width: 30rem) {
+  .per-vendor li { grid-template-columns: 1rem minmax(0, 1fr); }
+}
 .langkah-mark { color: var(--muted); display: grid; place-items: center; }
 .langkah li[data-s="done"] .langkah-mark { color: var(--ok); }
 .langkah li[data-s="fail"] .langkah-mark { color: var(--crit); }

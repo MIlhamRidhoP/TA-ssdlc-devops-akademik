@@ -334,8 +334,23 @@
   // tidak ada di pipeline saat run itu dijalankan. Menampilkan keduanya sebagai "menunggu"
   // membuat run lama seolah masih punya pekerjaan tersisa; run #54 berjalan sebelum job terbit-v2
   // ada, dan grafnya menyatakan "Satukan dan terbitkan: menunggu" selamanya.
-  const statusJobApi = (job, selesai = false) => {
-    if (!job) return { s: selesai ? 'absen' : 'wait', durasi: null, langkah: null, id: null };
+  // GitHub menamai job matriks "<nama job> (<nilai matriks>)". Sejak analisis-v2 bermatriks vendor,
+  // satu node graf bisa dipetakan ke BEBERAPA job sekaligus, dan pencocokan nama yang persis
+  // membuat node itu tidak menemukan job apa pun. Akibatnya run yang jelas-jelas berhasil tampil
+  // "tidak ada di run ini".
+  //
+  // Awalan dicocokkan dengan " (" di belakang nama node, bukan sekadar startsWith, supaya
+  // "Gabung dan terbitkan hasil" tidak ikut menangkap "Gabung dan terbitkan hasil v2".
+  const cocokJobNode = (namaJob, namaNode) => {
+    const nama = String(namaJob ?? '');
+    if (nama === namaNode) return { cocok: true, varian: null };
+    if (nama.startsWith(`${namaNode} (`) && nama.endsWith(')')) {
+      return { cocok: true, varian: nama.slice(namaNode.length + 2, -1) };
+    }
+    return { cocok: false, varian: null };
+  };
+
+  const statusSatuJob = (job) => {
     const s = bacaStatus(job.status, job.conclusion);
     return {
       s,
@@ -352,8 +367,51 @@
     };
   };
 
+  // Status satu node dari semua job yang cocok dengannya. Aturannya dipilih supaya tidak pernah
+  // lebih optimistis dari kenyataan: satu vendor gagal membuat nodenya gagal, bukan "selesai
+  // sebagian". Rinciannya tetap utuh di `per`, jadi yang hilang hanya ringkasannya, bukan datanya.
+  //
+  // `selesai` menandai bahwa daftar job ini sudah final. Job yang tidak ada di daftar run yang
+  // MASIH BERJALAN memang belum berjalan, tetapi job yang tidak ada di daftar run yang SUDAH
+  // SELESAI tidak akan pernah berjalan: ia belum ada di pipeline saat run itu dijalankan.
+  const statusNodeDariJob = (jobs, selesai = false) => {
+    if (!jobs.length) return { s: selesai ? 'absen' : 'wait', durasi: null, langkah: null, id: null, per: [] };
+    const per = jobs.map(({ job, varian }) => ({ varian, ...statusSatuJob(job), job }));
+    const ada = (x) => per.some((j) => j.s === x);
+    let s;
+    if (ada('fail')) s = 'fail';
+    else if (ada('run')) s = 'run';
+    else if (ada('wait')) s = per.every((j) => j.s === 'wait') ? 'wait' : 'run';
+    else if (per.every((j) => j.s === 'skip')) s = 'skip';
+    else s = 'done';
+
+    // Job matriks berjalan paralel, jadi lamanya adalah rentang dinding jam dari yang paling awal
+    // mulai sampai yang paling akhir selesai. Menjumlahkannya akan melaporkan run tiga vendor
+    // sebagai tiga kali lebih lama daripada yang benar-benar dialami.
+    const mulai = jobs.map(({ job }) => Date.parse(job.started_at)).filter(Number.isFinite);
+    const akhir = jobs.map(({ job }) => Date.parse(job.completed_at)).filter(Number.isFinite);
+    const durasiNode = per.length === 1
+      ? per[0].durasi
+      : (mulai.length && akhir.length ? (Math.max(...akhir) - Math.min(...mulai)) / 1000 : null);
+
+    // Satu job: tautan lognya seperti sebelumnya. Beberapa job: tidak ada satu log yang mewakili,
+    // jadi kartunya tidak menautkan apa pun dan tautan per vendor muncul di panel langkah.
+    const id = per.length === 1 ? per[0].id : null;
+
+    // Langkah seluruh vendor digabung berurutan, masing-masing membawa nama variannya supaya
+    // "Jalankan llm-scan" milik google tidak tertukar dengan milik openai.
+    const langkah = per.some((j) => Array.isArray(j.langkah))
+      ? per.flatMap((j) => (j.langkah ?? []).map((l) => (per.length > 1 ? { ...l, varian: j.varian } : l)))
+      : null;
+
+    return { s, durasi: s === 'skip' ? null : durasiNode, id, langkah, per: per.map(({ job, ...sisa }) => sisa) };
+  };
+
   const jobsDariApi = (daftar, node = nodeJalur(jalurAktif()), selesai = false) => Object.fromEntries(
-    node.map((n) => [n.key, statusJobApi(daftar.find((j) => j.name === n.job), selesai)]));
+    node.map((n) => {
+      const cocok = (daftar ?? []).map((job) => ({ job, ...cocokJobNode(job.name, n.job) })).filter((x) => x.cocok);
+      return [n.key, statusNodeDariJob(cocok, selesai)];
+    }));
 
   const sumberLive = {
     projects: () => jsonLokal('projects.json'),
@@ -1631,11 +1689,33 @@
     if (!terbuka) { isi(panel); panel.hidden = true; } else {
       panel.hidden = false;
       const n = PIPELINE.find((x) => x.key === state.simpulTerbuka);
+      // Node bermatriks mewakili beberapa job sekaligus. Ringkasan per vendor ditaruh di atas
+      // daftar langkah, karena yang pertama ingin diketahui saat satu node gagal adalah vendor
+      // mana yang gagal — bukan langkah ke berapa.
+      const per = status[state.simpulTerbuka]?.per ?? [];
+      const idRunPanel = live?.id ?? state.rekaman?.id ?? state.hasil?.run?.id ?? null;
+      const ringkasPerVendor = per.length > 1
+        ? el('ul', { class: 'per-vendor' }, per.map((v) => {
+          const url = urlJobGh(state.proyek, idRunPanel, v.id);
+          return el('li', { dataset: { s: v.s } },
+            el('span', { class: 'langkah-mark', 'aria-hidden': 'true' }, ikon(v.s === 'fail' ? IKON.silang : (v.s === 'skip' ? IKON.minus : IKON.cek))),
+            el('span', { class: 'pv-nama data', text: v.varian ?? '—' }),
+            el('span', { class: 'langkah-status', text: TEKS_SIMPUL[v.s] ?? v.s }),
+            el('span', { class: 'langkah-durasi data', text: durasi(v.durasi) }),
+            url ? el('a', {
+              class: 'simpul-tautan', href: url, target: '_blank', rel: 'noopener noreferrer',
+              'aria-label': `Lihat log job ${n?.nama ?? ''} ${v.varian ?? ''} di GitHub, tab baru`,
+            }, el('small', { text: 'Lihat log' }), ikon(IKON.luar)) : null);
+        }))
+        : null;
       isi(panel,
         el('p', { class: 'block-h', text: `Langkah job ${n?.nama ?? ''}` }),
+        ringkasPerVendor,
         el('ol', { class: 'langkah' }, terbuka.map((l) => el('li', { dataset: { s: l.s } },
           el('span', { class: 'langkah-mark', 'aria-hidden': 'true' }, ikon(l.s === 'fail' ? IKON.silang : (l.s === 'skip' ? IKON.minus : IKON.cek))),
-          el('span', { class: 'langkah-nama', text: l.nama }),
+          el('span', { class: 'langkah-nama' },
+            l.varian ? el('b', { class: 'langkah-varian data', text: l.varian }) : null,
+            el('span', { text: l.nama })),
           el('span', { class: 'langkah-status', text: TEKS_SIMPUL[l.s] ?? l.s }),
           el('span', { class: 'langkah-durasi data', text: durasi(l.durasi) })))));
     }
