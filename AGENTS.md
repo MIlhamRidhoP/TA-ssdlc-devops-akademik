@@ -171,6 +171,16 @@ docker compose down
   sedangkan skenario menentukan bentuk analisisnya.
 - Perkakas sementara, skrip tambalan, dan screenshot **tidak masuk repo**. Taruh di folder
   sementara di luar repo.
+- **Jangan memakai perintah cermin atau hapus massal di luar folder sementara milik sendiri.**
+  Termasuk `robocopy /MIR`, `rm -rf`, `Remove-Item -Recurse -Force`, dan `git clean -xfd`. Perintah
+  seperti ini menghapus menurut isi folder, bukan menurut apa yang Anda maksud, dan ia menembus
+  salinan maupun tautan tanpa bertanya. Pernah terjadi: `node_modules` repo ini terhapus sebagian
+  oleh `robocopy /MIR` yang dipakai membersihkan worktree sementara, karena `ln -s` di Git Bash
+  Windows diam-diam **menyalin** folder itu alih-alih menautkannya, sehingga cerminnya ikut
+  menyasar isi aslinya. Akibatnya lima berkas tes gagal dengan `Cannot find module` dan sempat
+  terbaca sebagai cacat kode. Hapus dengan menyebut sasaran yang spesifik, dan kalau folder yang
+  dibersihkan mungkin berisi salinan atau tautan ke sesuatu yang masih dipakai, periksa dulu
+  isinya sebelum menghapus.
 
 ## Peta berkas
 
