@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "rekomendasi": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Item ID copied exactly from the input" },
+          "cwe_dirujuk": { "type": "string", "description": "Single CWE identifier such as CWE-89, copied from the item" },
+          "langkah": {
+            "type": "array",
+            "description": "Two to four remediation steps in Bahasa Indonesia, in the order they should be carried out",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 4
+          },
+          "potongan_kode_usulan": {
+            "type": "string",
+            "description": "Optional corrected code excerpt, at most 15 lines, same language as the original"
+          },
+          "catatan_risiko": { "type": "string", "description": "One to three sentences in Bahasa Indonesia on what could break or still needs manual checking" }
+        },
+        "required": ["id", "cwe_dirujuk", "langkah", "catatan_risiko"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["rekomendasi"],
+  "additionalProperties": false
+}

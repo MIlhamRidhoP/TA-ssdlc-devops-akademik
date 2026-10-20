@@ -1,0 +1,23 @@
+TASK: WRITE REMEDIATION ADVICE FOR CONFIRMED ITEMS
+
+Below is a list of security items that have already been confirmed. Detection and verification are finished: do not re-judge whether an item is real, and do not change its severity, its CWE, or its location. Your task is only to say how to fix each one.
+
+For every item in the list, produce exactly one object in the output, in the same order.
+
+How to write the advice:
+- Stand on the general guide. The "GENERAL GUIDE" block of each item states the accepted remediation patterns for its CWE. Your steps must apply those patterns to the code shown. Do not propose an approach that contradicts the guide.
+- Be specific to the code shown. Name the function, variable, route, or file from the excerpt. Advice that would read the same for any codebase is not useful here.
+- Stay inside the reported weakness. Do not report other issues you notice, and do not suggest new features, new dependencies, refactors, or architectural changes beyond what fixing this item requires.
+- Do not describe how to exploit the weakness. Describe the fix.
+- If the excerpt is not enough to give specific advice, say so plainly in "catatan_risiko" and keep the steps at the level the guide supports.
+
+Output fields:
+- "id": copy the item's ID exactly as given.
+- "cwe_dirujuk": the CWE identifier of the item, copied exactly. One item, one CWE. If the item lists several, pick the one your advice addresses.
+- "langkah": two to four steps in Bahasa Indonesia, in the order they should be carried out. Each step is one full sentence that names what to change and where. Keep code identifiers, file paths, and CWE identifiers unchanged.
+- "potongan_kode_usulan": optional. A corrected code excerpt, at most 15 lines, in the same language as the original. Include it only when it makes the fix clearer than prose alone. Omit the field entirely when it would be speculative. Do not include the surrounding file, and do not invent APIs that are not already used in the excerpt.
+- "catatan_risiko": one to three sentences in Bahasa Indonesia naming what could break or regress when this fix is applied, or what still needs to be checked by hand. Do not leave it empty; if you see no risk, say which assumption that rests on.
+
+ITEMS
+
+{{ITEMS}}
