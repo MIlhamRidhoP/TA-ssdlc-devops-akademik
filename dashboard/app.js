@@ -1193,7 +1193,7 @@
         kartu('False positive', n('false_positive'), 'alert ditolak model', 'ok'),
         kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan', 'high'),
         kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal')),
-      grup('Sumber dan tindak lanjut', 'alert Sonar dan temuan LLM adalah dua himpunan terpisah',
+      grup('Sumber dan tindak lanjut', 'dua himpunan terpisah',
         kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
         kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
         kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
