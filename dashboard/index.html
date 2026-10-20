@@ -106,9 +106,11 @@
 
         <section class="pipeline-box" id="pipeline-box" aria-labelledby="pipeline-h2">
           <div class="pipeline">
-            <p class="pipeline-h"><span id="pipeline-title">Status pipeline</span><b id="pipeline-total" class="data"></b></p>
-            <h2 id="pipeline-h2" class="sr-only">Status pipeline</h2>
-            <ol class="nodes" id="nodes" aria-label="Job pipeline"></ol>
+            <p class="pipeline-h"><span id="pipeline-title">Alur eksekusi pipeline</span><b id="pipeline-total" class="data"></b></p>
+            <h2 id="pipeline-h2" class="sr-only">Alur eksekusi pipeline</h2>
+            <div class="alur" id="alur" data-arah="datar" tabindex="0" aria-label="Graf alur eksekusi pipeline" aria-describedby="alur-teks"></div>
+            <div class="sr-only" id="alur-teks"></div>
+            <div class="alur-langkah" id="alur-langkah" hidden></div>
           </div>
         </section>
 

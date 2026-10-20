@@ -428,35 +428,74 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .go-hint[data-kind="error"] { color: var(--crit); }
 .go-hint a, .runner .btn-text { color: var(--accent); }
 
-/* Langkah pipeline: daftar vertikal seperti mockup */
+/* ---------- Graf alur pipeline ----------
+   Menggantikan daftar vertikal lama. Kolom disusun dari kedalaman topologis `perlu` di PIPELINE,
+   dan garis antar kartu digambar sebagai SVG di belakangnya setelah tata letak selesai. Di layar
+   sempit arah berubah menjadi menurun, dan garisnya ikut digambar ulang. */
 .pipeline { min-width: 0; display: grid; align-content: start; gap: var(--s-3); }
 .pipeline-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); font-size: 0.8125rem; color: var(--muted); }
 .pipeline-h b { color: var(--ink); font-weight: 500; }
-.nodes { display: grid; border-top: 1px solid var(--rule-2); }
-.node {
-  position: relative; display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) auto; grid-template-rows: auto auto;
-  gap: 0 var(--s-3); align-items: center; padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2);
+
+.alur { position: relative; display: flex; gap: var(--s-5); align-items: center; overflow-x: auto; padding: var(--s-1) 0; }
+.alur[data-arah="tegak"] { flex-direction: column; align-items: stretch; gap: var(--s-4); overflow-x: visible; }
+/* Graf bisa lebih lebar dari panelnya, jadi wadahnya harus bisa difokus dan digulir keyboard. */
+.alur:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-ctl); }
+.alur-garis { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.alur-tepi { fill: none; stroke: var(--rule-2); stroke-width: 1.5; }
+.alur-tepi.mati { stroke: var(--rule); stroke-dasharray: 3 4; }
+.alur-kolom { position: relative; z-index: 1; display: grid; gap: var(--s-3); align-content: center; min-width: 12rem; flex: none; }
+.alur[data-arah="tegak"] .alur-kolom { min-width: 0; }
+
+.simpul {
+  display: grid; grid-template-columns: 1.125rem minmax(0, 1fr) auto; gap: 0.1rem var(--s-2);
+  align-items: center; width: 100%; text-align: left;
+  padding: var(--s-3); border: 1px solid var(--rule); border-radius: var(--radius-ctl);
+  background: var(--paper-2); color: inherit;
 }
-.seg-line { display: none; }
-.node-mark {
-  grid-row: 1 / span 2; width: 0.75rem; height: 0.75rem; border-radius: 50%;
-  border: 2px solid var(--rule-2); background: transparent; justify-self: center;
+.simpul-mark {
+  grid-row: 1 / span 2; width: 1.125rem; height: 1.125rem; border-radius: 50%;
+  display: grid; place-items: center; background: transparent; color: var(--netral);
+  border: 1.5px solid var(--rule-2);
 }
-.node-mark .icon { display: none; }
-.node-name { font-weight: 500; color: var(--ink); }
-.node-state { grid-column: 2; font-size: 0.8125rem; color: var(--muted); }
-.node-dim { grid-column: 3; grid-row: 1 / span 2; font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted); }
-.node[data-s="done"] .node-mark { background: var(--step-ok); border-color: var(--step-ok); }
-.node[data-s="run"] .node-mark { border-color: var(--high); }
-.node[data-s="run"] .node-state { color: var(--high); }
-.node[data-s="fail"] .node-mark { background: var(--crit); border-color: var(--crit); }
-.node[data-s="fail"] .node-state { color: var(--crit); }
-.node[data-s="skip"] { opacity: 0.6; }
+.simpul[data-s="done"] .simpul-mark, .simpul[data-s="run"] .simpul-mark,
+.simpul[data-s="fail"] .simpul-mark, .simpul[data-s="fail-diharapkan"] .simpul-mark { border-color: transparent; }
+.simpul-mark .icon { width: 0.75rem; height: 0.75rem; stroke-width: 2.2; }
+.simpul-nama { font-weight: 500; color: var(--ink); font-size: 0.875rem; }
+.simpul-durasi { grid-column: 3; grid-row: 1; color: var(--muted); }
+.simpul-status { grid-column: 2 / span 2; font-size: 0.75rem; color: var(--muted); }
+.simpul[data-s="done"] .simpul-mark { background: var(--ok-soft); color: var(--ok); }
+.simpul[data-s="run"] .simpul-mark { background: var(--high-soft); color: var(--high); }
+.simpul[data-s="run"] .simpul-status { color: var(--high); }
+.simpul[data-s="fail"] .simpul-mark { background: var(--crit-soft); color: var(--crit); }
+.simpul[data-s="fail"] .simpul-status { color: var(--crit); }
+.simpul[data-s="fail-diharapkan"] .simpul-mark { background: var(--high-soft); color: var(--high); }
+.simpul[data-s="fail-diharapkan"] .simpul-status { color: var(--high); }
+/* Jalur yang tidak dipakai tetap digambar: ia bagian dari cerita pipeline, bukan sesuatu yang
+   hilang. Dicoret dan diredupkan, bukan dihapus. */
+.simpul.mati { border-style: dashed; background: transparent; }
+.simpul.mati .simpul-nama { color: var(--muted); text-decoration: line-through; }
+.simpul.mati .simpul-mark { background: transparent; border: 1px dashed var(--rule-2); color: var(--muted); }
+.simpul.bisa-dibuka { cursor: pointer; }
+@media (hover: hover) { .simpul.bisa-dibuka:hover { border-color: var(--accent); } }
+.simpul.bisa-dibuka:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.simpul .buka { grid-column: 2 / span 2; }
 @media (prefers-reduced-motion: no-preference) {
-  .node-mark { transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out); }
-  .node[data-s="run"] .node-mark { animation: ping 1.4s var(--ease-out) infinite; }
+  .simpul-mark { transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
 }
-@keyframes ping { 0% { box-shadow: 0 0 0 0 oklch(82% 0.13 75 / 0.45); } 100% { box-shadow: 0 0 0 7px oklch(82% 0.13 75 / 0); } }
+
+.alur-langkah { border-top: 1px solid var(--rule); padding-top: var(--s-3); display: grid; gap: var(--s-2); }
+.langkah { display: grid; gap: 1px; }
+.langkah li {
+  display: grid; grid-template-columns: 1rem minmax(0, 1fr) auto auto; gap: var(--s-2);
+  align-items: center; padding: var(--s-1) var(--s-2); border-radius: var(--radius-chip);
+}
+.langkah li:nth-child(odd) { background: var(--paper-3); }
+.langkah-mark { color: var(--muted); display: grid; place-items: center; }
+.langkah li[data-s="done"] .langkah-mark { color: var(--ok); }
+.langkah li[data-s="fail"] .langkah-mark { color: var(--crit); }
+.langkah-nama { font-size: 0.8125rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.langkah-status { font-size: 0.75rem; color: var(--muted); }
+.langkah-durasi { color: var(--muted); }
 
 /* ---------- Ringkasan ---------- */
 

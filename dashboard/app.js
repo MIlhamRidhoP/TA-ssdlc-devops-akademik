@@ -24,19 +24,6 @@
     return GAGAL_DIHARAPKAN.find((x) => x.branch === branch && x.job === keyNode) ?? null;
   };
 
-  // Pipeline kedua jalur berbeda bentuk: di jalur v2 job "Gabung dan terbitkan hasil" sengaja
-  // dilewati (analisis-v2 menerbitkan sendiri), jadi menampilkannya akan selamanya "menunggu".
-  const NODE_V1 = [
-    { key: 'build', nama: 'Build dan uji', job: 'Build dan uji API', hasil: 'build_test' },
-    { key: 'sonar', nama: 'SonarCloud', job: 'Analisis SonarCloud', hasil: 'sonarcloud' },
-    { key: 'analisis', nama: 'Analisis LLM', job: 'Analisis temuan (Sonar dan Gemini)', hasil: 'analisis' },
-    { key: 'hasil', nama: 'Gabung hasil', job: 'Gabung dan terbitkan hasil', hasil: null },
-  ];
-  const NODE_V2 = [
-    { key: 'build', nama: 'Build dan uji', job: 'Build dan uji API', hasil: 'build_test' },
-    { key: 'sonar', nama: 'SonarCloud', job: 'Analisis SonarCloud', hasil: 'sonarcloud' },
-    { key: 'analisis', nama: 'Deteksi dan verifikasi', job: 'Analisis LLM v2 (deteksi dan verifikasi)', hasil: 'analisis' },
-  ];
   // Mode menentukan jalur, jadi drawer tidak punya pilihan jalur sendiri: satu keputusan, satu
   // kontrol. SAST + LLM selalu jalur v2 (deteksi + verifikasi per alert, hasilnya skema 2 yang
   // dibaca dashboard ini). SAST saja memakai jalur v1 yang tidak memanggil LLM sama sekali.
@@ -45,8 +32,6 @@
   // Saat run sudah dimuat, jalurnya ditentukan isi hasil; saat menyiapkan run baru, oleh form.
   const jalurAktif = (live) => live?.jalur
     ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
-  const nodeJalur = (jalur) => (jalur === 'v2' ? NODE_V2 : NODE_V1);
-  const TEKS_STATUS = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati' };
   const KUNCI = { token: 'sd.token', tema: 'sd.tema', padat: 'sd.kepadatan', terakhir: 'sd.terakhir', keputusan: 'sd.keputusan.', keputusanV2: 'sd.keputusan.v2.' };
 
   const $ = (id) => document.getElementById(id);
@@ -111,6 +96,8 @@
     panggilan: ['M14 8A6 6 0 1 1 8 2', 'M5.6 7.9l1.9 1.9L14 3.3'],
     asal: ['M2.5 3.5h11v9h-11z', 'M2.5 6.2h11'],
     bolt: 'M8.8 2.2L4.4 8.7h3l-.4 5.1 4.4-6.5h-3z',
+    minus: 'M4.5 8h7',
+    titik: 'M8 5.6a2.4 2.4 0 1 0 0 4.8a2.4 2.4 0 1 0 0-4.8z',
     // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
     padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
     nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
@@ -163,6 +150,7 @@
     jobs: null,
     filter: 'semua',
     terbuka: null,
+    simpulTerbuka: null,
     keputusan: {},
     sibuk: false,
     pantau: null,
@@ -249,15 +237,31 @@
     return r;
   };
 
+  const bacaStatus = (status, conclusion) => {
+    if (status === 'in_progress') return 'run';
+    if (status !== 'completed') return 'wait';
+    return { success: 'done', skipped: 'skip' }[conclusion] ?? 'fail';
+  };
+  const lamaDetik = (mulai, selesai) => {
+    const a = Date.parse(mulai);
+    if (!Number.isFinite(a)) return null;
+    const b = Date.parse(selesai);
+    return ((Number.isFinite(b) ? b : Date.now()) - a) / 1000;
+  };
   const statusJobApi = (job) => {
-    if (!job) return { s: 'wait', durasi: null };
-    const mulai = Date.parse(job.started_at);
-    const selesai = Date.parse(job.completed_at);
-    let s = 'wait';
-    if (job.status === 'in_progress') s = 'run';
-    else if (job.status === 'completed') s = { success: 'done', skipped: 'skip' }[job.conclusion] ?? 'fail';
-    const lama = Number.isFinite(mulai) ? ((Number.isFinite(selesai) ? selesai : Date.now()) - mulai) / 1000 : null;
-    return { s, durasi: s === 'skip' ? null : lama };
+    if (!job) return { s: 'wait', durasi: null, langkah: null };
+    const s = bacaStatus(job.status, job.conclusion);
+    return {
+      s,
+      durasi: s === 'skip' ? null : lamaDetik(job.started_at, job.completed_at),
+      // Langkah job dipakai saat node graf diklik. Hanya ada lewat API, jadi null untuk run yang
+      // dibaca dari berkas hasil.
+      langkah: Array.isArray(job.steps) ? job.steps.map((l) => ({
+        nama: String(l.name ?? ''),
+        s: bacaStatus(l.status, l.conclusion),
+        durasi: lamaDetik(l.started_at, l.completed_at),
+      })) : null,
+    };
   };
 
   const jobsDariApi = (daftar, node = nodeJalur(jalurAktif())) => Object.fromEntries(node.map((n) => [n.key, statusJobApi(daftar.find((j) => j.name === n.job))]));
@@ -729,6 +733,7 @@
   const muatRun = async (entri) => {
     state.entri = entri;
     state.terbuka = null;
+    state.simpulTerbuka = null;
     renderMemuat();
     try {
       state.hasil = await sumber().hasil(state.proyek, entri);
@@ -828,29 +833,164 @@
     }));
   };
 
+  // ---------- Graf pipeline ----------
+  // Satu-satunya tempat bentuk pipeline hidup di dashboard: node, job GitHub yang mewakilinya,
+  // kunci status di run.pipeline, dan ketergantungannya. `id` adalah id job di devsecops.yml, dan
+  // tests/pipeline.test.js membandingkan `perlu` di bawah dengan `needs` di berkas itu, supaya graf
+  // ini tidak pernah diam-diam berbeda dari pipeline yang sebenarnya berjalan.
+  const PIPELINE = [
+    { key: 'rencana', id: 'rencana', job: 'Tentukan mode analisis', nama: 'Mode analisis', hasil: null, perlu: [], jalur: 'kedua' },
+    { key: 'build', id: 'build-test', job: 'Build dan uji API', nama: 'Build dan uji', hasil: 'build_test', perlu: [], jalur: 'kedua' },
+    { key: 'sonar', id: 'sonarcloud', job: 'Analisis SonarCloud', nama: 'SonarCloud SAST', hasil: 'sonarcloud', perlu: ['rencana'], jalur: 'kedua' },
+    { key: 'analisis', id: 'analisis', job: 'Analisis temuan (Sonar dan Gemini)', nama: 'Analisis LLM v1', hasil: 'analisis', perlu: ['rencana', 'sonar'], jalur: 'v1' },
+    { key: 'analisis-v2', id: 'analisis-v2', job: 'Analisis LLM v2 (deteksi dan verifikasi)', nama: 'Deteksi dan verifikasi', hasil: 'analisis', perlu: ['rencana', 'sonar'], jalur: 'v2' },
+    { key: 'hasil', id: 'hasil', job: 'Gabung dan terbitkan hasil', nama: 'Gabung dan terbitkan', hasil: null, perlu: ['rencana', 'build', 'sonar', 'analisis'], jalur: 'v1' },
+  ];
+
+  // Node yang berjalan untuk jalur tertentu; sisanya tetap digambar tetapi diredupkan dan dicoret,
+  // karena jalur yang tidak dipakai adalah bagian dari cerita pipeline, bukan sesuatu yang hilang.
+  const nodeJalur = (jalur) => PIPELINE.filter((n) => n.jalur === 'kedua' || n.jalur === jalur);
+  const simpulAktif = (n, jalur) => n.jalur === 'kedua' || n.jalur === jalur;
+
+  // Kolom = kedalaman topologis. Dihitung dari `perlu`, bukan ditulis tangan, supaya menambah
+  // ketergantungan di PIPELINE langsung memindahkan nodenya.
+  const kolomPipeline = () => {
+    const dalam = new Map();
+    const hitung = (n) => {
+      if (dalam.has(n.key)) return dalam.get(n.key);
+      const d = n.perlu.length ? 1 + Math.max(...n.perlu.map((k) => hitung(PIPELINE.find((x) => x.key === k)))) : 0;
+      dalam.set(n.key, d);
+      return d;
+    };
+    PIPELINE.forEach(hitung);
+    const maks = Math.max(...dalam.values());
+    return Array.from({ length: maks + 1 }, (_, i) => PIPELINE.filter((n) => dalam.get(n.key) === i));
+  };
+
+  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi' };
+
+  // Garis antar node digambar sebagai SVG di belakang kartunya, setelah tata letak selesai, supaya
+  // posisinya mengikuti pembungkusan dan lebar layar apa pun.
+  const gambarGarisPipeline = () => {
+    const kotak = $('alur');
+    const svg = kotak?.querySelector('.alur-garis');
+    if (!svg) return;
+    const induk = kotak.getBoundingClientRect();
+    const titik = new Map([...kotak.querySelectorAll('.simpul')].map((n) => {
+      const r = n.getBoundingClientRect();
+      return [n.dataset.key, { kiri: r.left - induk.left, kanan: r.right - induk.left, atas: r.top - induk.top, bawah: r.bottom - induk.top, tengahY: r.top - induk.top + r.height / 2, tengahX: r.left - induk.left + r.width / 2 }];
+    }));
+    svg.setAttribute('viewBox', `0 0 ${Math.max(induk.width, 1)} ${Math.max(induk.height, 1)}`);
+    svg.setAttribute('width', String(Math.max(induk.width, 1)));
+    svg.setAttribute('height', String(Math.max(induk.height, 1)));
+    const tegak = kotak.dataset.arah === 'tegak';
+    const anak = [];
+    for (const n of PIPELINE) {
+      const ke = titik.get(n.key);
+      if (!ke) continue;
+      for (const kKey of n.perlu) {
+        const dari = titik.get(kKey);
+        if (!dari) continue;
+        const p = document.createElementNS(NS, 'path');
+        const d = tegak
+          ? `M ${dari.tengahX} ${dari.bawah} C ${dari.tengahX} ${dari.bawah + 14}, ${ke.tengahX} ${ke.atas - 14}, ${ke.tengahX} ${ke.atas}`
+          : `M ${dari.kanan} ${dari.tengahY} C ${dari.kanan + 18} ${dari.tengahY}, ${ke.kiri - 18} ${ke.tengahY}, ${ke.kiri} ${ke.tengahY}`;
+        p.setAttribute('d', d);
+        p.setAttribute('class', `alur-tepi${simpulAktif(n, jalurAktif()) && simpulAktif(PIPELINE.find((x) => x.key === kKey), jalurAktif()) ? '' : ' mati'}`);
+        anak.push(p);
+      }
+    }
+    svg.replaceChildren(...anak);
+  };
+
+  let pantauUkuranAlur = null;
+
   const renderPipeline = (live) => {
-    const node = nodeJalur(jalurAktif(live));
+    const jalur = jalurAktif(live);
     const mode = live?.mode ?? state.hasil?.run?.mode ?? modeTerpilih();
     const status = live?.jobs ?? state.jobs ?? statusNodeDariHasil() ?? {};
     // Skema 2 tidak punya run.gemini; kegagalan LLM terbaca dari status panggilan.
     const llmGagal = !live && (state.hasil?.run?.status_panggilan?.error ?? 0) > 0;
-    $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Pipeline run #${state.hasil.run.nomor}` : 'Status pipeline');
+    $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Alur eksekusi run #${state.hasil.run.nomor}` : 'Alur eksekusi pipeline');
     const total = Object.values(status).reduce((s, j) => s + (Number.isFinite(j?.durasi) ? j.durasi : 0), 0);
     $('pipeline-total').textContent = total ? `total ${durasi(total)}` : '';
-    isi($('nodes'), node.map((n) => {
+
+    // Saat run baru dipantau, panel alur harus terlihat meski run yang sedang dibaca berasal dari
+    // CLI dan panelnya tadi disembunyikan.
+    if (live) $('pipeline-box').hidden = false;
+    const kotak = $('alur');
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'alur-garis');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const kartu = (n) => {
+      const aktif = simpulAktif(n, jalur);
       let st = status[n.key] ?? { s: 'wait', durasi: null };
-      let teks = TEKS_STATUS[st.s];
-      if (n.key === 'analisis' && llmGagal && st.s === 'done') { st = { ...st, s: 'fail' }; teks = 'Analisis LLM gagal'; }
+      if (!aktif) st = { s: 'skip', durasi: null };
+      let teks = TEKS_SIMPUL[st.s];
+      if (aktif && n.key === 'analisis' && llmGagal && st.s === 'done') { st = { ...st, s: 'fail' }; teks = 'Analisis LLM gagal'; }
       const diharapkan = st.s === 'fail' ? ekspektasiGagal(n.key) : null;
       if (diharapkan) { st = { ...st, s: 'fail-diharapkan' }; teks = diharapkan.sebab; }
-      const nama = n.key === 'analisis' && mode === 'sast' ? 'Ambil temuan Sonar' : n.nama;
-      return el('li', { class: 'node', dataset: { s: st.s } },
-        el('span', { class: 'seg-line', 'aria-hidden': 'true' }),
-        el('span', { class: 'node-mark', 'aria-hidden': 'true' }, ikon(st.s === 'fail' ? IKON.silang : (st.s === 'fail-diharapkan' ? IKON.seru : IKON.cek))),
-        el('span', { class: 'node-name', text: nama }),
-        el('span', { class: 'node-state', text: teks }),
-        el('span', { class: 'node-dim', 'aria-label': `durasi ${durasi(st.durasi)}`, text: durasi(st.durasi) }));
-    }));
+      const nama = aktif && n.key === 'analisis' && mode === 'sast' ? 'Ambil temuan Sonar' : n.nama;
+      const langkah = status[n.key]?.langkah ?? null;
+      const bisaDibuka = aktif && Array.isArray(langkah) && langkah.length > 0;
+      // Node yang belum berjalan hanya lingkaran kosong. Tanda centang di sana terbaca sebagai
+      // "sudah selesai" padahal statusnya menunggu.
+      const TANDA = { fail: IKON.silang, 'fail-diharapkan': IKON.seru, skip: IKON.minus, done: IKON.cek, run: IKON.titik };
+      const tanda = TANDA[st.s] ?? null;
+      const isiSimpul = [
+        el('span', { class: 'simpul-mark', 'aria-hidden': 'true' }, tanda ? ikon(tanda) : null),
+        el('span', { class: 'simpul-nama', text: nama }),
+        el('span', { class: 'simpul-durasi data', text: durasi(st.durasi) }),
+        el('span', { class: 'simpul-status', text: aktif ? teks : 'digantikan jalur v2' }),
+      ];
+      const sifat = { class: `simpul${aktif ? '' : ' mati'}`, dataset: { s: st.s, key: n.key } };
+      if (!bisaDibuka) return el('div', sifat, isiSimpul);
+      return el('button', {
+        ...sifat,
+        class: `${sifat.class} bisa-dibuka`,
+        type: 'button',
+        'aria-expanded': state.simpulTerbuka === n.key ? 'true' : 'false',
+        'aria-controls': 'alur-langkah',
+        onclick: () => { state.simpulTerbuka = state.simpulTerbuka === n.key ? null : n.key; renderPipeline(live); },
+      }, isiSimpul, el('span', { class: 'buka' }, el('small', { text: state.simpulTerbuka === n.key ? 'Tutup langkah' : 'Lihat langkah' }), ikon(IKON.panah)));
+    };
+
+    isi(kotak, svg, ...kolomPipeline().map((kol) => el('div', { class: 'alur-kolom' }, kol.map(kartu))));
+
+    // Versi teks: graf adalah gambar, dan pembaca layar membaca daftar ini sebagai gantinya.
+    isi($('alur-teks'), el('ol', {}, nodeJalur(jalur).map((n) => {
+      const st = status[n.key] ?? { s: 'wait', durasi: null };
+      const perlu = n.perlu.filter((k) => simpulAktif(PIPELINE.find((x) => x.key === k), jalur)).map((k) => PIPELINE.find((x) => x.key === k).nama);
+      return el('li', { text: `${n.nama}: ${TEKS_SIMPUL[st.s]}${Number.isFinite(st.durasi) ? `, ${durasi(st.durasi)}` : ''}${perlu.length ? `, menunggu ${perlu.join(' dan ')}` : ''}` });
+    })));
+
+    const terbuka = state.simpulTerbuka && (status[state.simpulTerbuka]?.langkah ?? null);
+    const panel = $('alur-langkah');
+    if (!terbuka) { isi(panel); panel.hidden = true; } else {
+      panel.hidden = false;
+      const n = PIPELINE.find((x) => x.key === state.simpulTerbuka);
+      isi(panel,
+        el('p', { class: 'block-h', text: `Langkah job ${n?.nama ?? ''}` }),
+        el('ol', { class: 'langkah' }, terbuka.map((l) => el('li', { dataset: { s: l.s } },
+          el('span', { class: 'langkah-mark', 'aria-hidden': 'true' }, ikon(l.s === 'fail' ? IKON.silang : (l.s === 'skip' ? IKON.minus : IKON.cek))),
+          el('span', { class: 'langkah-nama', text: l.nama }),
+          el('span', { class: 'langkah-status', text: TEKS_SIMPUL[l.s] ?? l.s }),
+          el('span', { class: 'langkah-durasi data', text: durasi(l.durasi) })))));
+    }
+
+    kotak.dataset.arah = kotak.clientWidth < 720 ? 'tegak' : 'datar';
+    requestAnimationFrame(gambarGarisPipeline);
+    if (!pantauUkuranAlur && typeof ResizeObserver === 'function') {
+      pantauUkuranAlur = new ResizeObserver(() => {
+        const k = $('alur');
+        if (!k) return;
+        k.dataset.arah = k.clientWidth < 720 ? 'tegak' : 'datar';
+        gambarGarisPipeline();
+      });
+      pantauUkuranAlur.observe(kotak);
+    }
   };
 
 
@@ -1449,8 +1589,10 @@
     $('panel-operasional').hidden = false;
     $('panel-eksperimen').hidden = true;
     isi($('filters'));
-    isi($('nodes'));
-    $('pipeline-title').textContent = 'Status pipeline';
+    isi($('alur'));
+    isi($('alur-teks'));
+    $('alur-langkah').hidden = true;
+    $('pipeline-title').textContent = 'Alur eksekusi pipeline';
     $('pipeline-total').textContent = '';
     $('run-title').textContent = 'Format v1 (arsip pilot 10 Oktober), tidak lagi ditampilkan';
     isi($('crumb'));
@@ -1513,7 +1655,8 @@
   const simulasi = async (mode, jalur, pantau) => {
     const node = nodeJalur(jalur);
     const jobs = Object.fromEntries(node.map((n) => [n.key, { s: 'wait', durasi: null }]));
-    const lama = { build: 104, sonar: 51, analisis: mode === 'sast' ? 9 : (jalur === 'v2' ? 219 : 241), hasil: 22 };
+    const lama = { rencana: 3, build: 104, sonar: 51, analisis: 241, 'analisis-v2': 219, hasil: 22 };
+    if (mode === 'sast') { lama.analisis = 9; lama['analisis-v2'] = 9; }
     for (const n of node) {
       if (pantau.batal) return;
       jobs[n.key] = { s: 'run', durasi: null };
