@@ -39,6 +39,20 @@
           "v2": false
         }
       ]
+    },
+    {
+      "owner": "MIlhamRidhoP",
+      "repo": "ta-ssdlc-demo",
+      "workflow": "devsecops.yml",
+      "branches": [
+        {
+          "name": "main",
+          "dispatch": true,
+          "catatan": "Repo demo: framework ini pada objek uji berisi kerentanan tertanam. src/ byte-identik dengan branch eksperimen/seeded, jadi analisis SonarCloud main cocok. Run di sini peragaan, bukan data eksperimen.",
+          "v2": true,
+          "bawaan": true
+        }
+      ]
     }
   ]
 }
