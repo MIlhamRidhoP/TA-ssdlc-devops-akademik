@@ -233,3 +233,42 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
 - **Model**: Gemini 3.8 Flash (bawaan) dan Gemini 3.1 Pro Preview. Pro butuh billing aktif di project
   Google milik `GEMINI_API_KEY`; tanpa billing, kuota API Pro bernilai 0 dan run gagal.
 - Pemantauan memakai polling. Satu run memakan sekitar 2 permintaan tiap 5 detik dari batas 5.000 per jam.
+
+## Rencana lanjutan
+
+### Mode SAST saja menerbitkan skema 2
+
+**Masalahnya.** Mode SAST saja berjalan lewat jalur v1, hasilnya terbit sebagai skema 1 ke
+`index-v1.json`, dan dashboard ini hanya membaca `index.json` (skema 2). Developer yang
+menjalankannya karena itu tidak melihat apa pun, padahal runnya berhasil dan gratis.
+
+**Usulannya.** Terbitkan hasil mode SAST sebagai skema 2 berisi alert Sonar tanpa putusan model dan
+tanpa temuan LLM, sehingga inventaris alert langsung terbaca di dashboard.
+
+- **Produsen.** `scripts/llm-scan.js` sudah menulis `sonar-alert.json` sebelum panggilan LLM
+  pertama. Tambahkan `--sast` yang berhenti tepat di titik itu dengan nol panggilan;
+  `merge-results.js merge --v2` tidak perlu diubah (`alerts` terisi `putusan: null`, `findings`
+  kosong). Gerbang hash tree `src/` tetap berlaku, jadi alert yang ditampilkan dijamin berasal dari
+  kode yang sama.
+- **Skema.** `run.vendor`, `run.model_diminta`, dan `run.model_menjawab` wajib dan tidak punya nilai
+  jujur untuk run tanpa model. Perlu `run.jenis` (`sast` atau `sast-llm`) dan ketiganya dibuat
+  nullable. `scripts/validasi-skema.js` tidak mendukung `if/then` maupun `oneOf`, jadi aturan
+  "vendor wajib bila jenis = sast-llm" harus jadi tes tersendiri atau validatornya diperluas.
+- **Workflow.** Job baru `analisis-sast`, bukan melonggarkan `if` job `analisis-v2`: kondisi job itu
+  adalah pengaman biaya, dan menaruh jalur gratis di balik gerbang yang sama menghapus artinya.
+  Harus diputuskan lebih dulu: jalur v1 juga menerbitkan `<branch>/<nomor>.json` untuk mode sast,
+  jadi salah satu harus berhenti agar tidak menulis nomor yang sama.
+- **Dashboard.** Judul run, kelompok kartu putusan, blok verifikasi, panel Temuan, dan baris riwayat
+  semuanya perlu bentuk kedua. Menampilkan run sast dengan kosakata run LLM akan terbaca salah:
+  "Tanpa putusan: 5" tampak seperti lima panggilan gagal, padahal tidak ada panggilan.
+
+**Yang tidak didapat dari usulan ini.** Skenario A di tab Eksperimen adalah P/R/F1 alert Sonar
+terhadap ground truth `SEEDED.md`, dan ground truth itu hanya ada untuk objek uji seeded. Untuk
+branch biasa yang bisa ditampilkan hanyalah inventaris alert beserta sebaran severity-nya, bukan
+angka Skenario A.
+
+**Alasan ditunda.** Biaya jalankannya nol, tetapi biaya rawatnya tidak: skema 2 jadi punya dua
+bentuk dan setiap pembacanya (`entriIndexV2`, dashboard, skrip skor) harus menanganinya. Selama
+jalur v2 baru dipakai beberapa run, menstabilkan satu bentuk lebih berharga daripada menambah
+cabang kedua. Ditunda sampai jalur v2 terbukti stabil, dan dikerjakan dua tahap: skema, produsen,
+dan tes lebih dulu; workflow dan dashboard menyusul.
