@@ -241,7 +241,7 @@
         'Biasanya devsecops.yml di branch tujuan belum memuat input yang dikirim, atau ada nilai di luar daftar opsinya; perubahan workflow perlu di-push atau di-merge ke branch itu.',
       ].filter(Boolean).join(' ');
       case 'network': return 'Tidak bisa terhubung ke GitHub. Periksa koneksi internet, lalu coba lagi.';
-      case 'lokal': case 'format': case 'invalid': return err.message;
+      case 'lokal': case 'format': case 'invalid': case 'hasil': return err.message;
       default: return `GitHub mengembalikan galat ${err?.status ?? 'tak dikenal'}. Coba lagi beberapa saat lagi.`;
     }
   };
@@ -2901,7 +2901,12 @@
       // graf pipeline terlihat. Jadi menulis galat ke sana saja berarti menulisnya ke tempat yang
       // tidak dilihat siapa pun: dispatch yang ditolak 422 tampak seolah tidak terjadi apa-apa.
       // Banner adalah satu-satunya tempat yang pasti terlihat di semua tampilan.
-      tampilBanner('error', `Run tidak jadi dijalankan. ${pesan}`, {
+      // Judul hanya boleh menyebut 'tidak jadi dijalankan' kalau runnya memang tidak pernah ada.
+      // Galat yang terjadi SESUDAH run dibuat membawa judulnya sendiri yang menyebut keadaan
+      // sebenarnya; run yang berhasil pernah dilaporkan 'tidak jadi dijalankan' karena judul ini
+      // ditulis tetap.
+      const judul = err?.judul ?? 'Run tidak jadi dijalankan.';
+      tampilBanner('error', `${judul} ${pesan}`, {
         label: 'Buka drawer lagi',
         fn: () => { tutupBanner('error'); bukaDrawer(); },
       });
@@ -3016,7 +3021,12 @@
       const data = await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/runs?event=workflow_dispatch&branch=${enc(branch)}&per_page=20`);
       run = (data.workflow_runs || []).find((r) => typeof r.display_title === 'string' && r.display_title.includes(`[${label}]`) && Date.parse(r.created_at) >= dikirim - 60000) ?? null;
     }
-    if (!run) throw new GhError('invalid', 'Run belum muncul setelah 90 detik. Periksa tab Actions di GitHub; antrean runner mungkin penuh.');
+    // Dispatch sudah diterima GitHub (204), jadi runnya mungkin ada tetapi belum terlihat, bukan
+    // pasti tidak pernah dibuat. Judulnya menyebut persis sebanyak yang diketahui.
+    if (!run) {
+      throw new GhError('hasil', 'Permintaan sudah diterima GitHub, tetapi runnya belum muncul setelah 90 detik. Periksa tab Actions di repo itu; antrean runner mungkin penuh.',
+        { judul: 'Run belum terlihat di GitHub.' });
+    }
 
     while (!pantau.batal) {
       const [dataJobs, info] = await Promise.all([gh(`${repoPath(p)}/actions/runs/${run.id}/jobs?per_page=50`), gh(`${repoPath(p)}/actions/runs/${run.id}`)]);
@@ -3042,10 +3052,40 @@
       }
       await tunggu(JEDA_HASIL);
     }
-    const jobTerbit = jalur === 'v2' ? 'Analisis LLM v2 (deteksi dan verifikasi)' : 'Gabung dan terbitkan hasil';
-    throw new GhError('invalid', `Run #${run.run_number} selesai tetapi hasilnya belum ada di branch security-results. Lihat log job "${jobTerbit}" di GitHub.`);
+    throw await galatHasilTakAda(p, run, jalur);
   };
 
+  // Hasil tidak muncul di index.json bisa berarti tiga hal yang sangat berbeda, dan menyebut
+  // semuanya dengan kalimat yang sama pernah membuat run yang BERHASIL dilaporkan sebagai "tidak
+  // jadi dijalankan". Keadaannya ditanyakan ulang ke GitHub di sini, bukan ditebak dari apa yang
+  // terakhir diketahui, karena run bisa berubah keadaan selama dashboard menunggu hasilnya terbit.
+  const galatHasilTakAda = async (p, run, jalur) => {
+    let info = run;
+    try { info = await gh(`${repoPath(p)}/actions/runs/${run.id}`); } catch { info = run; }
+    const nomor = info.run_number ?? run.run_number;
+    const url = info.html_url ?? run.html_url;
+
+    // 1. Run gagal atau dibatalkan: wajar hasilnya tidak ada, dan yang perlu dibuka adalah lognya.
+    if (info.status === 'completed' && info.conclusion !== 'success') {
+      const kata = { failure: 'gagal', cancelled: 'dibatalkan', timed_out: 'kehabisan waktu', action_required: 'menunggu persetujuan' }[info.conclusion] ?? info.conclusion;
+      return new GhError('hasil', `Run #${nomor} ${kata}, jadi tidak ada hasil yang diterbitkan. Buka lognya di GitHub untuk melihat job mana yang berhenti.`,
+        { judul: `Run #${nomor} ${kata}.` });
+    }
+
+    // 2. Run belum selesai: bukan kegagalan, hanya belum waktunya.
+    if (info.status !== 'completed') {
+      return new GhError('hasil', `Run #${nomor} masih berjalan. Hasilnya akan muncul sendiri setelah job penerbitnya selesai; halaman ini bisa dimuat ulang nanti.`,
+        { judul: `Run #${nomor} masih berjalan.` });
+    }
+
+    // 3. Run berhasil tetapi hasilnya tidak ada di index.json. Sebab yang paling sering: hasilnya
+    //    terbit sebagai skema 1, yang punya index sendiri dan memang tidak dibaca dashboard ini.
+    const jobTerbit = jalur === 'v2' ? 'Gabung dan terbitkan hasil v2' : 'Gabung dan terbitkan hasil';
+    const sebabV1 = jalur === 'v2' ? '' : ' Jalur v1 menerbitkan skema 1 ke index-v1.json, dan dashboard ini hanya membaca skema 2 dari index.json.';
+    return new GhError('hasil',
+      `Run #${nomor} berhasil, tetapi hasilnya tidak ada di index.json pada branch security-results.${sebabV1} Periksa log job "${jobTerbit}" di GitHub: mungkin job itu dilewati, atau penerbitannya berhenti.`,
+      { judul: `Run #${nomor} berhasil, tetapi hasilnya tidak muncul di dashboard.` });
+  };
 
   // ---------- Mulai ----------
   const ikat = () => {
