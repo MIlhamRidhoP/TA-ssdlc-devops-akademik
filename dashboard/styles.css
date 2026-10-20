@@ -943,11 +943,20 @@ nav:has(.projects:empty) { display: none; }
 .putusan {
   font-family: var(--font-data); font-weight: 500; font-size: 0.8125rem;
   padding: 0.05rem var(--s-2); border-radius: 4px; white-space: nowrap;
+  /* Label putusan terpanjang, "Belum diverifikasi (skenario A)", tidak muat di layar 375px dan
+     mendorong seluruh baris alert keluar halaman. Dipendekkan katanya akan menghilangkan
+     keterangan skenarionya, jadi yang mengalah tata letaknya: di layar sempit ia boleh membungkus. */
+  max-width: 100%; overflow-wrap: anywhere;
 }
+@media (max-width: 30rem) { .putusan { white-space: normal; } }
 .putusan.p-tp { background: var(--crit-soft); color: var(--crit); }
 .putusan.p-fp { background: var(--ok-soft); color: var(--ok); }
 .putusan.p-unc { background: var(--high-soft); color: var(--high); }
 .putusan.p-none { background: var(--paper-3); color: var(--ink-2); }
+/* Belum diverifikasi (skenario A) dibedakan dari "tanpa putusan": yang satu belum dinilai siapa
+   pun, yang lain sudah dinilai tetapi jawabannya tidak sah. Garis putus-putus membuat bedanya
+   terbaca tanpa bergantung warna. */
+.putusan.p-belum { background: var(--paper-3); color: var(--ink-2); border: 1px dashed var(--rule-2); }
 
 /* Baris temuan v2 berbentuk kartu: chip dulu, lalu judul tebal, lalu lokasi. Urutannya mengikuti
    cara temuan dibaca: apa jenisnya, apa namanya, di mana. */

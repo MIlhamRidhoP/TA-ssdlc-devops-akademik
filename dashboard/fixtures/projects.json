@@ -32,6 +32,13 @@
           "contoh": "Contoh mode demo: saran lapis 2 pada run ini disusun sendiri, bukan keluaran model."
         },
         {
+          "name": "contoh/skenario-a",
+          "dispatch": false,
+          "v2": false,
+          "catatan": "Branch contoh khusus mode demo. Skenario A disusun dari alert SonarCloud run eksperimen 19 Okt vendor google, dengan seluruh putusan modelnya dibuang. Alertnya asli; yang dibuat-buat hanya identitas runnya.",
+          "contoh": "Contoh mode demo: skenario A disusun dari alert Sonar nyata, tanpa putusan model."
+        },
+        {
           "name": "contoh/gabungan",
           "dispatch": false,
           "v2": false,

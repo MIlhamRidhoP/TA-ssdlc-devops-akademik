@@ -18,7 +18,7 @@
         "nomor": { "type": "integer" },
         "repo": { "type": ["string", "null"], "description": "owner/repo; null untuk run yang dijalankan dari CLI" },
         "asal": { "enum": ["workflow", "cli", null], "description": "Asal run. Tidak ada pada berkas yang terbit sebelum field ini, jadi null dan tidak-ada sama-sama berarti tidak diketahui" },
-        "vendor": { "enum": ["google", "anthropic", "openai", "gabungan"], "description": "Vendor tunggal, atau gabungan bila hasil tiga vendor disatukan" },
+        "vendor": { "enum": ["google", "anthropic", "openai", "gabungan", null], "description": "Vendor tunggal, atau gabungan bila hasil tiga vendor disatukan. null pada skenario A, yang tidak memanggil model sama sekali sehingga tidak punya vendor" },
         "model_diminta": { "type": ["string", "null"], "description": "null pada mode gabungan, yang tidak punya satu model" },
         "model_menjawab": { "type": ["string", "null"], "description": "Model yang benar-benar menjawab; dibandingkan dengan model_diminta sebagai bukti" },
         "kondisi": { "type": "string", "description": "utama, sonar_di_deteksi, komentar_menyesatkan" },
@@ -187,7 +187,7 @@
           "severity_sonar": { "type": ["string", "null"], "description": "Severity apa adanya dari SonarCloud, tidak diterjemahkan" },
           "severity_asal": { "const": "sonar" },
           "putusan": { "enum": ["true_positive", "false_positive", "uncertain", null], "description": "null berarti model tidak memberi putusan sah untuk alert ini" },
-          "putusan_asal": { "enum": ["verifikasi-model", "suara-terbanyak", null] },
+          "putusan_asal": { "enum": ["verifikasi-model", "suara-terbanyak", "tanpa-verifikasi", null], "description": "Asal putusan alert. tanpa-verifikasi dipakai skenario A, yang memang tidak menjalankan verifikasi; bedanya dengan null penting, karena null berarti verifikasi dijalankan tetapi jawabannya tidak sah" },
           "putusan_gabungan": {
             "enum": ["true_positive", "false_positive", "uncertain", "tidak_sepakat"],
             "description": "Putusan hasil suara terbanyak. tidak_sepakat berarti tidak ada putusan yang meraih minimal dua suara; alert tetap dipertahankan dan TIDAK dianggap false positive. Hanya ada pada mode gabungan."

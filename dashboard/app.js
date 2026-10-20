@@ -1748,6 +1748,14 @@
   };
   const infoPutusan = (p) => PUTUSAN_V2[p] ?? { label: 'Tanpa putusan', kelas: 'none' };
 
+  // Dua alert yang sama-sama tanpa putusan bisa berarti hal yang berlawanan. "Tanpa putusan"
+  // berarti verifikasi dijalankan tetapi jawabannya tidak sah — sesuatu yang gagal. Skenario A
+  // tidak pernah menjalankan verifikasi sama sekali, jadi alertnya belum dinilai siapa pun, dan itu
+  // bukan kegagalan. Berkas hasil menyimpan bedanya di putusan_asal.
+  const infoPutusanAlert = (a) => (a?.putusan_asal === 'tanpa-verifikasi'
+    ? { label: 'Belum diverifikasi (skenario A)', kelas: 'belum' }
+    : infoPutusan(a?.putusan_gabungan ?? a?.putusan));
+
   // ---------- Bentuk run ----------
   // Run yang diterbitkan sebelum sumbu skenario ada tidak punya run.skenario maupun run.mode_model.
   // Saat keduanya belum ada, satu-satunya bentuk yang pernah dihasilkan pipeline adalah skenario B
@@ -1883,6 +1891,26 @@
     // Sonar MQR memakai nama severity lain; tanpa kartu ini alert seperti itu hilang dari hitungan.
     const sevLain = h.alerts.filter((a) => !SEV_DIKENAL.includes(String(a.severity_sonar).toUpperCase())).length;
     const ditinjau = (v) => h.findings.filter((t) => state.keputusan[t.fingerprint]?.v === v).length;
+
+    // Skenario A menjalankan SonarCloud tetapi tidak satu pun model, jadi kelompok "putusan model"
+    // akan berisi nol semua dan terbaca seolah model menilai dan tidak menemukan apa-apa.
+    if (skenarioRun(h.run) === 'A') {
+      isi($('summary'),
+        grup('Keparahan alert Sonar', `${h.alerts.length} alert`,
+          kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
+          kartu('Critical', sev(['CRITICAL']), 'severity apa adanya dari Sonar', 'high'),
+          kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
+          kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
+          sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
+        el('section', { class: 'kartu-grup' },
+          el('div', { class: 'kartu-kepala' }, el('h3', { text: 'Putusan model atas alert' }),
+            el('span', { class: 'kartu-total', text: 'tidak ada' })),
+          el('p', { class: 'note', text: 'Skenario A tidak memakai LLM. Seluruh alert di atas belum diverifikasi model mana pun, dan tidak ada temuan deteksi mandiri. Biaya run ini nol.' })),
+        grup('Sumber dan tindak lanjut', 'satu himpunan',
+          kartu('Alert Sonar', h.alerts.length, 'belum diverifikasi model'),
+          kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
+      return;
+    }
 
     // Skenario C tidak memakai SonarCloud, jadi dua kelompok pertama akan berisi nol semua.
     // Deretan nol membaca sebagai "diperiksa dan bersih"; yang benar adalah "tidak ikut diperiksa".
@@ -2178,19 +2206,28 @@
     // yaitu dua keadaan yang berbeda sebabnya.
     const putusanTampil = (a) => a.putusan_gabungan ?? a.putusan;
     const gabungan = gabunganRun(state.hasil.run);
-    const urut = gabungan
-      ? ['true_positive', 'false_positive', 'uncertain', 'tidak_sepakat', null]
-      : ['true_positive', 'false_positive', 'uncertain', null];
-    isi($('alerts-ringkas'), urut.map((p) => {
-      const inf = infoPutusan(p);
-      const n = alerts.filter((a) => putusanTampil(a) === p).length;
-      return el('span', { class: 'ringkas-item' },
-        el('b', { class: `putusan p-${inf.kelas}`, text: String(n) }), el('span', { text: inf.label }));
-    }));
+    // Skenario A tidak punya putusan apa pun, jadi deretan "0 dikonfirmasi, 0 false positive"
+    // hanya akan membuat halaman ini terbaca seolah model menilai dan tidak menemukan apa-apa.
+    // Yang ditampilkan satu angka: berapa alert yang menunggu diverifikasi.
+    if (sk === 'A') {
+      isi($('alerts-ringkas'), el('span', { class: 'ringkas-item' },
+        el('b', { class: 'putusan p-belum', text: String(alerts.length) }),
+        el('span', { text: 'Belum diverifikasi (skenario A)' })));
+    } else {
+      const urut = gabungan
+        ? ['true_positive', 'false_positive', 'uncertain', 'tidak_sepakat', null]
+        : ['true_positive', 'false_positive', 'uncertain', null];
+      isi($('alerts-ringkas'), urut.map((p) => {
+        const inf = infoPutusan(p);
+        const n = alerts.filter((a) => putusanTampil(a) === p).length;
+        return el('span', { class: 'ringkas-item' },
+          el('b', { class: `putusan p-${inf.kelas}`, text: String(n) }), el('span', { text: inf.label }));
+      }));
+    }
 
     isi($('alerts-body'), alerts.length
       ? el('ul', { class: 'alist' }, alerts.map((a) => {
-        const inf = infoPutusan(putusanTampil(a));
+        const inf = infoPutusanAlert(a);
         const idDetail = `ad-${a.id}`;
         const r = state.hasil.run;
         const hash = r.hash_prompt?.user_deteksi ?? null;
@@ -2200,7 +2237,9 @@
               ikon(IKON.bolt),
               el('b', { text: 'Alasan dan analisis model' }),
               el('span', { class: 'alasan-model', text: labelModelId(r.model_menjawab ?? r.model_diminta) })),
-            el('p', { class: 'alasan', text: a.alasan ?? 'Model tidak memberi alasan untuk alert ini.' })),
+            el('p', { class: 'alasan', text: a.alasan ?? (sk === 'A'
+              ? 'Skenario A tidak memakai LLM, jadi alert ini belum dinilai model mana pun. Severity di atas datang apa adanya dari SonarCloud.'
+              : 'Model tidak memberi alasan untuk alert ini.') })),
           el('div', { class: 'afakta' },
             a.rule ? el('span', { class: 'chip chip-rule', text: a.rule }) : null,
             ...a.cwe.map(tautanCwe),
@@ -2434,7 +2473,12 @@
         el('span', { class: 'buka' }, el('small', { text: terbuka ? 'Tutup detail' : 'Detail' }), ikon(IKON.panah)));
         return el('li', {}, baris);
       }))
-      : el('div', { class: 'state' }, el('p', { text: semua.length ? 'Tidak ada temuan yang cocok dengan saringan ini.' : 'Panggilan deteksi tidak melaporkan temuan.' })));
+      : el('div', { class: 'state' }, skenarioRun(state.hasil.run) === 'A'
+        // Kekosongan skenario A harus DIJELASKAN. Tanpa ini, 'tidak ada temuan' terbaca sebagai
+        // hasil pemeriksaan yang bersih, padahal deteksi LLM memang tidak pernah dijalankan.
+        ? [el('p', { text: 'Skenario A tidak memakai LLM.' }),
+          el('p', { class: 'note', text: 'Run ini hanya menjalankan SonarCloud, jadi tidak ada panggilan deteksi dan tidak ada temuan LLM. Alert SonarCloud-nya ada di halaman Verifikasi.' })]
+        : el('p', { text: semua.length ? 'Tidak ada temuan yang cocok dengan saringan ini.' : 'Panggilan deteksi tidak melaporkan temuan.' })));
     // Sidik jari berasal dari berkas hasil; hanya pola yang sah boleh masuk selector.
     if (fokusFp && /^[0-9a-f]{16}$/.test(fokusFp)) {
       const n = document.querySelector(`.frow-v2[data-fp="${fokusFp}"]`);
@@ -3001,6 +3045,7 @@
     const jobTerbit = jalur === 'v2' ? 'Analisis LLM v2 (deteksi dan verifikasi)' : 'Gabung dan terbitkan hasil';
     throw new GhError('invalid', `Run #${run.run_number} selesai tetapi hasilnya belum ada di branch security-results. Lihat log job "${jobTerbit}" di GitHub.`);
   };
+
 
   // ---------- Mulai ----------
   const ikat = () => {

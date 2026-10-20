@@ -386,6 +386,25 @@ jobs:
           SONAR_BRANCH: ${{ github.ref_name }}
         run: node scripts/gemini-scan.js --export-prompt
 
+      # Skenario A juga perlu hasil skema 2, karena dashboard hanya membaca index.json. Tanpa
+      # langkah ini run A berjalan dan sukses tetapi tidak pernah muncul di dashboard sama sekali.
+      #
+      # continue-on-error mengikuti pola langkah Gemini di bawah: kalau analisis Sonar belum
+      # sepadan dengan commit yang berjalan, skrip ini menolak dan berkasnya tidak dibuat, tetapi
+      # penerbitan skema 1 yang sudah ada tidak boleh ikut jatuh karenanya. Job terbit memeriksa
+      # ada atau tidaknya berkas itu, bukan menganggapnya selalu ada.
+      #
+      # Tidak ada API LLM yang dipanggil di sini; satu-satunya jaringan yang disentuh SonarCloud.
+      - name: Susun hasil skema 2 (skenario A)
+        if: needs.rencana.outputs.skenario == 'A'
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_BRANCH: ${{ github.ref_name }}
+        run: |
+          node scripts/hasil-skenario-a.js --objek=. --out=gemini-output/results-v2-a.json \
+            --nomor="$GITHUB_RUN_NUMBER" --id="$GITHUB_RUN_ID" --repo="$GITHUB_REPOSITORY"
+
       # Non-blocking: kegagalan Gemini (kuota, 503) tetap menghasilkan results.json dengan status gagal.
       - name: Analisis Gemini (1 run)
         if: needs.rencana.outputs.mode == 'sast-llm'
@@ -801,6 +820,14 @@ jobs:
               git worktree add --orphan -b security-results ../pub
             fi
             node scripts/merge-results.js publish --results=results.json --dir=../pub
+            # Skenario A menerbitkan DUA berkas dari satu job: skema 1 ke index-v1.json seperti
+            # biasa, dan skema 2 ke index.json supaya dashboard bisa membacanya. Keduanya menulis
+            # ke worktree yang sama lalu ikut satu commit dan satu push, jadi tidak ada penerbitan
+            # kedua yang bisa menimpa yang pertama. Itu pelajaran dari bug lama: dua job yang
+            # sama-sama menerbitkan pernah membuat hasil v2 run #46 hilang.
+            if [ -f gemini-output/results-v2-a.json ]; then
+              node scripts/merge-results.js publish --results=gemini-output/results-v2-a.json --dir=../pub
+            fi
             git -C ../pub add -A
             if git -C ../pub diff --cached --quiet; then
               echo "::notice::Isi branch security-results sudah sama; tidak ada yang perlu diterbitkan."

@@ -176,6 +176,31 @@
         "tidak_sepakat": 0,
         "tanpa_putusan": 0
       }
+    },
+    {
+      "id": 9004,
+      "nomor": 9004,
+      "branch": "contoh/skenario-a",
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "vendor": null,
+      "model_diminta": null,
+      "model_menjawab": null,
+      "kondisi": "utama",
+      "mulai": "2026-10-19T09:15:00.000Z",
+      "selesai": "2026-10-19T09:15:06.000Z",
+      "durasi_detik": 6,
+      "biaya_usd": 0,
+      "path": "contoh/skenario-a.json",
+      "status": "ok",
+      "jumlah": {
+        "alert": 5,
+        "temuan": 0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "uncertain": 0,
+        "tidak_sepakat": 0,
+        "tanpa_putusan": 5
+      }
     }
   ]
 }
