@@ -43,7 +43,10 @@ const petakanTemuan = (temuan, parseCwe, potongan = null) => temuan.map((t, i) =
   };
 });
 
-const petakanAlert = (alert, verifikasi) => {
+// skenario dibutuhkan untuk membedakan dua ketiadaan putusan yang artinya berlawanan: di skenario A
+// verifikasi memang tidak pernah dijalankan, sedangkan putusan_asal null berarti verifikasi berjalan
+// tetapi jawabannya tidak sah. Dashboard menampilkan keduanya dengan kalimat yang berbeda.
+const petakanAlert = (alert, verifikasi, skenario = null) => {
   const perId = new Map((verifikasi ?? []).map((v) => [v.id_alert, v]));
   return (alert ?? []).map((a) => {
     const v = perId.get(a.id);
@@ -60,7 +63,7 @@ const petakanAlert = (alert, verifikasi) => {
       severity_sonar: a.severity ?? null,
       severity_asal: 'sonar',
       putusan: sah ? v.putusan : null,
-      putusan_asal: sah ? 'verifikasi-model' : null,
+      putusan_asal: skenario === 'A' ? 'tanpa-verifikasi' : (sah ? 'verifikasi-model' : null),
       keyakinan: sah && ['high', 'medium', 'low'].includes(v.keyakinan) ? v.keyakinan : null,
       alasan: sah ? (v.alasan ?? null) : null,
       tanda: [...(v?.tanda ?? [])],
@@ -78,7 +81,10 @@ const detik = (mulai, selesai) => {
 // dashboard memakai id untuk mengambil status job. Dari CLI id tidak ada, jadi ikut nomor.
 const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null }) => {
   const d = run.deteksi ?? {};
-  const panggilan = [d, ...(run.verifikasi ?? []).map((v) => v.metadata ?? {})];
+  // Entri deteksi hanya dihitung kalau memang ADA. Skenario A tidak memanggil model sama sekali,
+  // dan objek kosong yang ikut terhitung membuatnya melaporkan "1 panggilan, 0 ok" — terbaca
+  // sebagai panggilan yang gagal, padahal tidak pernah ada panggilan.
+  const panggilan = [...(run.deteksi ? [d] : []), ...(run.verifikasi ?? []).map((v) => v.metadata ?? {})];
   const hitung = (f) => panggilan.filter(f).length;
   const biaya = panggilan.reduce((s, p) => s + (typeof p.biaya_usd === 'number' ? p.biaya_usd : 0), 0);
   return {
@@ -98,9 +104,13 @@ const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null
     // yang pernah dijalankan sebelum sumbu ini ada.
     skenario: run.skenario ?? summary.skenario ?? 'B',
     mode_model: run.mode_model ?? summary.mode_model ?? 'tunggal',
-    mulai: d.waktu_mulai ?? null,
-    selesai: panggilan.length ? (panggilan[panggilan.length - 1].waktu_selesai ?? null) : null,
-    durasi_detik: detik(d.waktu_mulai, panggilan.length ? panggilan[panggilan.length - 1].waktu_selesai : null),
+    // Waktu run diturunkan dari panggilannya, karena itulah yang benar-benar memakan waktu.
+    // Skenario A tidak punya satu pun panggilan tetapi tetap punya awal dan akhir: ia mengambil
+    // laporan Sonar. Tanpa cadangan ke run.mulai, runnya tercatat tanpa waktu sama sekali, dan di
+    // riwayat ia jatuh ke bawah seolah urutannya tidak diketahui.
+    mulai: d.waktu_mulai ?? run.mulai ?? null,
+    selesai: (panggilan.length ? (panggilan[panggilan.length - 1].waktu_selesai ?? null) : null) ?? run.selesai ?? null,
+    durasi_detik: detik(d.waktu_mulai ?? run.mulai, (panggilan.length ? panggilan[panggilan.length - 1].waktu_selesai : null) ?? run.selesai),
     objek_uji: {
       commit: run.commit_objek_uji ?? summary.objek_uji.commit,
       branch: run.branch_objek_uji ?? summary.objek_uji.branch ?? null,
@@ -249,7 +259,9 @@ const susunHasilV2 = ({ summary, run, nomor, id = null, alert, parseCwe, repo = 
   run: susunRun({ summary, run, nomor, id, repo, pipeline }),
   // Skenario C tidak memakai SonarCloud sama sekali: alertnya tidak pernah dikirim ke model dan
   // tidak punya putusan, jadi menampilkannya tanpa putusan akan menyesatkan. Himpunannya kosong.
-  alerts: (run.skenario ?? summary.skenario) === 'C' ? [] : petakanAlert(alert, run.verifikasi),
+  alerts: (run.skenario ?? summary.skenario) === 'C'
+    ? []
+    : petakanAlert(alert, run.verifikasi, run.skenario ?? summary.skenario ?? null),
   findings: petakanTemuan(run.temuan ?? [], parseCwe, potongan),
   ...(eksperimen ? { eksperimen } : {}),
 });

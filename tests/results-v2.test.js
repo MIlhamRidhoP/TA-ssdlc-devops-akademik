@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const { validasiSkema } = require('../scripts/validasi-skema');
 const { parseCwe } = require('../scripts/merge-results');
 const {
-  sidikJariTemuan, putusanSah, petakanTemuan, petakanAlert, susunEksperimen, entriIndexV2, rataRata,
+  sidikJariTemuan, putusanSah, petakanTemuan, petakanAlert, susunEksperimen, entriIndexV2, rataRata, susunRun,
 } = require('../scripts/llm/results-v2');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -30,6 +30,7 @@ const fixtureSemua = [
   require('../dashboard/fixtures/v2/contoh/rekomendasi-ai.json'),
   require('../dashboard/fixtures/v2/contoh/gabungan.json'),
   require('../dashboard/fixtures/v2/contoh/skenario-c.json'),
+  require('../dashboard/fixtures/v2/contoh/skenario-a.json'),
 ];
 const indexV2 = require('../dashboard/fixtures/v2/index.json');
 
@@ -281,4 +282,44 @@ test('index v2 konsisten dengan fixture yang ditunjuknya', () => {
   }
   // Tiga vendor berbeda di eksperimen, supaya tab Operasional bisa membandingkan model.
   assert.equal(new Set(indexV2.runs.filter((r) => r.branch === 'eksperimen/seeded').map((r) => r.vendor)).size, 3);
+});
+
+test('run tanpa satu pun panggilan model dilaporkan apa adanya', () => {
+  // Jumlah panggilan diturunkan dari daftar panggilan yang benar-benar terjadi. Entri deteksi yang
+  // tidak ada pernah ikut terhitung sebagai objek kosong, sehingga run tanpa panggilan melaporkan
+  // "1 panggilan, 0 ok" — terbaca sebagai panggilan yang gagal, padahal tidak pernah ada panggilan.
+  const dasar = {
+    versi_prompt: 'v2', vendor: 'google', model_diminta: 'm', kondisi: 'utama',
+    objek_uji: { commit: 'a'.repeat(40), branch: 'b', tree_src: 'c'.repeat(40) },
+    sumber_sonar: 'api',
+  };
+  const kosong = susunRun({
+    summary: dasar,
+    run: { mulai: '2026-10-20T10:00:00.000Z', selesai: '2026-10-20T10:00:06.000Z', verifikasi: [] },
+    nomor: 1,
+  });
+  assert.equal(kosong.status_panggilan.total, 0, 'tanpa deteksi berarti nol panggilan');
+  assert.equal(kosong.status_panggilan.ok, 0);
+  assert.equal(kosong.biaya_usd, 0);
+  // Run tanpa panggilan tetap punya awal dan akhir; tanpa cadangan ini ia tercatat tanpa waktu
+  // sama sekali dan jatuh ke dasar riwayat seolah urutannya tidak diketahui.
+  assert.equal(kosong.mulai, '2026-10-20T10:00:00.000Z');
+  assert.equal(kosong.selesai, '2026-10-20T10:00:06.000Z');
+  assert.equal(kosong.durasi_detik, 6);
+
+  // Run dengan deteksi tetap dihitung seperti semula, dan waktunya tetap datang dari panggilannya.
+  const ada = susunRun({
+    summary: dasar,
+    run: {
+      mulai: '2026-10-20T09:00:00.000Z', selesai: '2026-10-20T09:00:01.000Z',
+      deteksi: { status: 'ok', waktu_mulai: '2026-10-20T10:00:00.000Z', waktu_selesai: '2026-10-20T10:02:00.000Z', biaya_usd: 0.5 },
+      verifikasi: [],
+    },
+    nomor: 1,
+  });
+  assert.equal(ada.status_panggilan.total, 1);
+  assert.equal(ada.status_panggilan.ok, 1);
+  assert.equal(ada.biaya_usd, 0.5);
+  assert.equal(ada.mulai, '2026-10-20T10:00:00.000Z', 'waktu panggilan menang atas waktu run');
+  assert.equal(ada.durasi_detik, 120);
 });
