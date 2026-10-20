@@ -34,7 +34,17 @@
   // yang bisa ditolak: A selalu sast, B dan C selalu sast-llm.
   const MODE_SKENARIO = { A: 'sast', B: 'sast-llm', C: 'sast-llm' };
   // Saat run sudah dimuat, jalurnya ditentukan isi hasil; saat menyiapkan run baru, oleh form.
+  // Jalur graf ditentukan SKENARIO runnya, bukan versi skemanya. Sejak skenario A ikut menerbitkan
+  // skema 2, versi skema berhenti menjadi penanda jalur mana yang berjalan: run A berskema 2,
+  // tetapi job yang berjalan adalah rantai v1 (analisis lalu hasil). Menyimpulkannya dari skema
+  // membuat graf run A menandai job yang BENAR-BENAR berjalan sebagai "digantikan jalur v2",
+  // sekaligus menampilkan job v2 yang tidak pernah ada sebagai "dilewati".
+  const JALUR_SKENARIO = { A: 'v1', B: 'v2', C: 'v2' };
+  const skenarioAktif = (live) => live?.skenario ?? state.hasil?.run?.skenario ?? null;
   const jalurAktif = (live) => live?.jalur
+    ?? JALUR_SKENARIO[skenarioAktif(live)]
+    // Run lama tanpa field skenario: versi skema masih penanda yang benar, karena waktu itu hanya
+    // jalur v2 yang menghasilkan skema 2.
     ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
   const KUNCI = { token: 'sd.token', tema: 'sd.tema', padat: 'sd.kepadatan', terakhir: 'sd.terakhir', keputusan: 'sd.keputusan.', keputusanV2: 'sd.keputusan.v2.' };
 
@@ -1531,7 +1541,7 @@
     return Array.from({ length: maks + 1 }, (_, i) => PIPELINE.filter((n) => dalamSimpul(n.key) === i));
   };
 
-  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi', absen: 'tidak ada di run ini', 'tak-tahu': 'status tidak diketahui' };
+  const TEKS_SIMPUL = { wait: 'menunggu', run: 'berjalan', done: 'selesai', fail: 'gagal', skip: 'dilewati', 'fail-diharapkan': 'gagal sesuai ekspektasi', absen: 'tidak ada di run ini', 'tak-tahu': 'status tidak diketahui', 'luar-jalur': 'tidak dipakai' };
 
   // Ketergantungan yang perlu DIGAMBAR, bukan yang tercatat. `perlu` menyalin `needs` di workflow
   // apa adanya, dan `needs` memuat banyak ketergantungan yang sudah tersirat: `terbit-v2` menunggu
@@ -1609,6 +1619,7 @@
 
   const renderPipeline = (live) => {
     const jalur = jalurAktif(live);
+    const skenarioGraf = skenarioAktif(live);
     const mode = live?.mode ?? state.hasil?.run?.mode ?? modeTerpilih();
     const status = live?.jobs ?? state.jobs ?? statusNodeDariHasil() ?? {};
     // Rekaman bukan pemantauan: statusnya diambil sekali lalu dibekukan, dan itu harus terbaca.
@@ -1631,26 +1642,48 @@
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('preserveAspectRatio', 'none');
 
+    // Node yang tidak dipakai run ini. Sebabnya disebut apa adanya, bukan satu kalimat untuk semua:
+    // di skenario A job v2 memang tidak berlaku, sedangkan di jalur v2 job v1-lah yang digantikan.
+    // Sebelumnya semuanya berbunyi "digantikan jalur v2", sehingga job v2 yang tidak dipakai pun
+    // dikatakan digantikan oleh dirinya sendiri.
+    const teksLuarJalur = (n) => {
+      if (skenarioGraf === 'A') return 'tidak dipakai di skenario A';
+      if (n.jalur === 'v1') return 'digantikan jalur v2';
+      return 'tidak dipakai di jalur v1';
+    };
+
     const kartu = (n) => {
       const aktif = simpulAktif(n, jalur);
       let st = status[n.key] ?? { s: 'wait', durasi: null };
-      if (!aktif) st = { s: 'skip', durasi: null };
+      // Jobnya benar-benar ada di jawaban GitHub untuk run ini.
+      const adaJob = (st.per ?? []).length > 0;
+      // Node di luar jalur hanya ditandai begitu kalau memang TIDAK ada job yang cocok dengannya.
+      // Kalau jobnya jelas-jelas berjalan, statusnya ditampilkan apa adanya: graf tidak boleh
+      // menyangkal job yang berjalan dan sukses di GitHub, berapa pun yakinnya aturan jalur.
+      // Penjagaan ini yang membuat cacat jalur serupa muncul sebagai node tak terduga, bukan
+      // sebagai klaim "dilewati" yang terdengar meyakinkan.
+      if (!aktif && !adaJob) st = { s: 'luar-jalur', durasi: null };
+      const dipakai = aktif || adaJob;
       let teks = TEKS_SIMPUL[st.s];
       if (aktif && n.key === 'analisis' && llmGagal && st.s === 'done') { st = { ...st, s: 'fail' }; teks = 'Analisis LLM gagal'; }
       const diharapkan = st.s === 'fail' ? ekspektasiGagal(n.key) : null;
       if (diharapkan) { st = { ...st, s: 'fail-diharapkan' }; teks = diharapkan.sebab; }
-      const nama = aktif && n.key === 'analisis' && mode === 'sast' ? 'Ambil temuan Sonar' : n.nama;
+      // Label job analisis mengikuti SKENARIO runnya. Sebelumnya ia mengikuti `mode`, yang tidak ada
+      // di skema 2 sehingga jatuh ke pilihan yang sedang aktif di drawer: label node run tersimpan
+      // berubah-ubah mengikuti apa yang kebetulan dipilih pengguna.
+      const nama = dipakai && n.key === 'analisis' && (skenarioGraf === 'A' || mode === 'sast')
+        ? 'Ambil temuan Sonar' : n.nama;
       const langkah = status[n.key]?.langkah ?? null;
-      const bisaDibuka = aktif && Array.isArray(langkah) && langkah.length > 0;
+      const bisaDibuka = dipakai && Array.isArray(langkah) && langkah.length > 0;
       // Node yang belum berjalan hanya lingkaran kosong. Tanda centang di sana terbaca sebagai
       // "sudah selesai" padahal statusnya menunggu.
-      const TANDA = { fail: IKON.silang, 'fail-diharapkan': IKON.seru, skip: IKON.minus, done: IKON.cek, run: IKON.titik, absen: IKON.minus };
+      const TANDA = { fail: IKON.silang, 'fail-diharapkan': IKON.seru, skip: IKON.minus, done: IKON.cek, run: IKON.titik, absen: IKON.minus, 'luar-jalur': IKON.minus };
       const tanda = TANDA[st.s] ?? null;
       const isiSimpul = [
         el('span', { class: 'simpul-mark', 'aria-hidden': 'true' }, tanda ? ikon(tanda) : null),
         el('span', { class: 'simpul-nama', text: nama }),
         el('span', { class: 'simpul-durasi data', text: durasi(st.durasi) }),
-        el('span', { class: 'simpul-status', text: aktif ? teks : 'digantikan jalur v2' }),
+        el('span', { class: 'simpul-status', text: dipakai ? teks : teksLuarJalur(n) }),
       ];
       // Dua tindakan berbeda di satu kartu: membuka daftar langkah di halaman ini, dan membuka log
       // job itu di GitHub. Keduanya berdampingan di dalam kartu, bukan kartu yang seluruhnya bisa
@@ -1658,7 +1691,7 @@
       // bertumpuk membuat orang membuka tab baru padahal hanya ingin melihat langkahnya.
       const nomorRun = live?.nomor ?? state.hasil?.run?.nomor ?? null;
       const idRun = live?.id ?? state.rekaman?.id ?? state.hasil?.run?.id ?? null;
-      const urlLog = aktif ? urlJobGh(state.proyek, idRun, status[n.key]?.id) : null;
+      const urlLog = dipakai ? urlJobGh(state.proyek, idRun, status[n.key]?.id) : null;
       const aksi = [
         bisaDibuka ? el('button', {
           class: 'simpul-tombol', type: 'button',
@@ -1671,7 +1704,7 @@
           'aria-label': `Lihat log job ${nama}${nomorRun ? ` run #${nomorRun}` : ''} di GitHub, tab baru`,
         }, el('small', { text: 'Lihat log' }), ikon(IKON.luar)) : null,
       ].filter(Boolean);
-      const sifat = { class: `simpul${aktif ? '' : ' mati'}${bisaDibuka ? ' bisa-dibuka' : ''}`, dataset: { s: st.s, key: n.key } };
+      const sifat = { class: `simpul${dipakai ? '' : ' mati'}${bisaDibuka ? ' bisa-dibuka' : ''}`, dataset: { s: st.s, key: n.key } };
       return el('div', sifat, isiSimpul, aksi.length ? el('span', { class: 'simpul-aksi' }, aksi) : null);
     };
 
@@ -1826,9 +1859,13 @@
     // Skenario C tidak punya alert sama sekali, jadi menyebut "0 alert" di judul membaca seolah
     // Sonar dijalankan dan tidak menemukan apa-apa. Yang benar: alert memang tidak ikut.
     const bagianAlert = sk === 'C' ? 'tanpa alert Sonar' : `${state.hasil.alerts.length} alert`;
-    const bagianModel = gabungan
-      ? `${dipakai.length} model${dipakai.length ? ` (${dipakai.join(', ')})` : ''}`
-      : labelVendor(r.vendor);
+    // Skenario A tidak memanggil model, jadi vendornya null dan labelVendor memberi tanda hubung.
+    // Tanda hubung di judul terbaca seperti data yang hilang; yang benar adalah memang tidak ada.
+    const bagianModel = sk === 'A'
+      ? 'tanpa LLM'
+      : (gabungan
+        ? `${dipakai.length} model${dipakai.length ? ` (${dipakai.join(', ')})` : ''}`
+        : labelVendor(r.vendor));
     $('run-title').textContent = `Run #${r.nomor} · ${bagianModel} · ${bagianAlert} · ${state.hasil.findings.length} temuan`;
     renderStatusRun(r);
 
@@ -1851,10 +1888,12 @@
         warn: gagal.length > 0,
         title: `Ikut: ${dipakai.join(', ') || 'tidak ada'}${gagal.length ? `. Gagal: ${gagal.map((g) => `${g.vendor ?? 'tidak dikenal'} (${g.alasan ?? 'tanpa alasan'})`).join('; ')}` : ''}`,
       })
-      : sel('Model', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
+      : sel('Model', sk === 'A' ? 'tanpa LLM' : (r.model_menjawab ? labelModelId(r.model_menjawab) : '—'), {
         ikon: IKON.bolt,
         warn: bedaModel,
-        title: bedaModel ? `${r.model_menjawab}, padahal yang diminta ${r.model_diminta}` : (r.model_menjawab ?? r.model_diminta),
+        title: sk === 'A'
+          ? 'Skenario A hanya menjalankan SonarCloud; tidak ada model yang dipanggil.'
+          : (bedaModel ? `${r.model_menjawab}, padahal yang diminta ${r.model_diminta}` : (r.model_menjawab ?? r.model_diminta)),
       });
     const infoSk = LABEL_SKENARIO[sk] ?? { nama: sk, ket: '' };
     isi($('title-block'),
@@ -1974,12 +2013,16 @@
     // Sama seperti di halaman Verifikasi: putusan akhir mode gabungan ada di putusan_gabungan,
     // dan "tidak sepakat" tidak boleh ikut terhitung sebagai "tanpa putusan".
     const n = (p) => h.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan) === p).length;
+    // Skenario A tidak menjalankan verifikasi sama sekali, jadi seluruh alertnya jatuh ke kolom
+    // tanpa putusan. Label "Tanpa putusan" di situ terbaca seperti verifikasi yang gagal, padahal
+    // tidak pernah ada verifikasi yang dicoba. Hanya labelnya yang berubah; angkanya tetap sama.
+    const labelTanpaPutusan = skenarioRun(h.run) === 'A' ? 'Belum diverifikasi (skenario A)' : 'Tanpa putusan';
     isi($('ringkas-alert'), h.alerts.length
       ? el('div', { class: 'ringkas-putusan' },
         [['true_positive', 'Dikonfirmasi model'], ['false_positive', 'False positive'],
           ['uncertain', 'Ragu-ragu'],
           ...(gabunganRun(h.run) ? [['tidak_sepakat', 'Tidak sepakat']] : []),
-          [null, 'Tanpa putusan']].map(([k, label]) => el('div', { class: 'ringkas-angka' },
+          [null, labelTanpaPutusan]].map(([k, label]) => el('div', { class: 'ringkas-angka' },
           // Warna hanya untuk angka di atas nol, aturan yang sama dengan kartu statistik: nol
           // berwarna membuat mata berhenti di tempat yang justru tidak perlu ditindaklanjuti.
           el('b', { class: n(k) > 0 ? `putusan p-${infoPutusan(k).kelas}` : 'ringkas-nol', text: String(n(k)) }),
