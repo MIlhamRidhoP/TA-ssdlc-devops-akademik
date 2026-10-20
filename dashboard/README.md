@@ -166,7 +166,7 @@ panel detail temuan dan alert terbuka, branch tanpa run, dan rail terbuka di lay
 | Drawer detail | screenshot **viewport**, bukan `fullPage`; ukur bahwa panel menempel di kanan setinggi layar dan tautan lewati-ke-konten tersembunyi selama drawer terbuka |
 | Pemberitahuan setelah dispatch | cegat dispatch, kembalikan `display_title` yang memuat label yang baru dikirim, lalu periksa bahwa teks hasilnya memuat `<a>` ke `html_url` run itu dengan `rel="noopener noreferrer"` |
 
-Enam jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
+Delapan jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
 melaporkan cacat yang tidak ada:
 
 - **Drawer harus dibuka.** Isi `#drawer` tersembunyi saat halaman dimuat, jadi axe maupun
@@ -203,6 +203,17 @@ melaporkan cacat yang tidak ada:
 - **Panel modal menutupi halaman dengan sengaja.** Pemeriksaan tumpang tindih harus dipersempit ke
   panel yang terbuka, baik drawer maupun sidebar di layar sempit, kalau tidak seluruh halaman di
   belakangnya terlaporkan tertutup.
+- **Kepala panel `position: sticky` juga menutupi dengan sengaja.** Playwright menggulir panel saat
+  mencentang kontrol yang ada di bawah, dan isi yang tergulir ke balik kepala panel lalu
+  terlaporkan tertutup. Yang membuatnya sah bukan "sticky", melainkan latar yang masif: kepala
+  panel tembus pandang membuat teks terbaca menumpuk, dan itu cacat sungguhan. Jadi yang
+  dikecualikan adalah elemen penutup yang punya leluhur sticky **berlatar masif**, bukan semua
+  sticky.
+- **Latar masif belum tentu terbaca sebagai `rgba()`.** Chromium menyerahkan `backgroundColor`
+  dalam notasi yang ditulis CSS-nya, dan berkas ini memakai `oklch()`. Pemeriksaan yang mencari
+  pola `rgba(...)` untuk menebak alpha membaca SELURUH latar sebagai tembus pandang, dan
+  pengecualian apa pun yang bergantung padanya diam-diam tidak pernah berlaku. Cari alphanya di
+  notasi mana pun: koma keempat pada `rgba()`/`hsla()`, atau bentuk garis miring pada notasi modern.
 
 Pemeriksaan ini tidak ikut di repo, jadi menyalinnya ke mesin lain berarti menulisnya ulang dari
 tabel di atas. Yang **ada** di repo adalah tes `node --test` di bagian sebelumnya, termasuk dua

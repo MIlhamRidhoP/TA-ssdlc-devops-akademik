@@ -522,6 +522,30 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .seg label:has(input:disabled) input { cursor: not-allowed; }
 .seg small { font-size: 0.8125rem; color: var(--muted); }
 .seg label:has(input:disabled) small { color: var(--muted); }
+/* Pilihan yang punya konsekuensi berbeda-beda dibaca sebagai kartu, bukan sebagai tombol pendek:
+   subjudulnya perlu ruang untuk satu kalimat, dan teks rata tengah satu kalimat sulit dipindai. */
+.seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg-kartu label { justify-items: start; text-align: left; align-content: start; gap: 0.15rem; }
+.seg-kartu .seg-kode {
+  display: grid; place-items: center; min-width: 1.375rem; min-height: 1.375rem;
+  border-radius: var(--radius-chip); background: var(--paper-2); border: 1px solid var(--rule-2);
+  font-size: 0.8125rem; font-weight: 600; color: var(--ink-2);
+}
+/* --accent-ink, bukan --paper-2: pasangan inilah yang dipakai seluruh permukaan beraksen di
+   berkas ini, dan ia sudah lolos ambang kontras di kedua tema. */
+.seg-kartu label:has(input:checked) .seg-kode { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.label-kecil { display: block; margin-bottom: var(--s-1); font-size: 0.875rem; color: var(--ink-2); }
+/* Mode gabungan belum pernah diuji di eksperimen TA. Penandanya netral, bukan peringatan galat:
+   yang disampaikan adalah batas bukti, bukan ada yang rusak. */
+.catatan-gabungan {
+  display: flex; gap: var(--s-2); padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-2); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-ctl); background: var(--paper-3);
+  font-size: 0.875rem; color: var(--ink-2);
+}
+@media (max-width: 30rem) {
+  .seg, .seg-2 { grid-template-columns: 1fr; }
+}
 /* Persetujuan biaya jalur v2 memakai .check yang sama dengan panel token, diberi bingkai karena
    konsekuensinya berbayar. */
 .run-form .check {

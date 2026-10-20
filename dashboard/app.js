@@ -29,6 +29,10 @@
   // dibaca dashboard ini). SAST saja memakai jalur v1 yang tidak memanggil LLM sama sekali.
   const jalurUntukMode = (mode) => (mode === 'sast-llm' ? 'v2' : 'v1');
   const jalurTerpilih = () => jalurUntukMode(modeTerpilih());
+  // Skenario adalah satu-satunya pilihan yang dibuat pengguna; mode diturunkan darinya. Workflow
+  // menolak kombinasi mode x skenario yang tidak sah, jadi dashboard tidak boleh mengirim pasangan
+  // yang bisa ditolak: A selalu sast, B dan C selalu sast-llm.
+  const MODE_SKENARIO = { A: 'sast', B: 'sast-llm', C: 'sast-llm' };
   // Saat run sudah dimuat, jalurnya ditentukan isi hasil; saat menyiapkan run baru, oleh form.
   const jalurAktif = (live) => live?.jalur
     ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
@@ -738,8 +742,12 @@
     try {
       const d = await jsonLokal('models.json');
       state.models = Array.isArray(d?.models) ? d.models : [];
+      // Asal angka biaya disebut sekali di satu tempat. Di mode gabungan tiga vendor berbagi sumber
+      // yang sama, dan mengulangnya tiga kali membuat baris sumbernya tidak lagi terbaca.
+      state.modelsSumber = typeof d?.sumber_biaya === 'string' ? d.sumber_biaya : null;
     } catch {
       state.models = [];
+      state.modelsSumber = null;
     }
   };
 
@@ -843,12 +851,22 @@
   const modelV1Bawaan = () => (state.models.find((m) => m.jalur === 'v1' && m.bawaan)
     ?? state.models.find((m) => m.jalur === 'v1'))?.id ?? '';
 
+  const vendorRekomendasiTerpilih = () => modelJalur().find((x) => x.vendor === $('f-vendor-rekomendasi')?.value) ?? null;
+
   const renderModels = () => {
     const daftar = modelJalur();
     const sel = $('f-model');
     const sebelum = sel.value;
     isi(sel, daftar.map((m) => el('option', { value: m.id, selected: m.bawaan ? true : null }, `${m.label} (${m.vendor})`)));
     if (daftar.some((m) => m.id === sebelum)) sel.value = sebelum;
+
+    // Penyusun rekomendasi dipilih per VENDOR, bukan per id model: itulah yang diterima input
+    // vendor_rekomendasi di workflow, dan satu vendor hanya punya satu model di jalur v2.
+    const rek = $('f-vendor-rekomendasi');
+    const rekSebelum = rek.value;
+    isi(rek, daftar.map((m) => el('option', { value: m.vendor, selected: m.bawaan ? true : null }, `${m.label} (${m.vendor})`)));
+    if (daftar.some((m) => m.vendor === rekSebelum)) rek.value = rekSebelum;
+
     renderBiaya();
   };
 
@@ -877,72 +895,155 @@
   // seiring jumlah alert. Angkanya ditarik lurus lewat titik ukur nyata di models.json, bukan
   // ditebak: dengan dua titik ukur biayanya bisa dihitung untuk jumlah alert mana pun; dengan satu
   // titik, yang jujur hanyalah menyebut titik itu apa adanya.
-  const perkiraanBiaya = (m, jumlahAlert) => {
+  // Hasilnya selalu berbentuk selang {min, maks}, walau keduanya sering sama. Bentuk tunggal itu
+  // yang membuat mode gabungan bisa dijumlahkan tanpa aturan kedua: tiga vendor punya tingkat
+  // kepastian yang berbeda-beda, dan menjumlahkan angka tunggal akan menyembunyikan perbedaan itu.
+  const perkiraanBiaya = (m, jumlahAlert, skenario = 'B') => {
     const titik = (m?.biaya_terukur ?? [])
       .filter((x) => Number.isFinite(x.alert) && Number.isFinite(x.usd))
       .sort((a, b) => a.alert - b.alert);
     if (!titik.length) return null;
     const a = titik[0];
     const b = titik[titik.length - 1];
-    if (titik.length < 2 || b.alert === a.alert) return { jenis: 'satu-titik', titik };
-    if (jumlahAlert === null) return { jenis: 'rentang', titik };
-    const usdHitung = a.usd + ((b.usd - a.usd) / (b.alert - a.alert)) * (jumlahAlert - a.alert);
-    return { jenis: 'hitung', usd: Math.max(usdHitung, 0), alert: jumlahAlert, titik };
+    const duaTitik = titik.length >= 2 && b.alert !== a.alert;
+    const pada = (n) => a.usd + ((b.usd - a.usd) / (b.alert - a.alert)) * (n - a.alert);
+
+    // Skenario C hanya memanggil deteksi, tanpa satu pun verifikasi alert, jadi biayanya adalah
+    // biaya pada 0 alert. Dengan dua titik ukur itu bisa dihitung; dengan satu titik, deteksi dan
+    // verifikasi tidak bisa dipisahkan, dan yang masih jujur hanyalah batas atas: C memanggil model
+    // lebih sedikit daripada B pada titik ukur itu, jadi biayanya tidak mungkin lebih besar.
+    if (skenario === 'C') {
+      if (duaTitik) {
+        const v = Math.max(pada(0), 0);
+        return { jenis: 'hitung', min: v, maks: v, alert: 0, titik };
+      }
+      return { jenis: 'batas-atas', min: 0, maks: a.usd, titik };
+    }
+
+    if (!duaTitik) return { jenis: 'satu-titik', min: a.usd, maks: a.usd, titik };
+    if (jumlahAlert === null) return { jenis: 'rentang', min: a.usd, maks: b.usd, titik };
+    const v = Math.max(pada(jumlahAlert), 0);
+    return { jenis: 'hitung', min: v, maks: v, alert: jumlahAlert, titik };
   };
+
+  // Model yang ikut dihitung: ketiga vendor v2 di mode gabungan, satu yang dipilih di mode tunggal.
+  const modelDipakai = () => (modeModelTerpilih() === 'gabungan' ? modelJalur() : [modelTerpilih()].filter(Boolean));
+
+  // Menjumlahkan selang beberapa model. Satu model tanpa titik ukur membuat seluruh totalnya tidak
+  // bisa dipertanggungjawabkan, jadi yang dilaporkan adalah itu, bukan jumlah dari sisanya.
+  const perkiraanTotal = (daftar, jumlahAlert, skenario) => {
+    const per = daftar.map((m) => ({ m, p: perkiraanBiaya(m, jumlahAlert, skenario) }));
+    const kosong = per.filter((x) => !x.p).map((x) => x.m.vendor);
+    if (kosong.length) return { kosong, per };
+    return {
+      kosong: [],
+      per,
+      min: per.reduce((s, x) => s + x.p.min, 0),
+      maks: per.reduce((s, x) => s + x.p.maks, 0),
+      // Jenis total mengikuti anggota yang paling lemah: satu model yang baru punya satu titik ukur
+      // membuat jumlahnya ikut belum bergantung jumlah alert. Batas atas tidak boleh larut menjadi
+      // rentang biasa: "US$0,0000 sampai US$0,3702" membaca seolah nol mungkin, padahal yang
+      // diketahui hanyalah batas atasnya.
+      jenis: per.every((x) => x.p.jenis === 'batas-atas') ? 'batas-atas'
+        : (per.some((x) => x.p.jenis !== 'hitung') ? 'campuran' : 'hitung'),
+    };
+  };
+
+  // Angka ditulis tunggal kalau selangnya memang satu titik, dan sebagai rentang kalau tidak.
+  const tulisSelang = (min, maks) => (Math.abs(maks - min) < 0.00005 ? usd(min) : `${usd(min)} \u2013 ${usd(maks)}`);
 
   const renderBiaya = () => {
     const teks = $('biaya-perkiraan');
     const sumber = $('biaya-sumber');
-    const m = modelTerpilih();
-    if (!m) { teks.textContent = ''; sumber.textContent = ''; $('biaya-angka').textContent = ''; return; }
-    const p = perkiraanBiaya(m, alertTerakhir());
-    if (!p) {
-      $('biaya-angka').textContent = '\u2014';
-      teks.textContent = 'Biaya model ini belum pernah diukur.';
-      sumber.textContent = 'Angka akan muncul setelah ada run yang biayanya tercatat.';
+    const angka = $('biaya-angka');
+    const skenario = skenarioTerpilih();
+    const gabungan = modeModelTerpilih() === 'gabungan';
+    const daftar = modelDipakai();
+    // Skenario A tidak memanggil model sama sekali. Kotak biayanya disembunyikan, tetapi angka lama
+    // dibersihkan juga: teks yang tertinggal di dalam elemen tersembunyi akan muncul kembali begitu
+    // skenario diganti, sekejap sebelum angka barunya dihitung.
+    if (modeTerpilih() !== 'sast-llm' || !daftar.length) {
+      teks.textContent = ''; sumber.textContent = ''; angka.textContent = '';
+      $('rekomendasi-biaya').textContent = '';
       return;
     }
-    const a = p.titik[0];
-    const b = p.titik[p.titik.length - 1];
-    const angka = $('biaya-angka');
-    if (p.jenis === 'hitung') {
-      angka.textContent = usd(p.usd);
-      teks.textContent = `Untuk ${p.alert} alert Sonar di branch tujuan run.`;
-    } else if (p.jenis === 'satu-titik') {
-      angka.textContent = usd(a.usd);
-      teks.textContent = `Diukur pada ${a.alert} alert Sonar; belum ada titik ukur kedua, jadi angkanya belum ikut jumlah alert.`;
-    } else {
-      angka.textContent = `${usd(a.usd)} \u2013 ${usd(b.usd)}`;
-      teks.textContent = `Jumlah alert branch tujuan belum diketahui: rentangnya ${a.alert} sampai ${b.alert} alert.`;
+
+    const jumlahAlert = alertTerakhir();
+    const t = perkiraanTotal(daftar, jumlahAlert, skenario);
+    if (t.kosong.length) {
+      angka.textContent = '\u2014';
+      teks.textContent = gabungan
+        ? `Biaya belum pernah diukur untuk ${t.kosong.join(', ')}, jadi totalnya tidak bisa dipertanggungjawabkan.`
+        : 'Biaya model ini belum pernah diukur.';
+      sumber.textContent = 'Angka akan muncul setelah ada run yang biayanya tercatat.';
+      $('rekomendasi-biaya').textContent = '';
+      return;
     }
-    sumber.textContent = `Titik ukur: ${p.titik.map((x) => `${usd(x.usd)} pada ${x.alert} alert, ${x.sumber}`).join('; ')}. Perkiraan, bukan tarif.`;
-    renderBiayaRekomendasi(m, p);
+
+    // Penjelasan disusun dari apa yang sebenarnya diketahui, bukan dari satu kalimat tetap: tiga
+    // vendor bisa punya tingkat kepastian berbeda di run yang sama.
+    const bagian = [];
+    if (skenario === 'C') {
+      bagian.push('Skenario C hanya memanggil deteksi, tanpa verifikasi alert.');
+      const batas = t.per.filter((x) => x.p.jenis === 'batas-atas').map((x) => x.m.vendor);
+      if (batas.length) {
+        bagian.push(`Untuk ${batas.join(', ')} biaya deteksi belum bisa dipisahkan dari verifikasi karena baru ada satu titik ukur, jadi angkanya batas atas: run C tidak mungkin lebih mahal dari itu.`);
+      }
+    } else if (t.jenis === 'hitung') {
+      bagian.push(`Untuk ${jumlahAlert} alert Sonar di branch tujuan run.`);
+    } else {
+      const satu = t.per.filter((x) => x.p.jenis === 'satu-titik');
+      if (satu.length) {
+        bagian.push(`${satu.map((x) => `${x.m.vendor} diukur pada ${x.p.titik[0].alert} alert`).join(', ')}; baru satu titik ukur, jadi angkanya belum ikut jumlah alert.`);
+      }
+      const rentang = t.per.find((x) => x.p.jenis === 'rentang');
+      if (rentang) {
+        const ti = rentang.p.titik;
+        bagian.push(`Jumlah alert branch tujuan belum diketahui: rentangnya ${ti[0].alert} sampai ${ti[ti.length - 1].alert} alert.`);
+      }
+    }
+    if (gabungan) bagian.unshift('Jumlah tiga vendor yang berjalan paralel; ketiganya ditagih terpisah.');
+
+    angka.textContent = t.jenis === 'batas-atas' ? `≤ ${usd(t.maks)}` : tulisSelang(t.min, t.maks);
+    teks.textContent = bagian.join(' ');
+    sumber.textContent = `Titik ukur: ${t.per.map((x) => `${x.m.vendor} ${x.p.titik.map((y) => `${usd(y.usd)} pada ${y.alert} alert`).join(' dan ')}`).join('; ')}. Sumber: ${state.modelsSumber ?? 'models.json'}. Perkiraan, bukan tarif.`;
+    renderBiayaRekomendasi(t);
   };
 
   // Perkiraan tambahan untuk lapis 2. Ditampilkan terpisah dari angka utama, dan hanya ikut
   // dijumlahkan saat pilihannya benar-benar dicentang: angka yang berubah tanpa sebab yang terlihat
   // membuat pengguna tidak lagi mempercayainya.
-  const renderBiayaRekomendasi = (m, perkiraan) => {
+  //
+  // Lapis 2 memanggil SATU vendor, berapa pun jumlah model yang menganalisis. Di mode gabungan
+  // vendor itu dipilih terpisah, jadi biayanya pun biaya vendor itu, bukan jumlah tiga vendor.
+  const renderBiayaRekomendasi = (total) => {
     const n = $('rekomendasi-biaya');
+    const m = modeModelTerpilih() === 'gabungan' ? vendorRekomendasiTerpilih() : modelTerpilih();
     const b = m?.biaya_rekomendasi_usd ?? null;
     if (!b) {
       n.textContent = 'Biaya rekomendasi AI untuk model ini belum pernah diperkirakan.';
       return;
     }
     const pilih = $('f-rekomendasi').checked;
+    const siapa = modeModelTerpilih() === 'gabungan' ? ` oleh ${m.vendor}` : '';
     n.textContent = pilih
-      ? `Termasuk dalam angka di atas: tambahan ${usd(b.min)} sampai ${usd(b.maks)} untuk satu panggilan rekomendasi.`
-      : `Kalau dicentang, biaya bertambah ${usd(b.min)} sampai ${usd(b.maks)} untuk satu panggilan rekomendasi.`;
-    if (pilih && perkiraan) {
-      const angka = $('biaya-angka');
-      const dasar = perkiraan.jenis === 'hitung' ? perkiraan.usd : perkiraan.titik[0].usd;
-      const atas = perkiraan.jenis === 'hitung' ? perkiraan.usd : perkiraan.titik[perkiraan.titik.length - 1].usd;
-      angka.textContent = `${usd(dasar + b.min)} \u2013 ${usd(atas + b.maks)}`;
+      ? `Termasuk dalam angka di atas: tambahan ${usd(b.min)} sampai ${usd(b.maks)} untuk satu panggilan rekomendasi${siapa}.`
+      : `Kalau dicentang, biaya bertambah ${usd(b.min)} sampai ${usd(b.maks)} untuk satu panggilan rekomendasi${siapa}.`;
+    if (pilih && total && !total.kosong.length) {
+      $('biaya-angka').textContent = total.jenis === 'batas-atas'
+        ? `≤ ${usd(total.maks + b.maks)}`
+        : tulisSelang(total.min + b.min, total.maks + b.maks);
     }
   };
 
   // ---------- Form jalankan ----------
-  const modeTerpilih = () => document.querySelector('input[name="mode"]:checked')?.value ?? 'sast-llm';
+  const skenarioTerpilih = () => document.querySelector('input[name="skenario"]:checked')?.value ?? 'B';
+  const modeTerpilih = () => MODE_SKENARIO[skenarioTerpilih()] ?? 'sast-llm';
+  // Mode gabungan hanya sah untuk skenario B. Dibaca lewat fungsi ini, bukan langsung dari radio,
+  // supaya pilihan yang tertinggal dari kunjungan sebelumnya tidak pernah ikut terkirim.
+  const modeModelTerpilih = () => (skenarioTerpilih() === 'B'
+    && document.querySelector('input[name="mode_model"]:checked')?.value === 'gabungan'
+    ? 'gabungan' : 'tunggal');
 
   // Branch hanya bisa dipicu kalau workflow di branch itu memuat jalur yang dipilih. Kemampuan v2
   // tidak bisa ditanyakan ke API tanpa izin membaca isi berkas workflow, jadi dicatat per branch
@@ -995,24 +1096,49 @@
   // dijelaskan, dan apakah tombol boleh ditekan. Branch TUJUAN RUN yang tidak mendukung mode
   // terpilih akan digeser ke branch bawaan oleh renderFormBranch, sedangkan branch yang sedang
   // DIBACA tidak pernah ikut berpindah: itu kontrol terpisah di rail.
+  const PENJELASAN_SKENARIO = {
+    A: 'Hanya SonarCloud. Tanpa panggilan LLM, tanpa biaya. Hasilnya terbit dalam format lama (skema 1) yang tidak ditampilkan dashboard ini.',
+    B: 'Satu panggilan deteksi untuk seluruh kode, lalu satu panggilan verifikasi per alert SonarCloud.',
+    C: 'Satu panggilan deteksi untuk seluruh kode, tanpa verifikasi. SonarCloud tetap berjalan tetapi alertnya tidak dikirim ke model dan tidak ikut di hasil.',
+  };
+
   const renderDrawer = () => {
+    const skenario = skenarioTerpilih();
     const llm = modeTerpilih() === 'sast-llm';
-    $('mode-hint').textContent = llm
-      ? 'Satu panggilan deteksi untuk seluruh kode, lalu satu panggilan verifikasi per alert SonarCloud.'
-      : 'Tanpa panggilan LLM, tanpa biaya. Hasilnya terbit dalam format lama (skema 1) yang tidak ditampilkan dashboard ini.';
+    const gabungan = modeModelTerpilih() === 'gabungan';
+    $('skenario-hint').textContent = PENJELASAN_SKENARIO[skenario] ?? '';
     $('model-field').hidden = !llm;
     $('biaya-field').hidden = !llm;
     $('rekomendasi-field').hidden = !llm;
     $('konfirmasi-v2-field').hidden = !llm;
     if (!llm && $('f-rekomendasi').checked) $('f-rekomendasi').checked = false;
     if (!llm && $('f-konfirmasi-v2').checked) $('f-konfirmasi-v2').checked = false;
+
+    // Gabungan hanya sah untuk B. Pilihannya disembunyikan di C, dan radionya dikembalikan ke
+    // tunggal supaya keadaan form tidak pernah berbeda dari apa yang terlihat.
+    $('mode-model-seg').hidden = skenario !== 'B';
+    if (skenario !== 'B') {
+      const t = document.querySelector('input[name="mode_model"][value="tunggal"]');
+      if (t) t.checked = true;
+    }
+    // Di mode gabungan tidak ada satu vendor yang dipilih, jadi pemilih vendornya tidak berlaku.
+    $('f-model').hidden = gabungan;
+    $('f-model-label').hidden = gabungan;
+    // Hanya berarti kalau rekomendasi memang diminta: pilihan yang tidak mengubah apa pun membuat
+    // pengguna menduga ia berpengaruh.
+    $('vendor-rekomendasi-field').hidden = !(gabungan && $('f-rekomendasi').checked);
+    $('model-hint').textContent = gabungan
+      ? 'Ketiga vendor berjalan paralel dan hasilnya disatukan sekali: temuan yang sama dari beberapa model digabung, putusan alert diambil dari suara terbanyak. Mode ini belum dievaluasi di eksperimen TA.'
+      : '';
+
     renderFormBranch();
     renderModels();
     // Keterangan sumber analisis Sonar hanya relevan untuk branch yang memang bisa dijalankan.
     const bisa = state.proyek.branches.filter(branchSesuai).length;
     const semua = state.proyek.branches.filter((b) => b.dispatch).length;
     $('branch-meta').textContent = `${bisa} dari ${semua} bisa dipicu`;
-    $('branch-hint').textContent = llm && branchSesuai(branchJalan()) && branchJalan()?.name !== 'main'
+    // Hanya skenario B yang memakai alert Sonar, jadi hanya di situ kecocokan analisisnya berarti.
+    $('branch-hint').textContent = skenario === 'B' && branchSesuai(branchJalan()) && branchJalan()?.name !== 'main'
       ? 'Analisis Sonar diambil dari main; kecocokan kode diperiksa lewat hash tree src/ sebelum ada panggilan berbayar.'
       : '';
     perbaruiTombolJalankan();
@@ -1246,7 +1372,10 @@
     { key: 'sonar', id: 'sonarcloud', job: 'Analisis SonarCloud', nama: 'SonarCloud SAST', hasil: 'sonarcloud', perlu: ['rencana'], jalur: 'kedua' },
     { key: 'analisis', id: 'analisis', job: 'Analisis temuan (Sonar dan Gemini)', nama: 'Analisis LLM v1', hasil: 'analisis', perlu: ['rencana', 'sonar'], jalur: 'v1' },
     { key: 'analisis-v2', id: 'analisis-v2', job: 'Analisis LLM v2 (deteksi dan verifikasi)', nama: 'Deteksi dan verifikasi', hasil: 'analisis', perlu: ['rencana', 'sonar'], jalur: 'v2' },
-    { key: 'terbit-v2', id: 'terbit-v2', job: 'Gabung dan terbitkan hasil v2', nama: 'Gabung dan terbitkan', hasil: null, perlu: ['rencana', 'sonar', 'analisis-v2'], jalur: 'v2' },
+    // Namanya dibedakan dari node v1 di bawah: graf menggambar SELURUH pipeline dan meredupkan
+    // jalur yang tidak dipakai, jadi dua node bernama sama akan tampak bersamaan dan tidak bisa
+    // dibedakan mana yang berjalan.
+    { key: 'terbit-v2', id: 'terbit-v2', job: 'Gabung dan terbitkan hasil v2', nama: 'Satukan dan terbitkan', hasil: null, perlu: ['rencana', 'sonar', 'analisis-v2'], jalur: 'v2' },
     { key: 'hasil', id: 'hasil', job: 'Gabung dan terbitkan hasil', nama: 'Gabung dan terbitkan', hasil: null, perlu: ['rencana', 'build', 'sonar', 'analisis'], jalur: 'v1' },
   ];
 
@@ -2061,6 +2190,10 @@
     // Begitu pula pilihan rekomendasi AI, yang menambah biaya.
     $('f-konfirmasi-v2').checked = false;
     $('f-rekomendasi').checked = false;
+    // Mode gabungan menagih tiga vendor sekaligus, jadi ia pun tidak boleh terbawa diam-diam ke
+    // pembukaan drawer berikutnya.
+    const tunggal = document.querySelector('input[name="mode_model"][value="tunggal"]');
+    if (tunggal) tunggal.checked = true;
     renderDrawer();
     bukaPanel($('drawer'), { pemicu: $('buka-drawer'), tutupId: 'drawer-tutup' });
   }
@@ -2393,18 +2526,30 @@
       await muatIndex();
       state.sibuk = true;
     }
-    const inputs = { mode, model, label, jalur };
+    // Dibaca dari form di sini, sama seperti rekomendasi_ai di bawah: drawer yang sudah ditutup
+    // hanya tersembunyi, nilainya masih utuh, dan baru di-reset saat drawer dibuka lagi.
+    const skenario = skenarioTerpilih();
+    const gabungan = modeModelTerpilih() === 'gabungan';
+    const inputs = { mode, model, label, jalur, skenario };
     if (jalur === 'v2') {
-      const m = modelJalur().find((x) => x.id === model);
-      if (!m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
-      // rekomendasi_ai hanya berarti di jalur v2: langkah remediasi hidup di job analisis-v2.
+      // Mode gabungan tidak memilih satu model, jadi id modelnya tidak perlu dikenali. Mode tunggal
+      // harus: id yang tidak ada di daftar membuat job gagal pada langkah validasinya.
+      const m = gabungan ? null : modelJalur().find((x) => x.id === model);
+      if (!gabungan && !m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
+      // rekomendasi_ai hanya berarti di jalur v2: langkah remediasi hidup di job terbit-v2.
       // Mengirimnya di jalur v1 cuma menambah input yang tidak pernah dibaca siapa pun.
       Object.assign(inputs, {
-        vendor_v2: m.vendor,
+        vendor_v2: gabungan ? 'gabungan' : m.vendor,
         konfirmasi_v2: 'JALANKAN',
         sonar_branch_v2: sonarBranchV2(branch),
         rekomendasi_ai: $('f-rekomendasi').checked,
       });
+      // Workflow mengabaikan input ini di mode tunggal maupun saat rekomendasi tidak diminta.
+      // Mengirimnya hanya saat berarti membuat body dispatch bisa dibaca sebagai catatan apa yang
+      // sebenarnya diminta, bukan sebagai daftar input yang sebagian tidak berpengaruh.
+      if (gabungan && inputs.rekomendasi_ai) {
+        inputs.vendor_rekomendasi = vendorRekomendasiTerpilih()?.vendor ?? 'google';
+      }
     }
     if (!model) throw new GhError('invalid', 'Daftar model tidak terbaca dari models.json. Muat ulang dashboard lalu coba lagi.');
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
@@ -2469,7 +2614,9 @@
     // Tanpa pembungkus, objek Event ikut terkirim sebagai argumen `pesan` dan tercetak di hint.
     $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
-    $('f-rekomendasi').addEventListener('change', renderBiaya);
+    // renderDrawer, bukan renderBiaya: mencentang rekomendasi di mode gabungan juga memunculkan
+    // pilihan vendor penyusunnya.
+    $('f-rekomendasi').addEventListener('change', renderDrawer);
     $('buka-drawer').addEventListener('click', bukaDrawer);
     $('drawer-tutup').addEventListener('click', tutupDrawerAktif);
     $('drawer-tirai').addEventListener('click', tutupDrawerAktif);
@@ -2512,10 +2659,11 @@
       state.branchJalan = b;
       renderDrawer();
     });
-    document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => {
+    document.querySelectorAll('input[name="skenario"], input[name="mode_model"]').forEach((r) => r.addEventListener('change', () => {
       renderDrawer();
       if (!state.sibuk && !state.hasil) renderPipeline();
     }));
+    $('f-vendor-rekomendasi').addEventListener('change', renderBiaya);
     $('run-form').addEventListener('submit', jalankan);
     window.addEventListener('offline', () => tampilBanner('error', 'Koneksi internet terputus. Pemantauan run berhenti sampai koneksi kembali.'));
     window.addEventListener('online', () => tutupBanner('error'));

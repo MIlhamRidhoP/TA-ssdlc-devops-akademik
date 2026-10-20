@@ -148,6 +148,15 @@
         ],
         "createdAt": "2026-10-13T15:07:32.104Z",
         "reason": "Claude: sketsa keputusan putaran 1 (gitignored, tidak dikirim); bukan bagian dashboard/"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          "dashboard/index.html"
+        ],
+        "createdAt": "2026-10-20T10:30:43.284Z",
+        "reason": "0.8125rem = 13px, di atas ambang 12px yang disebut aturannya; kelas .go-hint-kecil dan .seg small adalah teks petunjuk sekunder yang sudah dipakai seluruh dashboard dan lolos gerbang kontras 4,5:1 repo ini"
       }
     ]
   }

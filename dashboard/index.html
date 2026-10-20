@@ -243,13 +243,14 @@
           </div>
           <form class="run-form" id="run-form" novalidate>
             <fieldset class="field bagian">
-              <div class="bagian-kepala"><legend><span class="bagian-no">1</span>Mode</legend></div>
-              <div class="seg">
-                <label><input type="radio" name="mode" value="sast"><span>SAST saja</span><small>tanpa biaya</small></label>
-                <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span><small>berbayar</small></label>
-                <label><input type="radio" name="mode" value="dast" disabled><span>DAST</span><small>di luar batasan TA</small></label>
+              <div class="bagian-kepala"><legend><span class="bagian-no">1</span>Skenario analisis</legend></div>
+              <div class="seg seg-kartu">
+                <label><input type="radio" name="skenario" value="A"><b class="seg-kode" aria-hidden="true">A</b><span>SAST saja</span><small>SonarCloud saja, tanpa panggilan LLM</small></label>
+                <label><input type="radio" name="skenario" value="B" checked><b class="seg-kode" aria-hidden="true">B</b><span>SAST + LLM</span><small>Tiap alert SonarCloud diverifikasi model</small></label>
+                <label><input type="radio" name="skenario" value="C"><b class="seg-kode" aria-hidden="true">C</b><span>LLM saja</span><small>Deteksi model tanpa SonarCloud</small></label>
               </div>
-              <p class="go-hint" id="mode-hint"></p>
+              <p class="go-hint" id="skenario-hint"></p>
+              <p class="go-hint go-hint-kecil">DAST di luar batasan TA.</p>
             </fieldset>
             <div class="field bagian">
               <div class="bagian-kepala">
@@ -259,13 +260,19 @@
               <select class="select" id="f-branch"></select>
               <p class="go-hint" id="branch-hint"></p>
             </div>
-            <div class="field bagian" id="model-field">
+            <fieldset class="field bagian" id="model-field">
               <div class="bagian-kepala">
-                <label for="f-model"><span class="bagian-no">3</span>Model (vendor)</label>
+                <legend><span class="bagian-no">3</span>Model</legend>
                 <span class="bagian-meta">jalur v2</span>
               </div>
+              <div class="seg seg-2" id="mode-model-seg">
+                <label><input type="radio" name="mode_model" value="tunggal" checked><span>Satu model</span><small>satu vendor</small></label>
+                <label><input type="radio" name="mode_model" value="gabungan"><span>Gabungan 3 model</span><small>ketiga vendor, hasilnya disatukan</small></label>
+              </div>
+              <label class="label-kecil" for="f-model" id="f-model-label">Vendor</label>
               <select class="select" id="f-model"></select>
-            </div>
+              <p class="go-hint" id="model-hint"></p>
+            </fieldset>
             <div class="biaya-kotak" id="biaya-field">
               <div class="biaya-kepala">
                 <span class="biaya-judul">Perkiraan biaya satu run</span>
@@ -280,6 +287,11 @@
                 <span>Sertakan rekomendasi AI. Satu panggilan berbayar tambahan untuk menyusun saran perbaikan atas temuan yang dikonfirmasi. Panduan umum per CWE tetap tampil tanpa ini.</span>
               </label>
               <p class="go-hint go-hint-kecil" id="rekomendasi-biaya"></p>
+              <div id="vendor-rekomendasi-field" hidden>
+                <label class="label-kecil" for="f-vendor-rekomendasi">Vendor penyusun rekomendasi</label>
+                <select class="select" id="f-vendor-rekomendasi"></select>
+                <p class="go-hint go-hint-kecil">Mode gabungan tidak punya satu vendor sendiri, jadi penyusun saran dipilih terpisah. Ia berjalan sesudah hasil ketiga model disatukan.</p>
+              </div>
             </div>
             <div class="field" id="konfirmasi-v2-field" hidden>
               <label class="check" for="f-konfirmasi-v2">
