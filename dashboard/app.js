@@ -623,7 +623,7 @@
     try {
       const index = await sumber().index(p);
       state.index = index;
-      const urut = (index.runs ?? []).slice().sort((a, b) => String(b.selesai ?? '').localeCompare(String(a.selesai ?? '')));
+      const urut = (index.runs ?? []).slice().sort(urutEntri);
       const nama = urut.find((e) => p.branches.some((b) => b.name === e.branch))?.branch ?? null;
       return nama;
     } catch {
@@ -845,11 +845,24 @@
   };
 
   // Jumlah alert Sonar yang terakhir diketahui untuk branch ini, dari entri index run terbaru.
+  // Urutan riwayat: terbaru di atas menurut waktu selesai. Waktu selesai yang sama atau tidak ada
+  // sama sekali bukan hal teoretis — dua run bisa berbagi stempel waktu, dan run yang gagal bisa
+  // tidak punya waktu selesai. Tanpa pemutus seri, urutannya jatuh ke urutan berkas yang sembarang,
+  // dan "run terbaru" bisa menunjuk run yang salah. Nomor run GitHub naik monoton per repo, jadi
+  // ia pemutus seri yang benar; ia TIDAK dipakai sebagai kunci utama karena run CLI memakai nomor
+  // sebagai indeks biasa yang urutannya memang tidak selalu searah dengan waktu.
+  const urutEntri = (a, b) => {
+    const wa = String(a.selesai ?? '');
+    const wb = String(b.selesai ?? '');
+    if (wa !== wb) return wb.localeCompare(wa);
+    return (Number(b.nomor) || 0) - (Number(a.nomor) || 0);
+  };
+
   const alertTerakhir = () => {
     const b = branchJalan();
     const n = (state.index?.runs ?? [])
       .filter((e) => e.branch === b?.name)
-      .sort((a, c) => String(c.selesai ?? '').localeCompare(String(a.selesai ?? '')))[0]?.jumlah?.alert;
+      .sort(urutEntri)[0]?.jumlah?.alert;
     return Number.isFinite(n) ? n : null;
   };
   // Biaya satu run = satu panggilan deteksi + satu panggilan verifikasi per alert, jadi naik
@@ -1033,7 +1046,7 @@
   // ---------- Index dan run ----------
   const entriBranch = () => (state.branch ? (state.index?.runs ?? []) : [])
     .filter((e) => e.branch === state.branch.name)
-    .sort((a, b) => String(b.selesai ?? '').localeCompare(String(a.selesai ?? '')));
+    .sort(urutEntri);
 
   const muatIndex = async (pilihId) => {
     ingatPilihan();
