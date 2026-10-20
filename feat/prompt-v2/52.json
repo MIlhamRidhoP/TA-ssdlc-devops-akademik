@@ -1,0 +1,154 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 39365647465,
+    "nomor": 52,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "asal": "workflow",
+    "vendor": "anthropic",
+    "model_diminta": "claude-sonnet-5-5",
+    "model_menjawab": "claude-sonnet-5-5",
+    "kondisi": "utama",
+    "mulai": "2026-10-20T03:49:11.559Z",
+    "selesai": "2026-10-20T03:49:44.399Z",
+    "durasi_detik": 33,
+    "objek_uji": {
+      "commit": "8b86320541d7efd95de841ee402b24a8fb358f1d",
+      "branch": "feat/prompt-v2",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "commit_kode": {
+      "head": "8b86320541d7efd95de841ee402b24a8fb358f1d",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "4391e630a966de687eafd051072f41f6f0674cec9170386c825c53680ddaf050"
+    },
+    "sumber_sonar": "api",
+    "analisis_sonar": {
+      "tanggal": "2026-10-10T08:00:24+0000",
+      "revisi": "fe97d23b7c4b20c575d746d9e4df9a8bd2443b32",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "sonar_beku": null,
+    "biaya_usd": 0.29492,
+    "status_panggilan": {
+      "total": 2,
+      "ok": 2,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0
+    },
+    "pipeline": null
+  },
+  "alerts": [
+    {
+      "id": "SONAR-01",
+      "rule": "javascript:S5122",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "pesan": "Make sure that enabling CORS is safe here.",
+      "severity_sonar": "MAJOR",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "medium",
+      "alasan": "Di src/app.js baris 10, `app.use(cors())` dipanggil tanpa opsi sehingga mengirim `Access-Control-Allow-Origin: *` untuk semua origin pada semua route. Autentikasi memakai header `Authorization: Bearer` (middleware/auth.js), bukan cookie, dan tidak ada `credentials: true`, jadi situs lain tidak bisa membawa kredensial korban secara otomatis. Dengan demikian wildcard CORS tidak membuka akses lintas-origin ke data pribadi, dan alert ini merupakan hotspot yang secara praktis tidak dapat dieksploitasi pada kode saat ini.",
+      "tanda": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Tidak ada pembatasan percobaan login (rate limiting/lockout)",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint login dan register tidak dibatasi laju permintaan, dan tidak ada penguncian akun setelah login gagal. Riwayat login memang dicatat, tetapi tidak dipakai untuk menolak percobaan berikutnya. Penyerang dapat menebak password secara masif terhadap akun yang berisi data pribadi mahasiswa. Kebijakan password hanya mensyaratkan 8 karakter, 1 huruf besar, dan 1 angka.",
+      "sifat": "hardening",
+      "keyakinan": "medium",
+      "fingerprint": "2d908477b96e0956",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "file": "src/app.js",
+      "baris": 10,
+      "fungsi": "",
+      "jenis": "CORS terbuka untuk semua origin",
+      "cwe": [
+        "CWE-942"
+      ],
+      "kategori_owasp": "A02",
+      "penjelasan": "cors() dipanggil tanpa opsi sehingga semua origin diizinkan mengakses API yang melayani data pribadi. Autentikasi memakai header Bearer sehingga tidak ada celah CSRF langsung. Namun origin yang tidak dipercaya tetap bisa membaca respons API dari browser jika token ada di tangannya, dan daftar origin yang diizinkan seharusnya dibatasi.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "fingerprint": "2165fb9f12b500dc",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 7,
+        "baris": [
+          "const app = express();",
+          "",
+          "app.use(helmet());",
+          "app.use(cors());",
+          "app.use(express.json());",
+          "",
+          "app.get('/health', (req, res) => {"
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "file": "src/routes/mahasiswaRoutes.js",
+      "baris": 11,
+      "fungsi": "GET /me",
+      "jenis": "Pemeriksaan konsen orang tua tidak diterapkan pada endpoint data pribadi",
+      "cwe": [
+        "CWE-862"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Middleware requireConsent dipasang pada route krs, nilai, dan cuti, tetapi tidak pada route /api/mahasiswa/me. Route yang dilewati mencakup profil, ekspor data (/me/ekspor), dokumen, rekening, dan akun sosial. Mahasiswa di bawah 18 tahun yang konsennya belum approved tetap dapat membaca dan mengubah data pribadi, padahal route lain menolaknya dengan CONSENT_REQUIRED.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "fingerprint": "8a8af97b758e8cdc",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 8,
+        "baris": [
+          "router.use(authenticate);",
+          "",
+          "// /me harus didaftarkan sebelum /:id",
+          "router.get('/me', authorize('mahasiswa'), c.getMe);",
+          "router.put('/me', authorize('mahasiswa'), c.updateMe);",
+          "router.post('/me/email', authorize('mahasiswa'), profil.addEmail);",
+          "router.delete('/me/email/:id', authorize('mahasiswa'), profil.removeEmail);"
+        ]
+      }
+    }
+  ]
+}
