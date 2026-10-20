@@ -139,6 +139,13 @@ artifact. Itu konsekuensi izin dispatch; perlakukan token seperti kata sandi.
 3. Memantau `GET .../actions/runs/{id}/jobs` tiap 5 detik sampai run selesai.
 4. Menunggu entri run muncul di `index.json` branch `security-results`, lalu memuat hasilnya.
 
+Branch `security-results` memakai satu berkas index per skema. `index.json` berisi skema 2 dan
+hanya itu yang dibaca dashboard; jalur v1 menulis daftarnya ke `index-v1.json`. Pemisahan ini
+dibuat setelah run #46: sebelumnya kedua jalur memakai `index.json` yang sama dan penerbitan jalur
+mana pun menghapus entri jalur lain, sehingga hasil v2 yang sudah berbiaya hilang dari daftar.
+Berkas hasil per run (`<branch>/<nomor>.json`) tidak pernah ikut terhapus, dan nomornya adalah
+nomor run GitHub sehingga dua run tidak saling menimpa.
+
 ## GitHub Pages
 
 GitHub Pages dari branch hanya bisa melayani root atau folder `/docs`, bukan `/dashboard`. Pilihan:

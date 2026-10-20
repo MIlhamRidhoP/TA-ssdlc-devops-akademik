@@ -463,6 +463,8 @@ jobs:
           VENDOR: ${{ inputs.vendor_v2 }}
         run: node scripts/llm-scan.js --vendor="$VENDOR" --kondisi=utama --runs=1 --objek=.
 
+      # --nomor memakai nomor run GitHub, bukan indeks berkas run-N.json. Tanpa itu setiap run v2
+      # diterbitkan sebagai "run 1" ke <branch>/1.json dan saling menimpa.
       - name: Susun results.json skema 2
         env:
           VENDOR: ${{ inputs.vendor_v2 }}
@@ -473,7 +475,7 @@ jobs:
             echo "Folder keluaran llm-scan untuk vendor $VENDOR tidak ditemukan." >&2
             exit 1
           fi
-          node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
+          node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --nomor="$GITHUB_RUN_NUMBER" --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
 
       - name: Unggah output v2
         if: always()

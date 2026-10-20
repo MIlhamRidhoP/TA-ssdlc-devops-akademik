@@ -272,25 +272,36 @@ const perbaruiIndex = (index, entri) => {
   return { schema_version: SCHEMA_VERSION, diperbarui: entri.selesai, runs: runs.slice(0, BATAS_INDEX) };
 };
 
-// Menerbitkan results.json ke worktree branch security-results dan memperbarui index.json.
-// Skema 1 dan 2 punya bentuk entri index yang berbeda, jadi index tidak boleh bercampur versi:
-// entri dengan schema_version berbeda dari berkas yang diterbitkan dibuang dari index.
+// Satu berkas index per skema. Skema 1 dan 2 punya bentuk entri yang berbeda sehingga tidak bisa
+// bercampur dalam satu daftar; sebelumnya keduanya memakai index.json yang sama dan penerbitan
+// jalur mana pun MENGHAPUS entri jalur lain (itu yang menghilangkan hasil v2 run #46). Sekarang
+// index.json milik skema 2 — satu-satunya yang dibaca dashboard — dan jalur v1 menulis ke
+// index-v1.json, jadi tidak ada jalur penerbitan yang bisa membuang entri skema lain.
+const FILE_INDEX = { 1: 'index-v1.json', 2: 'index.json' };
+
+// Menerbitkan results.json ke worktree branch security-results dan memperbarui index skemanya.
 const terbitkan = (fileHasil, dir) => {
   const r = bacaJson(fileHasil);
   const v2 = r.schema_version === 2;
+  const namaIndex = FILE_INDEX[r.schema_version];
+  if (!namaIndex) throw new Error(`schema_version ${r.schema_version} tidak punya berkas index`);
   const branch = v2 ? (r.run.objek_uji?.branch ?? 'main') : r.run.branch;
   const relPath = `${pathBranch(branch)}/${r.run.nomor}.json`;
   fs.mkdirSync(path.join(dir, path.dirname(relPath)), { recursive: true });
   tulisJson(path.join(dir, relPath), r);
-  const fileIndex = path.join(dir, 'index.json');
+  const fileIndex = path.join(dir, namaIndex);
   const lama = fs.existsSync(fileIndex) ? bacaJson(fileIndex) : null;
-  const sesuai = lama && (lama.schema_version ?? 1) === r.schema_version ? lama : null;
-  if (lama && !sesuai) console.warn(`index.json lama memakai skema ${lama.schema_version ?? 1}, diganti dengan skema ${r.schema_version}`);
+  // Berkas index hanya boleh berisi skemanya sendiri. Kalau isinya skema lain, itu sisa dari aturan
+  // lama: berhenti dan minta dirapikan, jangan diam-diam menimpanya seperti dulu.
+  if (lama && (lama.schema_version ?? 1) !== r.schema_version) {
+    throw new Error(`${namaIndex} berisi skema ${lama.schema_version ?? 1}, bukan ${r.schema_version}. `
+      + 'Penerbitan dihentikan supaya tidak ada entri yang terbuang; rapikan berkas index itu dulu.');
+  }
   const entri = v2 ? require('./llm/results-v2').entriIndexV2(r, relPath) : entriIndex(r, relPath);
-  const baru = perbaruiIndex(sesuai, entri);
+  const baru = perbaruiIndex(lama, entri);
   baru.schema_version = r.schema_version;
   tulisJson(fileIndex, baru);
-  console.log(`Diterbitkan (skema ${r.schema_version}): ${relPath}`);
+  console.log(`Diterbitkan (skema ${r.schema_version}): ${relPath} -> ${namaIndex}`);
 };
 
 const metaDariEnv = (env) => ({
@@ -387,4 +398,7 @@ if (require.main === module) {
   }
 }
 
-module.exports = { susunHasil, gabungTemuan, ringkasanMarkdown, perbaruiIndex, entriIndex, pathBranch, parseCwe, potonganKode };
+module.exports = {
+  susunHasil, gabungTemuan, ringkasanMarkdown, perbaruiIndex, entriIndex, pathBranch, parseCwe, potonganKode,
+  terbitkan, FILE_INDEX,
+};
