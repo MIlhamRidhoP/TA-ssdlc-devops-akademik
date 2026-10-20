@@ -603,9 +603,51 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   .frow { grid-template-areas: "sev dec dec" "title title title" "fid loc loc" "src src src"; }
 }
 
-.state { padding: var(--s-6) var(--s-2); display: grid; gap: var(--s-3); justify-items: start; max-width: 62ch; }
-.state h3 { font-size: 1.0625rem; }
+/* ---------- Keadaan kosong dan galat ---------- */
+.state { display: grid; gap: var(--s-5); }
+.state-hero {
+  display: grid; justify-items: center; text-align: center; gap: var(--s-3);
+  padding: var(--s-6) var(--s-4); border: 1px solid var(--rule); border-radius: var(--radius-card);
+  background: var(--paper-3);
+}
+.state-ikon {
+  width: 3rem; height: 3rem; border-radius: 50%; display: grid; place-items: center;
+  border: 1px dashed var(--rule-2); color: var(--muted);
+}
+.state-ikon .icon { width: 1.5rem; height: 1.5rem; }
+.state-galat .state-ikon { border-style: solid; border-color: var(--crit-rule); background: var(--crit-soft); color: var(--crit); }
+.state-eyebrow {
+  font-family: var(--font-data); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--muted); margin: 0; padding: 0.15rem var(--s-2);
+  border: 1px solid var(--rule-2); border-radius: var(--radius-chip);
+}
+.state-galat .state-eyebrow { color: var(--crit); border-color: var(--crit-rule); }
+.state h3 { font-size: 1.25rem; }
+.state-teks { color: var(--muted); max-width: 60ch; }
+.state-aksi { display: flex; flex-wrap: wrap; gap: var(--s-2); justify-content: center; }
 .state p { color: var(--muted); }
+
+/* Kartu langkah lanjutan: nomor, label, judul, penjelasan, lalu aksinya. */
+.langkah-blok { display: grid; gap: var(--s-3); }
+.langkah-blok > .kartu-kepala > h3 { font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-family: var(--font-data); font-weight: 600; }
+.langkah-baris { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.langkah-kartu {
+  display: grid; gap: var(--s-2); align-content: start; text-align: left; width: 100%;
+  padding: var(--s-4); border: 1px solid var(--rule); border-radius: var(--radius-card);
+  background: var(--paper-2); color: inherit;
+  grid-template-columns: auto 1fr;
+}
+.langkah-nomor { color: var(--muted); font-size: 1rem; }
+.langkah-kartu > .chip { justify-self: end; }
+.langkah-judul { grid-column: 1 / -1; font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
+.langkah-teks { grid-column: 1 / -1; font-size: 0.8125rem; color: var(--muted); }
+.langkah-aksi {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-2); padding-top: var(--s-2); border-top: 1px solid var(--rule);
+  font-size: 0.8125rem; color: var(--accent); font-weight: 500;
+}
+@media (hover: hover) { .langkah-kartu:hover { border-color: var(--accent); } }
+.langkah-kartu:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .skeleton { display: grid; gap: var(--s-2); }
 .skeleton i { display: block; height: 2.75rem; border-radius: var(--radius-ctl); background: var(--paper-3); }
 @media (prefers-reduced-motion: no-preference) { .skeleton i { animation: fade 1.4s ease-in-out infinite alternate; } }

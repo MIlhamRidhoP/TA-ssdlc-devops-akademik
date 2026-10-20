@@ -98,6 +98,9 @@
     bolt: 'M8.8 2.2L4.4 8.7h3l-.4 5.1 4.4-6.5h-3z',
     minus: 'M4.5 8h7',
     titik: 'M8 5.6a2.4 2.4 0 1 0 0 4.8a2.4 2.4 0 1 0 0-4.8z',
+    perisai: 'M8 1.8l5 1.9v4.1c0 3-2.1 5.3-5 6.4c-2.9-1.1-5-3.4-5-6.4V3.7z',
+    cabang: ['M4.5 3.2a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2z', 'M11.5 3.2a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2z', 'M4.5 9.6a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2z', 'M4.5 6.4v3.2', 'M11.5 6.4c0 2-2.3 2.2-4.5 3.2'],
+    labu: ['M6.5 2h3', 'M7 2v4L3.6 12a1.4 1.4 0 0 0 1.2 2.1h6.4A1.4 1.4 0 0 0 12.4 12L9 6V2'],
     // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
     padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
     nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
@@ -782,6 +785,47 @@
     renderPipeline();
   };
 
+  // Kartu "apa yang dapat dilakukan selanjutnya". Hanya tindakan yang memang bisa dilakukan dari
+  // keadaan sekarang; kartu yang tidak berlaku tidak dibuat, bukan dibuat lalu dimatikan.
+  const kartuLangkah = (nomor, tag, judul, teks, aksi) => el('button', {
+    class: 'langkah-kartu', type: 'button', onclick: aksi.onclick,
+  },
+  el('span', { class: 'langkah-nomor data', text: nomor }),
+  el('span', { class: 'chip chip-cwe', text: tag }),
+  el('b', { class: 'langkah-judul', text: judul }),
+  el('span', { class: 'langkah-teks', text: teks }),
+  el('span', { class: 'langkah-aksi' }, el('span', { text: aksi.label }), ikon(IKON.panah)));
+
+  const langkahSelanjutnya = () => {
+    const kartu = [];
+    const lain = (state.proyek?.branches ?? []).filter((b) => b !== state.branch
+      && (state.index?.runs ?? []).some((e) => e.branch === b.name));
+    if (lain.length) {
+      kartu.push(kartuLangkah('01', 'Riwayat', 'Pilih branch yang punya run',
+        `${lain.length} branch lain sudah punya hasil terbit: ${lain.map((b) => b.name).join(', ')}.`,
+        { label: 'Buka pilihan branch', onclick: () => { bukaRailBilaTerlipat(); $('f-branch-lihat').focus(); } }));
+    }
+    if (!alasanTidakBisa()) {
+      kartu.push(kartuLangkah(String(kartu.length + 1).padStart(2, '0'), 'Pipeline', 'Jalankan analisis',
+        'Memicu devsecops.yml di branch tujuan lewat GitHub API, lalu memantau tiap job sampai hasilnya terbit.',
+        { label: 'Buka panel jalankan', onclick: () => bukaDrawer() }));
+    }
+    if (!state.demo) {
+      kartu.push(kartuLangkah(String(kartu.length + 1).padStart(2, '0'), 'Demo', 'Buka mode demo',
+        'Data nyata eksperimen 19 Okt 2026 dari branch eksperimen/seeded, tanpa token dan tanpa memanggil GitHub.',
+        { label: 'Masuk mode demo', onclick: () => masukDemo() }));
+    }
+    if (!kartu.length) return null;
+    return el('section', { class: 'langkah-blok' },
+      el('div', { class: 'kartu-kepala' }, el('h3', { text: 'Apa yang dapat dilakukan selanjutnya' })),
+      el('div', { class: 'langkah-baris' }, kartu));
+  };
+
+  // Rail terlipat di layar sempit; memfokuskan kontrol di dalamnya harus membukanya dulu.
+  const bukaRailBilaTerlipat = () => {
+    if (getComputedStyle($('rail-isi')).display === 'none') terapkanRail(true);
+  };
+
   const renderKosong = (pesanGalatTeks, galat) => {
     bersihkanBlokRun();
     $('pipeline-box').hidden = false;
@@ -820,7 +864,17 @@
         teks = `Tekan Jalankan analisis untuk membuat run pertama. Hasilnya muncul di sini setelah job ${jobTerakhir} selesai.`;
       }
     }
-    isi($('findings-body'), el('div', { class: 'state' }, el('h3', { text: judul }), el('p', { text: teks }), aksi));
+    // Hero: ikon, label kecil, judul, penjelasan, lalu aksi. Tanpa grafik dekoratif yang tidak
+    // mewakili data apa pun.
+    const jenis = galat ? 'galat' : 'kosong';
+    isi($('findings-body'), el('div', { class: 'state' },
+      el('div', { class: `state-hero state-${jenis}` },
+        el('span', { class: 'state-ikon', 'aria-hidden': 'true' }, ikon(galat ? IKON.seru : IKON.perisai)),
+        el('p', { class: 'state-eyebrow', text: galat ? 'Gagal membaca hasil' : 'Konteks alur kerja DevSecOps' }),
+        el('h3', { text: judul }),
+        el('p', { class: 'state-teks', text: teks }),
+        aksi ? el('div', { class: 'state-aksi' }, aksi) : null),
+      langkahSelanjutnya()));
   };
 
   // Skema 2 menaruh status job di run.pipeline; null berarti run dijalankan dari CLI, bukan lewat pipeline.
