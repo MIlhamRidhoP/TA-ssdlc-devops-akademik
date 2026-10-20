@@ -11,22 +11,25 @@ diandalkan, misalnya saat dipresentasikan.
 
 | Keluarga | Dipakai untuk | Sumber | Lisensi | Pemegang hak cipta |
 |---|---|---|---|---|
-| Hanken Grotesk | teks isi (`--font-body`) | https://fonts.google.com/specimen/Hanken+Grotesk · https://github.com/marcologous/hanken-grotesk | [OFL-hanken-grotesk.txt](OFL-hanken-grotesk.txt) | Copyright 2021 The Hanken Grotesk Project Authors |
-| Schibsted Grotesk | judul (`--font-head`) | https://fonts.google.com/specimen/Schibsted+Grotesk · https://github.com/schibsted/schibsted-grotesk | [OFL-schibsted-grotesk.txt](OFL-schibsted-grotesk.txt) | Copyright 2023 The Schibsted-Grotesk Project Authors |
-| JetBrains Mono | angka dan data (`--font-data`) | https://fonts.google.com/specimen/JetBrains+Mono · https://github.com/JetBrains/JetBrainsMono | [OFL-jetbrains-mono.txt](OFL-jetbrains-mono.txt) | Copyright 2020 The JetBrains Mono Project Authors |
+| Geist | seluruh teks antarmuka: judul, isi, label (`--font-body`, `--font-head`) | https://fonts.google.com/specimen/Geist · https://github.com/vercel/geist-font | [OFL-geist.txt](OFL-geist.txt) | Copyright 2024 The Geist Project Authors |
+| JetBrains Mono | data dan telemetri: hash commit, CWE, path berkas, angka metrik (`--font-data`) | https://fonts.google.com/specimen/JetBrains+Mono · https://github.com/JetBrains/JetBrainsMono | [OFL-jetbrains-mono.txt](OFL-jetbrains-mono.txt) | Copyright 2020 The JetBrains Mono Project Authors |
 
-Ketiganya berlisensi **SIL Open Font License, Version 1.1**. Teks lisensi lengkapnya ada di folder
+Keduanya berlisensi **SIL Open Font License, Version 1.1**. Teks lisensi lengkapnya ada di folder
 ini, satu berkas per keluarga, disalin apa adanya dari repositori `google/fonts`.
 
 Ringkasan kewajiban yang relevan di sini: font boleh dipakai, disalin, dan didistribusikan ulang
 selama teks lisensi ikut disertakan dan font tidak dijual terpisah. Itulah sebabnya berkas OFL di
 atas ada di repo ini, bukan sekadar ditautkan.
 
+Hanken Grotesk dan Schibsted Grotesk dipakai sampai Oktober 2026, lalu dibuang ketika bahasa
+visual beralih ke pasangan Geist dan JetBrains Mono. Berkasnya tidak perlu disimpan: riwayat git
+masih memuatnya, dan menahan font yang tidak dirujuk `fonts.css` hanya menambah berat repo.
+
 ## Subset
 
-Hanya subset **latin** dan **latin-ext** yang diambil; teks dashboard berbahasa Indonesia dan
-nama berkas kode tidak memerlukan subset lain. `unicode-range` di `../fonts.css` membuat browser
-hanya mengunduh subset yang benar-benar terpakai.
+Hanya subset **latin** dan **latin-ext** yang diambil; teks dashboard berbahasa Indonesia dan nama
+berkas kode tidak memerlukan subset lain. `unicode-range` di `../fonts.css` membuat browser hanya
+mengunduh subset yang benar-benar terpakai.
 
 ## Memperbarui
 

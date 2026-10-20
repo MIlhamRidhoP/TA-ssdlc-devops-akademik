@@ -1,47 +1,58 @@
-/* Security Dashboard: mengikuti docs/design/mockup-dashboard.html (Cobalt, panel graphite, kartu bergaris tipis)
-   dengan perbaikan yang disepakati: font bukan Inter/Space Grotesk, tanpa label di atas judul,
-   monospace hanya untuk data, teks minimal 13px, konten di tengah. */
+/* ---------- Token ----------
+   Bahasa visual mengikuti desain "DevSecOps Intelligence System": kanvas gelap pekat, panel satu
+   tingkat lebih terang, dan garis rambut sebagai pemisah, bukan bayangan. Desain itu hanya
+   merancang tema gelap; tema terang di bawah adalah padanan yang dirancang terpisah dengan
+   hierarki permukaan yang sama (kanvas, panel, cekungan), bukan hasil pembalikan warna.
 
+   Tiga tingkat permukaan yang dipakai seluruh komponen:
+     --paper    kanvas halaman
+     --paper-2  panel: kartu, tabel, daftar
+     --paper-3  cekungan: baris tersorot, latar kontrol di dalam panel
+*/
 :root {
-  --paper: oklch(98.5% 0.004 250);
-  --paper-2: oklch(96.5% 0.005 252);
-  --paper-3: oklch(94% 0.006 254);
-  --rule: oklch(91% 0.008 255);
-  --rule-2: oklch(83% 0.011 255);
-  --muted: oklch(50% 0.013 255);
-  --ink-2: oklch(34% 0.018 257);
-  --ink: oklch(24% 0.02 258);
-  --accent: oklch(52% 0.2 256);
-  --accent-soft: oklch(94% 0.03 256);
-  --accent-ink: oklch(99% 0.004 256);
-  --focus: oklch(54% 0.2 256);
-  --graphite: oklch(24% 0.018 260);
-  --graphite-2: oklch(30% 0.018 260);
-  --graphite-rule: oklch(38% 0.018 260);
-  --on-graphite: oklch(95% 0.006 255);
-  --on-graphite-muted: oklch(76% 0.012 255);
-  --on-graphite-accent: oklch(78% 0.13 256);
-  --on-graphite-warn: oklch(82% 0.13 75);
-  --on-graphite-bad: oklch(74% 0.15 25);
-  --crit: oklch(49% 0.19 27);
-  --crit-soft: oklch(95% 0.03 27);
-  --high: oklch(47% 0.12 60);
-  --high-soft: oklch(95% 0.04 70);
-  --ok: oklch(46% 0.11 155);
-  --ok-soft: oklch(95% 0.03 155);
-  --step-ok: oklch(68% 0.13 155);
-  --src-sonar: oklch(52% 0.14 300);
-  --src-gemini: oklch(54% 0.2 256);
-  --src-both: oklch(52% 0.1 195);
-  /* Bayangan tepi wadah guliran: di tema gelap, bayangan hitam tidak terlihat di atas latar gelap. */
-  --bayang-tepi: oklch(0% 0 0 / 0.18);
+  --paper: oklch(98.4% 0.003 250);
+  --paper-2: oklch(100% 0 0);
+  --paper-3: oklch(96.2% 0.005 250);
+  --kode: oklch(97.2% 0.004 250);
+  --rule: oklch(92.6% 0.007 250);
+  --rule-2: oklch(86% 0.012 250);
+  --muted: oklch(52% 0.023 254);
+  --ink-2: oklch(37% 0.03 256);
+  --ink: oklch(21% 0.035 258);
 
-  --font-body: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-head: "Schibsted Grotesk", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --accent: oklch(50% 0.21 263);
+  --accent-kuat: oklch(55% 0.22 263);
+  --accent-soft: oklch(95.5% 0.03 263);
+  --accent-ink: oklch(100% 0 0);
+  --focus: oklch(55% 0.22 263);
+
+  --crit: oklch(51% 0.2 25);
+  --crit-soft: oklch(95.5% 0.03 25);
+  --crit-rule: oklch(83% 0.09 25);
+  --high: oklch(52% 0.13 68);
+  --high-soft: oklch(96% 0.04 75);
+  --high-rule: oklch(84% 0.09 75);
+  --ok: oklch(48% 0.12 158);
+  --ok-soft: oklch(95.5% 0.04 158);
+  --ok-rule: oklch(82% 0.09 158);
+  --netral: oklch(52% 0.023 254);
+  --netral-soft: oklch(95% 0.006 254);
+  --netral-rule: oklch(86% 0.012 250);
+  --step-ok: oklch(58% 0.13 158);
+
+  --src-sonar: oklch(52% 0.14 300);
+  --src-gemini: oklch(50% 0.21 263);
+  --src-both: oklch(52% 0.1 195);
+  --bayang-tepi: oklch(0% 0 0 / 0.14);
+  --bayang-panel: 0 1px 2px oklch(0% 0 0 / 0.05);
+
+  --font-body: Geist, ui-sans-serif, system-ui, sans-serif;
+  --font-head: Geist, ui-sans-serif, system-ui, sans-serif;
   --font-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --radius-card: 10px;
+  --radius-card: 8px;
   --radius-ctl: 6px;
+  --radius-chip: 4px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-micro: 120ms;
   --dur-short: 220ms;
@@ -59,63 +70,84 @@
 
 :root[data-density="padat"] { font-size: 90%; }
 
+/* Tema gelap: nilai inilah yang berasal langsung dari desain. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="terang"]) {
-    --paper: oklch(18% 0.014 260);
-    --paper-2: oklch(21% 0.015 260);
-    --paper-3: oklch(25% 0.016 260);
-    --rule: oklch(30% 0.016 258);
-    --rule-2: oklch(40% 0.016 258);
-    --muted: oklch(72% 0.014 255);
-    --ink-2: oklch(85% 0.01 255);
-    --ink: oklch(95% 0.006 255);
-    --accent: oklch(74% 0.14 256);
-    --accent-soft: oklch(30% 0.06 256);
-    --accent-ink: oklch(18% 0.02 260);
-    --focus: oklch(78% 0.13 256);
-    --graphite: oklch(13% 0.012 260);
-    --graphite-2: oklch(19% 0.014 260);
-    --graphite-rule: oklch(30% 0.016 258);
-    --crit: oklch(76% 0.14 27);
-    --crit-soft: oklch(28% 0.06 27);
-    --high: oklch(82% 0.12 70);
-    --high-soft: oklch(29% 0.05 70);
-    --ok: oklch(80% 0.12 155);
-    --ok-soft: oklch(27% 0.05 155);
+    --paper: oklch(16.5% 0.019 264);
+    --paper-2: oklch(21.5% 0.028 263);
+    --paper-3: oklch(27.5% 0.031 260);
+    --kode: oklch(13.5% 0.017 264);
+    --rule: oklch(27.5% 0.031 260);
+    --rule-2: oklch(38% 0.031 258);
+    --muted: oklch(71% 0.028 256);
+    --ink-2: oklch(84% 0.019 254);
+    --ink: oklch(91% 0.014 254);
+
+    --accent: oklch(72% 0.15 258);
+    --accent-kuat: oklch(62% 0.2 262);
+    --accent-soft: oklch(34% 0.08 262);
+    --accent-ink: oklch(100% 0 0);
+    --focus: oklch(72% 0.15 258);
+
+    --crit: oklch(72% 0.16 24);
+    --crit-soft: oklch(30% 0.07 24);
+    --crit-rule: oklch(44% 0.12 24);
+    --high: oklch(82% 0.14 77);
+    --high-soft: oklch(31% 0.06 77);
+    --high-rule: oklch(47% 0.1 77);
+    --ok: oklch(78% 0.14 164);
+    --ok-soft: oklch(29% 0.06 164);
+    --ok-rule: oklch(45% 0.1 164);
+    --netral: oklch(71% 0.028 256);
+    --netral-soft: oklch(28% 0.02 256);
+    --netral-rule: oklch(40% 0.028 256);
+    --step-ok: oklch(72% 0.15 164);
+
     --src-sonar: oklch(76% 0.11 300);
-    --src-gemini: oklch(74% 0.14 256);
+    --src-gemini: oklch(72% 0.15 258);
     --src-both: oklch(78% 0.09 195);
-    --bayang-tepi: oklch(0% 0 0 / 0.5);
+    --bayang-tepi: oklch(0% 0 0 / 0.55);
+    --bayang-panel: none;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="gelap"] {
-  --paper: oklch(18% 0.014 260);
-  --paper-2: oklch(21% 0.015 260);
-  --paper-3: oklch(25% 0.016 260);
-  --rule: oklch(30% 0.016 258);
-  --rule-2: oklch(40% 0.016 258);
-  --muted: oklch(72% 0.014 255);
-  --ink-2: oklch(85% 0.01 255);
-  --ink: oklch(95% 0.006 255);
-  --accent: oklch(74% 0.14 256);
-  --accent-soft: oklch(30% 0.06 256);
-  --accent-ink: oklch(18% 0.02 260);
-  --focus: oklch(78% 0.13 256);
-  --graphite: oklch(13% 0.012 260);
-  --graphite-2: oklch(19% 0.014 260);
-  --graphite-rule: oklch(30% 0.016 258);
-  --crit: oklch(76% 0.14 27);
-  --crit-soft: oklch(28% 0.06 27);
-  --high: oklch(82% 0.12 70);
-  --high-soft: oklch(29% 0.05 70);
-  --ok: oklch(80% 0.12 155);
-  --ok-soft: oklch(27% 0.05 155);
+  --paper: oklch(16.5% 0.019 264);
+  --paper-2: oklch(21.5% 0.028 263);
+  --paper-3: oklch(27.5% 0.031 260);
+  --kode: oklch(13.5% 0.017 264);
+  --rule: oklch(27.5% 0.031 260);
+  --rule-2: oklch(38% 0.031 258);
+  --muted: oklch(71% 0.028 256);
+  --ink-2: oklch(84% 0.019 254);
+  --ink: oklch(91% 0.014 254);
+
+  --accent: oklch(72% 0.15 258);
+  --accent-kuat: oklch(62% 0.2 262);
+  --accent-soft: oklch(34% 0.08 262);
+  --accent-ink: oklch(100% 0 0);
+  --focus: oklch(72% 0.15 258);
+
+  --crit: oklch(72% 0.16 24);
+  --crit-soft: oklch(30% 0.07 24);
+  --crit-rule: oklch(44% 0.12 24);
+  --high: oklch(82% 0.14 77);
+  --high-soft: oklch(31% 0.06 77);
+  --high-rule: oklch(47% 0.1 77);
+  --ok: oklch(78% 0.14 164);
+  --ok-soft: oklch(29% 0.06 164);
+  --ok-rule: oklch(45% 0.1 164);
+  --netral: oklch(71% 0.028 256);
+  --netral-soft: oklch(28% 0.02 256);
+  --netral-rule: oklch(40% 0.028 256);
+  --step-ok: oklch(72% 0.15 164);
+
   --src-sonar: oklch(76% 0.11 300);
-  --src-gemini: oklch(74% 0.14 256);
+  --src-gemini: oklch(72% 0.15 258);
   --src-both: oklch(78% 0.09 195);
-  --bayang-tepi: oklch(0% 0 0 / 0.5);
+  --bayang-tepi: oklch(0% 0 0 / 0.55);
+  --bayang-panel: none;
   color-scheme: dark;
 }
 
@@ -152,7 +184,8 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .data { font-family: var(--font-data); font-size: 0.8125rem; font-variant-ligatures: none; }
 .skip {
   position: fixed; left: var(--s-3); top: -3rem; z-index: 10;
-  background: var(--graphite); color: var(--on-graphite); padding: var(--s-2) var(--s-3); border-radius: var(--radius-ctl);
+  background: var(--paper-2); color: var(--ink); padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--accent); border-radius: var(--radius-ctl);
 }
 .skip:focus { top: var(--s-3); }
 
@@ -163,7 +196,7 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
   min-height: 2.5rem; padding: 0 var(--s-4);
-  border: 1px solid var(--rule-2); border-radius: var(--radius-ctl); background: var(--paper); color: var(--ink);
+  border: 1px solid var(--rule-2); border-radius: var(--radius-ctl); background: var(--paper-2); color: var(--ink);
   font-weight: 500; font-size: 0.9375rem; line-height: 1.1; text-align: center; white-space: nowrap;
   transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
 }
@@ -222,7 +255,7 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
   border: 1px solid transparent; border-radius: var(--radius-ctl); background: transparent; text-align: left; color: var(--ink-2);
 }
 @media (hover: hover) { .project:hover { border-color: var(--rule-2); } }
-.project[aria-current="true"] { background: var(--paper); border-color: var(--rule); }
+.project[aria-current="true"] { background: var(--paper-3); border-color: var(--rule-2); }
 .project b { font-weight: 500; color: var(--ink); overflow-wrap: anywhere; display: flex; align-items: center; gap: var(--s-2); }
 .project[aria-current="true"] b::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
 .project span { font-size: 0.8125rem; color: var(--muted); }
@@ -296,19 +329,18 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .title-block dd { color: var(--ink); overflow-wrap: anywhere; }
 .title-block dd.warn { color: var(--high); font-weight: 500; }
 
-/* ---------- Panel jalankan analisis (graphite) ---------- */
+/* ---------- Form jalankan analisis ---------- */
 
 .runner {
-  background: var(--graphite); color: var(--on-graphite); border-radius: var(--radius-card);
+  background: var(--paper-2); color: var(--ink); border-radius: var(--radius-card);
   display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); padding: var(--s-5);
 }
 @media (min-width: 62rem) { .runner { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s-6); } }
 .run-form { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 30rem) { .run-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .run-form .wide { grid-column: 1 / -1; }
-/* Select selalu berada di permukaan terang (rail dan drawer), jadi tokennya ikut permukaan itu,
-   bukan token graphite. Sebelumnya latarnya --graphite-2 sementara teksnya --ink: di tema terang
-   keduanya gelap dan rasionya 1,2:1. */
+/* Select memakai token permukaan, bukan token panel gelap tersendiri. Pernah ada masa latarnya
+   permukaan gelap sementara teksnya --ink: di tema terang keduanya gelap dan rasionya 1,2:1. */
 .select {
   appearance: none; width: 100%; min-width: 0; min-height: 2.5rem; padding: 0 2.25rem 0 var(--s-3);
   border: 1px solid var(--rule-2); border-radius: var(--radius-ctl); background-color: var(--paper); color: var(--ink);
@@ -326,66 +358,66 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .seg { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .seg label {
   position: relative; display: inline-flex; align-items: center; gap: var(--s-2);
-  min-height: 2.5rem; padding: 0 var(--s-3); border: 1px solid var(--graphite-rule); border-radius: var(--radius-ctl);
-  cursor: pointer; color: var(--on-graphite); font-size: 0.9375rem;
+  min-height: 2.5rem; padding: 0 var(--s-3); border: 1px solid var(--rule-2); border-radius: var(--radius-ctl);
+  cursor: pointer; color: var(--ink); font-size: 0.9375rem;
 }
 .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.seg label:has(input:checked) { border-color: var(--on-graphite-accent); box-shadow: inset 0 0 0 1px var(--on-graphite-accent); }
-.seg label:has(input:focus-visible) { outline: 2px solid var(--on-graphite-accent); outline-offset: 2px; }
+.seg label:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Opsi mati tetap harus terbaca: opacity menurunkan kontras sampai di bawah 4,5:1 tanpa terlihat
    di computed style. Yang dipakai warna redup eksplisit, dan keadaannya ditandai garis putus-putus
    supaya tidak hanya bergantung warna. */
 .seg label:has(input:disabled) { cursor: not-allowed; border-style: dashed; color: var(--muted); }
 .seg label:has(input:disabled) input { cursor: not-allowed; }
-.seg small { font-size: 0.8125rem; color: var(--on-graphite-muted); }
+.seg small { font-size: 0.8125rem; color: var(--muted); }
 .seg label:has(input:disabled) small { color: var(--muted); }
-/* Persetujuan biaya jalur v2 memakai .check yang sama dengan panel token, disesuaikan ke panel
-   graphite dan diberi bingkai karena konsekuensinya berbayar. */
+/* Persetujuan biaya jalur v2 memakai .check yang sama dengan panel token, diberi bingkai karena
+   konsekuensinya berbayar. */
 .run-form .check {
-  padding: var(--s-2) var(--s-3); border: 1px solid var(--graphite-rule); border-radius: var(--radius-ctl);
-  color: var(--on-graphite); font-size: 0.9375rem; cursor: pointer;
+  padding: var(--s-2) var(--s-3); border: 1px solid var(--rule-2); border-radius: var(--radius-ctl);
+  color: var(--ink); font-size: 0.9375rem; cursor: pointer;
 }
-.run-form .check input { accent-color: var(--on-graphite-accent); cursor: pointer; }
-.run-form .check:has(input:checked) { border-color: var(--on-graphite-accent); box-shadow: inset 0 0 0 1px var(--on-graphite-accent); }
-.run-form .check:has(input:focus-visible) { outline: 2px solid var(--on-graphite-accent); outline-offset: 2px; }
+.run-form .check input { accent-color: var(--accent); cursor: pointer; }
+.run-form .check:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.run-form .check:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .go { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .btn-run {
-  border: 1px solid var(--on-graphite-accent); background: var(--on-graphite-accent); color: var(--graphite);
+  border: 1px solid var(--accent); background: var(--accent); color: var(--paper-2);
   min-height: 2.75rem; padding: 0 var(--s-5); font-weight: 600;
 }
-@media (hover: hover) { .btn-run:hover:not(:disabled) { border-color: var(--on-graphite); } }
-.btn-run:disabled { background: transparent; color: var(--on-graphite-muted); border-color: var(--graphite-rule); opacity: 1; }
+@media (hover: hover) { .btn-run:hover:not(:disabled) { border-color: var(--ink); } }
+.btn-run:disabled { background: transparent; color: var(--muted); border-color: var(--rule-2); opacity: 1; }
 .btn-run .spin { width: 0.875rem; height: 0.875rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; display: none; }
 .btn-run[data-busy] .spin { display: inline-block; }
 @media (prefers-reduced-motion: no-preference) { .btn-run[data-busy] .spin { animation: spin 0.8s linear infinite; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-.go-hint { font-size: 0.875rem; color: var(--on-graphite-muted); max-width: 52ch; }
-.go-hint[data-kind="error"] { color: var(--on-graphite-bad); }
-.go-hint a, .runner .btn-text { color: var(--on-graphite-accent); }
+.go-hint { font-size: 0.875rem; color: var(--muted); max-width: 52ch; }
+.go-hint[data-kind="error"] { color: var(--crit); }
+.go-hint a, .runner .btn-text { color: var(--accent); }
 
 /* Langkah pipeline: daftar vertikal seperti mockup */
 .pipeline { min-width: 0; display: grid; align-content: start; gap: var(--s-3); }
-.pipeline-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); font-size: 0.8125rem; color: var(--on-graphite-muted); }
-.pipeline-h b { color: var(--on-graphite); font-weight: 500; }
-.nodes { display: grid; border-top: 1px solid var(--graphite-rule); }
+.pipeline-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); font-size: 0.8125rem; color: var(--muted); }
+.pipeline-h b { color: var(--ink); font-weight: 500; }
+.nodes { display: grid; border-top: 1px solid var(--rule-2); }
 .node {
   position: relative; display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) auto; grid-template-rows: auto auto;
-  gap: 0 var(--s-3); align-items: center; padding: var(--s-3) 0; border-bottom: 1px solid var(--graphite-rule);
+  gap: 0 var(--s-3); align-items: center; padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2);
 }
 .seg-line { display: none; }
 .node-mark {
   grid-row: 1 / span 2; width: 0.75rem; height: 0.75rem; border-radius: 50%;
-  border: 2px solid var(--graphite-rule); background: transparent; justify-self: center;
+  border: 2px solid var(--rule-2); background: transparent; justify-self: center;
 }
 .node-mark .icon { display: none; }
-.node-name { font-weight: 500; color: var(--on-graphite); }
-.node-state { grid-column: 2; font-size: 0.8125rem; color: var(--on-graphite-muted); }
-.node-dim { grid-column: 3; grid-row: 1 / span 2; font-family: var(--font-data); font-size: 0.8125rem; color: var(--on-graphite-muted); }
+.node-name { font-weight: 500; color: var(--ink); }
+.node-state { grid-column: 2; font-size: 0.8125rem; color: var(--muted); }
+.node-dim { grid-column: 3; grid-row: 1 / span 2; font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted); }
 .node[data-s="done"] .node-mark { background: var(--step-ok); border-color: var(--step-ok); }
-.node[data-s="run"] .node-mark { border-color: var(--on-graphite-warn); }
-.node[data-s="run"] .node-state { color: var(--on-graphite-warn); }
-.node[data-s="fail"] .node-mark { background: var(--on-graphite-bad); border-color: var(--on-graphite-bad); }
-.node[data-s="fail"] .node-state { color: var(--on-graphite-bad); }
+.node[data-s="run"] .node-mark { border-color: var(--high); }
+.node[data-s="run"] .node-state { color: var(--high); }
+.node[data-s="fail"] .node-mark { background: var(--crit); border-color: var(--crit); }
+.node[data-s="fail"] .node-state { color: var(--crit); }
 .node[data-s="skip"] { opacity: 0.6; }
 @media (prefers-reduced-motion: no-preference) {
   .node-mark { transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out); }
@@ -421,7 +453,8 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 }
 
 .findings, .box {
-  border: 1px solid var(--rule); border-radius: var(--radius-card); background: var(--paper); min-width: 0;
+  border: 1px solid var(--rule); border-radius: var(--radius-card); background: var(--paper-2); min-width: 0;
+  box-shadow: var(--bayang-panel);
 }
 .findings { padding: var(--s-4); display: grid; gap: var(--s-3); container-type: inline-size; }
 .findings-head { display: grid; gap: var(--s-1); }
@@ -440,7 +473,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   gap: var(--s-1) var(--s-3); align-items: center;
   width: 100%; padding: var(--s-3) var(--s-1); border: 0; border-radius: var(--radius-ctl); background: transparent; text-align: left;
 }
-@media (hover: hover) { .frow:hover { background: var(--paper-2); } }
+@media (hover: hover) { .frow:hover { background: var(--paper-3); } }
 .sev {
   grid-area: sev; justify-self: start; display: inline-flex; align-items: center;
   font-size: 0.8125rem; font-weight: 600; text-transform: capitalize; padding: 0.1rem var(--s-2); border-radius: 4px; line-height: 1.45;
@@ -460,7 +493,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .block-h { font: 600 0.8125rem/1.3 var(--font-body); color: var(--muted); margin-bottom: var(--s-1); display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 .fdetail p { max-width: 68ch; overflow-wrap: anywhere; }
 .code {
-  margin: 0; overflow-x: auto; background: var(--paper-2);
+  margin: 0; overflow-x: auto; background: var(--kode);
   border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
   font: 0.8125rem/1.7 var(--font-data); font-variant-ligatures: none; color: var(--ink); padding: var(--s-2) 0;
 }
@@ -492,7 +525,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   display: grid; grid-template-columns: 3rem minmax(0, 1fr) 2rem; gap: 0.15rem var(--s-3); align-items: center;
   width: 100%; padding: var(--s-2) var(--s-1); border: 0; border-radius: var(--radius-ctl); background: transparent; text-align: left; min-height: 2.75rem;
 }
-@media (hover: hover) { .hrow:hover { background: var(--paper-2); } }
+@media (hover: hover) { .hrow:hover { background: var(--paper-3); } }
 .hrow[aria-current="true"] { background: var(--accent-soft); }
 .hrow[aria-current="true"] .hnum { color: var(--accent); }
 .hnum { font-family: var(--font-data); font-size: 0.8125rem; color: var(--ink); grid-row: 1 / span 2; }
@@ -505,7 +538,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 
 /* ---------- Layar awal ---------- */
 
-.start { border: 1px solid var(--rule); border-radius: var(--radius-card); background: var(--paper); display: grid; gap: var(--s-5); padding: var(--s-5); }
+.start { border: 1px solid var(--rule); border-radius: var(--radius-card); background: var(--paper-2); display: grid; gap: var(--s-5); padding: var(--s-5); box-shadow: var(--bayang-panel); }
 @media (min-width: 60rem) { .start { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-6); padding: var(--s-6); } }
 .start > div { display: grid; gap: var(--s-3); align-content: start; }
 .start h1 { font-size: clamp(1.5rem, 1.15rem + 1.2vw, 1.875rem); line-height: 1.15; }
@@ -565,7 +598,7 @@ nav:has(.projects:empty) { display: none; }
 }
 .aisi { display: grid; gap: 0.15rem; min-width: 0; }
 .ameta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
-.arow:hover { background: var(--paper-2); }
+.arow:hover { background: var(--paper-3); }
 /* .fid, .ftitle dan kerabatnya membawa grid-area bernama milik layout .frow. Di luar layout itu
    nama tersebut tidak ada, dan grid justru membuat kolom implisit untuknya: .ftitle terlempar ke
    kolom kedua .aisi dan path tampak rata kanan dengan lebar seadanya. Dikembalikan ke otomatis,
@@ -635,10 +668,10 @@ nav:has(.projects:empty) { display: none; }
 .tabel-kotak { display: grid; gap: var(--s-2); }
 .tabel-geser { margin: 0; }
 .tabel-bungkus {
-  overflow-x: auto; background: var(--paper);
+  overflow-x: auto; background: var(--paper-2);
   background-image:
-    linear-gradient(to right, var(--paper) 40%, transparent),
-    linear-gradient(to left, var(--paper) 40%, transparent),
+    linear-gradient(to right, var(--paper-2) 40%, transparent),
+    linear-gradient(to left, var(--paper-2) 40%, transparent),
     linear-gradient(to right, var(--bayang-tepi), transparent),
     linear-gradient(to left, var(--bayang-tepi), transparent);
   background-position: left center, right center, left center, right center;
@@ -652,7 +685,10 @@ table.eks th, table.eks td { padding: var(--s-2) var(--s-3); text-align: left; b
 /* Kepala kolom dan kolom jangkar boleh membungkus. Sejak nama model dipakai apa adanya
    ("Gemini 3.1 Pro Preview" menggantikan "google"), menahannya satu baris melebarkan tabel jauh
    melampaui layar dan menyisakan sedikit ruang untuk angkanya. Angka tetap tidak membungkus. */
-table.eks th { font-weight: 600; color: var(--ink-2); background: var(--paper-2); white-space: normal; }
+table.eks th {
+  font-weight: 600; color: var(--muted); background: var(--paper-3); white-space: normal;
+  font-family: var(--font-data); font-size: 0.6875rem; letter-spacing: 0.03em; text-transform: uppercase;
+}
 table.eks th:not(:first-child) { min-width: 5rem; }
 /* Kolom jangkar: cukup lebar untuk memuat nama model satu baris, tidak lebih. Terlalu sempit
    membuat tiap nama pecah tiga baris dan barisnya menjulang. */
@@ -662,26 +698,26 @@ table.eks td:first-child, table.eks th:first-child { white-space: normal; min-wi
 }
 /* Kolom pertama menempel: tanpa itu, menggeser ke kanan membuat angka kehilangan identitas barisnya. */
 table.eks th:first-child, table.eks td:first-child {
-  position: sticky; left: 0; z-index: 1; background: var(--paper);
+  position: sticky; left: 0; z-index: 1; background: var(--paper-2);
   border-right: 1px solid var(--rule);
 }
-table.eks th:first-child { z-index: 2; background: var(--paper-2); }
+table.eks th:first-child { z-index: 2; background: var(--paper-3); }
 table.eks td.num { font-family: var(--font-data); }
 table.eks tr:last-child td { border-bottom: 0; }
 .eks-pilih { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-bottom: var(--s-3); }
 
 /* Drawer "Jalankan analisis": memisahkan menjalankan dari melihat */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-/* Blok pipeline mempertahankan latar graphite: seluruh gaya node dibangun di atas token --on-graphite. */
 .pipeline-box {
-  margin-top: var(--s-5); padding: var(--s-5); border-radius: var(--radius-card);
-  background: var(--graphite); color: var(--on-graphite);
+  margin-top: var(--s-5); padding: var(--s-4); border-radius: var(--radius-card);
+  background: var(--paper-2); color: var(--ink); border: 1px solid var(--rule);
+  box-shadow: var(--bayang-panel);
 }
 .drawer { position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end; }
 .drawer-tirai { position: absolute; inset: 0; background: oklch(0% 0 0 / 0.45); }
 .drawer-panel {
   position: relative; width: min(28rem, 100%); height: 100%; overflow-y: auto;
-  background: var(--paper); border-left: 1px solid var(--rule); padding: var(--s-5);
+  background: var(--paper-2); border-left: 1px solid var(--rule); padding: var(--s-5);
   display: grid; gap: var(--s-4); align-content: start;
 }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
@@ -695,7 +731,7 @@ table.eks tr:last-child td { border-bottom: 0; }
   width: 100%; text-align: left; border: 0; background: none; cursor: pointer; color: var(--ink-2);
   font: inherit; font-size: 0.875rem; padding: var(--s-2) var(--s-3); border-radius: var(--radius-ctl);
 }
-.railnav button:hover { background: var(--paper-2); color: var(--ink); }
+.railnav button:hover { background: var(--paper-3); color: var(--ink); }
 .railnav button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .railnav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
@@ -711,21 +747,9 @@ table.eks tr:last-child td { border-bottom: 0; }
 .hgagal { font-weight: 700; color: var(--crit); margin-left: var(--s-1); }
 
 /* Kegagalan yang diharapkan: amber, berbeda dari kegagalan sungguhan, dan selalu disertai sebabnya. */
-.node[data-s="fail-diharapkan"] .node-mark { background: var(--on-graphite-warn); border-color: var(--on-graphite-warn); }
-.node[data-s="fail-diharapkan"] .node-state { color: var(--on-graphite-warn); }
+.node[data-s="fail-diharapkan"] .node-mark { background: var(--high); border-color: var(--high); }
+.node[data-s="fail-diharapkan"] .node-state { color: var(--high); }
 
-/* Form Jalankan analisis pindah dari panel graphite ke drawer berlatar terang (S6), tetapi gayanya
-   masih memakai token on-graphite. Di tema terang itu menghasilkan teks putih di atas putih.
-   Token dipetakan ulang di dalam drawer, bukan diubah global, supaya panel pipeline yang memang
-   masih graphite tidak ikut berubah. */
-.drawer-panel {
-  --on-graphite: var(--ink);
-  --on-graphite-muted: var(--muted);
-  --on-graphite-accent: var(--accent);
-  --on-graphite-bad: var(--crit);
-  --graphite-rule: var(--rule-2);
-  --graphite: var(--accent-ink);
-}
 .drawer-panel .btn-run:disabled { color: var(--ink-2); background: var(--paper-2); }
 /* Drawer hanya selebar 28rem; dua kolom membuat nama branch dan model terpotong elipsis. */
 .drawer-panel .run-form { grid-template-columns: minmax(0, 1fr); }
