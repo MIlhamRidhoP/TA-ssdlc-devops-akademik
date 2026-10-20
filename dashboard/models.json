@@ -40,7 +40,7 @@
       "bawaan": false,
       "secret": "ANTHROPIC_API_KEY",
       "biaya_perkiraan_usd": 0.3702,
-      "catatan": "Secret ANTHROPIC_API_KEY belum dibuat di repo."
+      "catatan": "Secret ANTHROPIC_API_KEY sudah ada di GitHub Secrets. Pembanding jalur v2 pada eksperimen 19 Okt 2026."
     },
     {
       "vendor": "openai",
@@ -50,7 +50,7 @@
       "bawaan": false,
       "secret": "OPENAI_API_KEY",
       "biaya_perkiraan_usd": 0.2031,
-      "catatan": "Secret OPENAI_API_KEY belum dibuat di repo."
+      "catatan": "Secret OPENAI_API_KEY sudah ada di GitHub Secrets. Pembanding jalur v2 pada eksperimen 19 Okt 2026."
     }
   ]
 }
