@@ -26,8 +26,11 @@ Langgar satu pun dan data eksperimen TA ini rusak atau uangnya terbakar.
 4. **Jangan menulis ulang riwayat git.** Tanpa `rebase`, `--force`, `reset --hard`, atau `--amend`,
    kecuali diminta eksplisit.
 5. **Jangan menyentuh berkas ini:**
-   - `prompts/v2/**` — hash-nya dikunci `prompts/v2/HASHES.txt` dan harus tetap OK
-   - `prompts/remediasi-v1/**` — hash-nya dikunci `prompts/remediasi-v1/HASHES.txt`
+   - `prompts/v2/**` dan `prompts/remediasi-v1/**` — dikunci HASHES.txt masing-masing. Aturannya
+     dua arah: `sha256sum -c` harus OK, **dan** folder itu hanya boleh berisi berkas yang tercantum
+     di HASHES.txt. `sha256sum -c` tidak pernah mengeluh soal berkas yang TIDAK tercantum, jadi
+     menambah satu varian prompt baru di situ lolos 8/8 OK. `tests/kunci-prompt.test.js` menutup
+     arah kedua itu; pengecualiannya hanya HASHES.txt sendiri dan README.md.
    - `src/**` dan `SEEDED.md` — objek uji beserta ground truth kerentanan tertanam
    - `hasil-eksperimen/**` — data eksperimen yang sudah diambil
    - Skrip penilaian: `scripts/llm/score.js`, `scripts/llm-score.js`, dan
@@ -85,9 +88,13 @@ Di dalam repo:
 ```bash
 npm test                                   # node --test
 node --check dashboard/app.js
-cd prompts/v2 && sha256sum -c HASHES.txt   # harus 8/8 OK
+cd prompts/v2 && sha256sum -c HASHES.txt            # harus 8/8 OK
+cd prompts/remediasi-v1 && sha256sum -c HASHES.txt  # harus 3/3 OK
 node scripts/validasi-skema.js             # fixture v2 terhadap skema
 ```
+
+`sha256sum -c` hanya separuh aturannya; separuh lainnya, yaitu tidak ada berkas di luar daftar,
+diperiksa `tests/kunci-prompt.test.js` dan ikut berjalan di `npm test`. Lihat batas keras nomor 5.
 
 Catatan jujur tentang `npm test`: sebagian berkas tes memanggil server API lewat HTTP dan **gagal
 dengan `ECONNREFUSED` kalau server tidak jalan**. Itu keadaan lingkungan, bukan cacat kode. Untuk
@@ -101,6 +108,13 @@ npm test
 ```
 
 Tes yang tidak memanggil jaringan bisa dipilih tanpa menghafal daftarnya:
+
+```bash
+npm run test:tanpa-server
+```
+
+Skrip itu memilih berkasnya sendiri dan berjalan di PowerShell maupun bash. Perintah di bawah
+melakukan hal yang sama, tetapi `git ls-files | grep` tidak ada di PowerShell:
 
 ```bash
 node --test $(git ls-files 'tests/*.test.js' | grep -vE 'api|cuti|khs|profil|list-query')
@@ -158,12 +172,12 @@ docker compose down
 |---|---|
 | `dashboard/` | Security Dashboard: HTML, CSS, JS vanilla tanpa build step. `README.md` di dalamnya paling rinci |
 | `dashboard/fixtures/` | Data mode demo: data nyata dari run eksperimen 19 Okt dan rekaman run CI #54, kecuali fixture yang ditandai contoh mock (misalnya rekomendasi AI), yang di dashboard selalu tampil dengan label contoh |
-| `.github/workflows/devsecops.yml` | Pipeline: rencana, build-test, sonarcloud, analisis (v1), analisis-v2, hasil |
-| `scripts/llm/` | Mesin analisis v2: deteksi, verifikasi, penyusun `results.json` skema 2, penilaian |
+| `.github/workflows/devsecops.yml` | Pipeline: rencana (turunkan skenario, tolak kombinasi tidak sah), build-test, sonarcloud, analisis (v1), analisis-v2 (matriks vendor, tidak menerbitkan), terbit-v2 (gabung tiga vendor lalu terbit; satu-satunya penerbit jalur v2), hasil (penerbit jalur v1) |
+| `scripts/llm/` | Mesin analisis v2: deteksi, verifikasi, penyusun `results.json` skema 2, penggabung tiga vendor (`gabung.js`), penilaian |
 | `prompts/v2/` | Prompt jalur v2: deteksi dan verifikasi. **Terkunci hash** |
 | `prompts/remediasi-v1/` | Prompt rekomendasi lapis 2. **Terkunci hash** |
 | `src/` | Aplikasi SIA, objek uji. **Jangan diubah** |
-| `tests/` | `node --test`. Yang berhubungan dengan dashboard tidak butuh server |
+| `tests/` | `node --test`. Yang berhubungan dengan dashboard tidak butuh server; `npm run test:tanpa-server` menjalankan yang tanpa server saja |
 | `docs/design/` | Skema `results.json`, mockup, catatan rancangan |
 | `hasil-eksperimen/` | Data eksperimen TA. **Jangan diubah** |
 

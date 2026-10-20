@@ -271,23 +271,40 @@ test('workflow: langkah remediasi dijaga input dan berada di jalur v2', () => {
   assert.match(blok, /if: inputs\.rekomendasi_ai/, 'langkah remediasi tidak dijaga input');
   assert.match(blok, /llm-remediasi\.js --vendor=/, 'langkah remediasi tidak memanggil skripnya');
 
-  // Harus berada di dalam job analisis-v2, sesudah results.json tersusun dan sebelum diterbitkan.
-  const jobV2 = wf.indexOf('  analisis-v2:');
-  const susun = wf.indexOf('- name: Susun results.json skema 2');
+  // Harus berada di job terbit-v2, sesudah results.json siap dan sebelum diterbitkan. Letaknya di
+  // job penerbit, bukan di job analisis yang bermatriks: di mode gabungan analisis berjalan tiga
+  // kali, dan saran lapis 2 harus berpijak pada hasil gabungan, bukan pada hasil satu vendor.
+  const jobTerbit = wf.indexOf('\n  terbit-v2:');
+  const siap = wf.indexOf('- name: Siapkan results.json');
   const terbit = wf.indexOf('- name: Terbitkan ke branch security-results');
-  assert.ok(jobV2 < susun && susun < i && i < terbit, 'urutan langkah remediasi salah');
+  assert.ok(jobTerbit < siap && siap < i && i < terbit, 'urutan langkah remediasi salah');
+  assert.ok(wf.indexOf('\n  hasil:') > i, 'langkah remediasi keluar dari job terbit-v2');
+  // Mode gabungan tidak punya vendor sendiri, jadi vendornya diambil dari input terpisah.
+  assert.match(blok, /vendor_rekomendasi/, 'mode gabungan tanpa pilihan vendor rekomendasi');
 });
 
 test('workflow: remediasi tidak menambah permission maupun secret baru', () => {
   const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'devsecops.yml'), 'utf8');
   const i = wf.indexOf('- name: Rekomendasi perbaikan AI (lapis 2)');
-  const blok = wf.slice(i, wf.indexOf('- name: Unggah output v2', i));
+  const blok = wf.slice(i, wf.indexOf('- name: Unggah hasil gabungan', i));
+  assert.ok(blok.length > 0 && blok.length < 2000, 'batas blok langkah remediasi tidak ditemukan');
   assert.ok(!/permissions:/.test(blok), 'langkah remediasi menyebut permissions');
   // Secret yang dipakai harus persis yang sudah dipakai langkah llm-scan.
   const dipakai = [...blok.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((m) => m[1]).sort();
   assert.deepEqual(dipakai, ['ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY']);
   // Izin global dan izin job tidak berubah.
   assert.match(wf, /^permissions:\n  contents: read$/m, 'permissions global berubah');
+  // Izin tulis tetap hanya di job yang memang menerbitkan. Daftarnya ditulis lengkap supaya job
+  // baru yang minta izin tulis menggagalkan tes, bukan lolos diam-diam.
+  const bagianJob = wf.slice(wf.indexOf('\njobs:'));
+  let jobKini = null;
+  const izinTulis = [];
+  for (const b of bagianJob.split('\n')) {
+    const kepala = b.match(/^ {2}([a-z][a-z0-9-]*):\s*$/);
+    if (kepala) { jobKini = kepala[1]; continue; }
+    if (/^ {6}contents: write\s*$/.test(b)) izinTulis.push(jobKini);
+  }
+  assert.deepEqual(izinTulis.sort(), ['hasil', 'terbit-v2'], 'izin tulis ada di job selain penerbit');
 });
 
 test('penerbitan mempertahankan field remediasi apa adanya', async () => {

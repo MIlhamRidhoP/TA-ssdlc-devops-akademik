@@ -1246,6 +1246,7 @@
     { key: 'sonar', id: 'sonarcloud', job: 'Analisis SonarCloud', nama: 'SonarCloud SAST', hasil: 'sonarcloud', perlu: ['rencana'], jalur: 'kedua' },
     { key: 'analisis', id: 'analisis', job: 'Analisis temuan (Sonar dan Gemini)', nama: 'Analisis LLM v1', hasil: 'analisis', perlu: ['rencana', 'sonar'], jalur: 'v1' },
     { key: 'analisis-v2', id: 'analisis-v2', job: 'Analisis LLM v2 (deteksi dan verifikasi)', nama: 'Deteksi dan verifikasi', hasil: 'analisis', perlu: ['rencana', 'sonar'], jalur: 'v2' },
+    { key: 'terbit-v2', id: 'terbit-v2', job: 'Gabung dan terbitkan hasil v2', nama: 'Gabung dan terbitkan', hasil: null, perlu: ['rencana', 'sonar', 'analisis-v2'], jalur: 'v2' },
     { key: 'hasil', id: 'hasil', job: 'Gabung dan terbitkan hasil', nama: 'Gabung dan terbitkan', hasil: null, perlu: ['rencana', 'build', 'sonar', 'analisis'], jalur: 'v1' },
   ];
 

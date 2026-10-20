@@ -31,10 +31,20 @@ on:
         type: choice
         options: [v1, v2]
         default: v2
-      vendor_v2:
-        description: 'Vendor untuk jalur v2'
+      skenario:
+        description: >-
+          Skenario analisis TA. A = SAST saja, tanpa panggilan LLM. B = SAST + LLM, tiap alert
+          SonarCloud diverifikasi model. C = LLM saja, tanpa SonarCloud. Dibiarkan kosong berarti
+          mengikuti mode: sast menjadi A, sast-llm menjadi B.
         type: choice
-        options: [google, anthropic, openai]
+        options: ['', A, B, C]
+        default: ''
+      vendor_v2:
+        description: >-
+          Model untuk jalur v2. gabungan menjalankan ketiga vendor lalu menyatukan hasilnya, dan
+          hanya sah untuk skenario B.
+        type: choice
+        options: [google, anthropic, openai, gabungan]
         default: google
       konfirmasi_v2:
         description: 'Ketik JALANKAN untuk menyetujui biaya panggilan berbayar jalur v2'
@@ -55,6 +65,13 @@ on:
           selalu tampil tanpa input ini.
         type: boolean
         default: false
+      vendor_rekomendasi:
+        description: >-
+          Vendor yang menyusun rekomendasi AI pada mode gabungan, yang tidak punya satu vendor
+          sendiri. Diabaikan di mode satu model, yang memakai vendor runnya.
+        type: choice
+        options: [google, anthropic, openai]
+        default: google
 
 permissions:
   contents: read
@@ -141,20 +158,76 @@ jobs:
     timeout-minutes: 2
     outputs:
       mode: ${{ steps.mode.outputs.mode }}
+      skenario: ${{ steps.mode.outputs.skenario }}
+      gabungan: ${{ steps.mode.outputs.gabungan }}
+      vendors: ${{ steps.mode.outputs.vendors }}
     steps:
-      - name: Tentukan mode
+      - name: Tentukan mode dan skenario
         id: mode
         env:
           MODE_INPUT: ${{ inputs.mode }}
           USE_GEMINI: ${{ inputs.use_gemini }}
+          SKENARIO_INPUT: ${{ inputs.skenario }}
+          VENDOR_V2: ${{ inputs.vendor_v2 }}
+          JALUR: ${{ inputs.jalur }}
         run: |
+          set -euo pipefail
           mode=none
           case "$MODE_INPUT" in
             sast|sast-llm) mode="$MODE_INPUT" ;;
             *) if [ "$USE_GEMINI" = "true" ]; then mode=sast-llm; fi ;;
           esac
-          echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "Mode analisis: $mode"
+
+          # Skenario boleh dikosongkan. Dispatch lama tidak mengenal input ini, dan menurunkannya
+          # dari mode membuat perilakunya persis seperti sebelumnya: sast menjadi A, sast-llm
+          # menjadi B. Tidak ada dispatch lama yang berubah arti karena input ini ditambahkan.
+          skenario="$SKENARIO_INPUT"
+          if [ -z "$skenario" ]; then
+            case "$mode" in
+              sast) skenario=A ;;
+              sast-llm) skenario=B ;;
+              *) skenario=A ;;
+            esac
+          fi
+
+          gabungan=false
+          if [ "$VENDOR_V2" = "gabungan" ]; then gabungan=true; fi
+
+          # Penjaga kombinasi, dijalankan di job paling awal supaya menolak SEBELUM ada satu pun
+          # panggilan berbayar. Job rencana tidak pernah memanggil LLM.
+          if [ "$gabungan" = "true" ] && [ "$skenario" != "B" ]; then
+            echo "::error::Mode gabungan hanya sah untuk skenario B. Skenario yang diminta: $skenario." >&2
+            exit 1
+          fi
+          if [ "$skenario" = "A" ] && [ "$mode" = "sast-llm" ]; then
+            echo "::error::Skenario A tidak memakai LLM, tetapi mode yang diminta sast-llm. Pilih salah satu." >&2
+            exit 1
+          fi
+          if { [ "$skenario" = "B" ] || [ "$skenario" = "C" ]; } && [ "$mode" != "sast-llm" ]; then
+            echo "::error::Skenario $skenario membutuhkan mode sast-llm, tetapi mode yang diminta $mode." >&2
+            exit 1
+          fi
+          if [ "$skenario" = "C" ] && [ "$JALUR" != "v2" ]; then
+            echo "::error::Skenario C hanya tersedia di jalur v2." >&2
+            exit 1
+          fi
+
+          # Daftar vendor yang dijalankan, dipakai sebagai matriks job analisis. Mode satu model
+          # menghasilkan daftar berisi satu vendor, jadi kedua mode memakai job yang sama persis
+          # dan tidak ada jalur kode yang hanya dilalui salah satunya.
+          if [ "$gabungan" = "true" ]; then
+            vendors='["google","anthropic","openai"]'
+          else
+            vendors="[\"$VENDOR_V2\"]"
+          fi
+
+          {
+            echo "mode=$mode"
+            echo "skenario=$skenario"
+            echo "gabungan=$gabungan"
+            echo "vendors=$vendors"
+          } >> "$GITHUB_OUTPUT"
+          echo "Mode analisis: $mode, skenario: $skenario, gabungan: $gabungan"
 
   sonarcloud:
     name: Analisis SonarCloud
@@ -338,25 +411,32 @@ jobs:
   # Jalur v2: satu run kondisi utama dengan llm-scan.js. Belum pernah dijalankan; lihat README dashboard.
   # Pengaman berlapis: hanya workflow_dispatch, wajib konfirmasi eksplisit, dikunci satu run,
   # satu run sekaligus lewat concurrency, timeout job, dan menolak branch objek uji eksperimen.
+  # Job analisis TIDAK menerbitkan apa pun. Penerbitan dipusatkan di job terbit-v2, sehingga
+  # mode gabungan tidak mungkin menerbitkan tiga kali: bukan karena ada kondisi yang menahannya,
+  # melainkan karena langkah terbitnya memang tidak ada di sini.
   analisis-v2:
     name: Analisis LLM v2 (deteksi dan verifikasi)
     needs: [rencana, sonarcloud]
+    strategy:
+      fail-fast: false
+      matrix:
+        vendor: ${{ fromJSON(needs.rencana.outputs.vendors) }}
     # llm-scan menolak run bila hash tree src/ pada revisi analisis Sonar berbeda dengan commit yang
     # di-checkout, jadi job ini baru boleh jalan setelah analisis commit ini benar-benar ada di server.
     # mode wajib sast-llm: sejak jalur bawaan menjadi v2, dispatch mode=sast tanpa menyentuh input
     # jalur akan ikut memenuhi syarat lain di bawah, dan tanpa baris ini justru memanggil LLM.
+    # Gerbang kesiapan Sonar hanya berlaku untuk skenario yang MEMAKAI alert Sonar. Skenario C tidak
+    # mengirim satu pun alert ke model dan hasilnya tidak memuat alert, jadi menahannya karena
+    # analisis Sonar belum sepadan berarti menahan run karena data yang tidak ia pakai.
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
       && needs.rencana.outputs.mode == 'sast-llm'
-      && needs.sonarcloud.result == 'success' && needs.sonarcloud.outputs.analisis_siap == 'true'
+      && (needs.rencana.outputs.skenario == 'C'
+      || (needs.sonarcloud.result == 'success' && needs.sonarcloud.outputs.analisis_siap == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: write
-    concurrency:
-      # Mengantre, bukan menolak: dua dispatch berurutan tetap menghasilkan dua run berbayar.
-      group: security-results
-      cancel-in-progress: false
+      contents: read
     steps:
       - name: Tolak tanpa konfirmasi eksplisit
         if: inputs.konfirmasi_v2 != 'JALANKAN'
@@ -422,7 +502,7 @@ jobs:
       # Daftar model hidup di dashboard/models.json; input vendor divalidasi terhadap berkas itu.
       - name: Validasi vendor terhadap dashboard/models.json
         env:
-          VENDOR: ${{ inputs.vendor_v2 }}
+          VENDOR: ${{ matrix.vendor }}
         run: |
           node -e '
             const m = require("./dashboard/models.json").models.filter((x) => x.jalur === "v2");
@@ -475,14 +555,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           # Branch Sonar yang kecocokannya sudah diverifikasi job sonarcloud lewat hash tree src/.
           SONAR_BRANCH: ${{ needs.sonarcloud.outputs.sonar_branch }}
-          VENDOR: ${{ inputs.vendor_v2 }}
-        run: node scripts/llm-scan.js --vendor="$VENDOR" --kondisi=utama --runs=1 --objek=.
+          VENDOR: ${{ matrix.vendor }}
+          SKENARIO: ${{ needs.rencana.outputs.skenario }}
+        run: node scripts/llm-scan.js --vendor="$VENDOR" --kondisi=utama --runs=1 --objek=. --skenario="$SKENARIO"
 
       # --nomor memakai nomor run GitHub, bukan indeks berkas run-N.json. Tanpa itu setiap run v2
       # diterbitkan sebagai "run 1" ke <branch>/1.json dan saling menimpa.
       - name: Susun results.json skema 2
         env:
-          VENDOR: ${{ inputs.vendor_v2 }}
+          VENDOR: ${{ matrix.vendor }}
         run: |
           set -euo pipefail
           folder=$(ls -dt "llm-output/v2/"*"-$VENDOR-utama" 2>/dev/null | head -1 || true)
@@ -492,12 +573,95 @@ jobs:
           fi
           node scripts/merge-results.js merge --v2             --folder="$folder" --run=1 --nomor="$GITHUB_RUN_NUMBER" --id="$GITHUB_RUN_ID" --objek=.             --repo="$GITHUB_REPOSITORY" --out=results.json
 
-      # Lapis 2 opt-in. Tanpa input rekomendasi_ai bernilai true, langkah ini dilewati dan field
-      # rekomendasi_ai tidak pernah ditulis ke results.json, jadi run lama maupun run biasa tetap
-      # berbentuk sama persis seperti sebelumnya.
+      # Satu artifact per vendor. Inilah satu-satunya keluaran job ini; penerbitannya urusan
+      # job terbit-v2.
+      - name: Unggah output v2
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: llm-v2-${{ matrix.vendor }}-${{ github.run_id }}
+          path: |
+            llm-output/v2/
+            results.json
+          retention-days: 14
+          if-no-files-found: warn
+
+
+  # Penerbitan dipusatkan di satu job supaya mode gabungan menerbitkan TEPAT SEKALI. Job ini juga
+  # yang menyatukan hasil tiga vendor dan, bila diminta, menyusun rekomendasi AI sesudahnya.
+  #
+  # always() dipakai dengan sengaja: fail-fast dimatikan di matriks analisis, jadi satu atau dua
+  # vendor yang gagal tidak boleh menghalangi penerbitan hasil vendor yang berhasil. Yang menahan
+  # job ini bukan keberhasilan seluruh matriks, melainkan ada atau tidaknya hasil yang bisa dipakai.
+  #
+  # Gerbang kesiapan Sonar TIDAK diulang di sini dengan sengaja. Syaratnya berbeda per skenario, dan
+  # menuliskannya dua kali berarti dua tempat yang bisa berbeda diam-diam. Yang diperiksa adalah
+  # apakah job analisis benar-benar berjalan: gerbangnya sudah mengandung seluruh syarat itu.
+  terbit-v2:
+    name: Gabung dan terbitkan hasil v2
+    needs: [rencana, sonarcloud, analisis-v2]
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' && inputs.jalur == 'v2'
+      && needs.rencana.result == 'success' && needs.rencana.outputs.mode == 'sast-llm'
+      && needs['analisis-v2'].result != 'skipped' && needs['analisis-v2'].result != 'cancelled'
+      && inputs.konfirmasi_v2 == 'JALANKAN'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      # Mengantre, bukan menolak: dua dispatch berurutan tetap menghasilkan dua run berbayar.
+      group: security-results
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependency
+        run: npm ci
+
+      - name: Unduh hasil tiap vendor
+        uses: actions/download-artifact@v8
+        with:
+          pattern: llm-v2-*-${{ github.run_id }}
+          path: hasil-vendor
+
+      # Mode satu model memakai results.json vendor itu apa adanya; mode gabungan menyatukan
+      # ketiganya. Keduanya berakhir di berkas yang sama, sehingga langkah sesudahnya tidak perlu
+      # tahu mode mana yang berjalan.
+      - name: Siapkan results.json
+        env:
+          GABUNGAN: ${{ needs.rencana.outputs.gabungan }}
+        run: |
+          set -euo pipefail
+          if [ "$GABUNGAN" = "true" ]; then
+            node scripts/llm-gabung.js --masuk=hasil-vendor --out=results.json \
+              --nomor="$GITHUB_RUN_NUMBER" --id="$GITHUB_RUN_ID" --repo="$GITHUB_REPOSITORY"
+          else
+            berkas=$(find hasil-vendor -name results.json | head -1)
+            if [ -z "$berkas" ]; then
+              echo "::error::Tidak ada results.json di artifact. Job analisis gagal sebelum sempat menyusunnya." >&2
+              exit 1
+            fi
+            cp "$berkas" results.json
+          fi
+          node -e '
+            const h = require("./results.json");
+            console.log(`Skema ${h.schema_version}, skenario ${h.run.skenario}, mode ${h.run.mode_model}, ${h.alerts.length} alert, ${h.findings.length} temuan`);
+          '
+
+      # Lapis 2 opt-in, dijalankan SESUDAH penggabungan supaya sarannya berpijak pada hasil akhir,
+      # bukan pada hasil satu vendor. Mode gabungan tidak punya vendor sendiri, jadi vendor
+      # penyusun rekomendasi diambil dari input terpisah; mode satu model memakai vendor runnya.
       #
-      # Secret yang dipakai sama dengan langkah llm-scan di atas; tidak ada secret baru dan tidak
-      # ada permission yang ditambahkan. Langkah ini tidak pernah menggagalkan job: skrip keluar
+      # Secret yang dipakai sama dengan langkah llm-scan; tidak ada secret baru dan tidak ada
+      # permission yang ditambahkan. Langkah ini tidak pernah menggagalkan job: skripnya keluar
       # dengan 0 walau panggilannya gagal, karena menjatuhkan job berarti membuang hasil deteksi
       # dan verifikasi yang sudah sah.
       - name: Rekomendasi perbaikan AI (lapis 2)
@@ -506,21 +670,25 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          VENDOR: ${{ inputs.vendor_v2 }}
-        run: node scripts/llm-remediasi.js --vendor="$VENDOR" --results=results.json
+          GABUNGAN: ${{ needs.rencana.outputs.gabungan }}
+          VENDOR_RUN: ${{ inputs.vendor_v2 }}
+          VENDOR_REKOM: ${{ inputs.vendor_rekomendasi }}
+        run: |
+          set -euo pipefail
+          if [ "$GABUNGAN" = "true" ]; then vendor="$VENDOR_REKOM"; else vendor="$VENDOR_RUN"; fi
+          echo "Vendor rekomendasi: $vendor"
+          node scripts/llm-remediasi.js --vendor="$vendor" --results=results.json
 
-      - name: Unggah output v2
+      - name: Unggah hasil gabungan
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: llm-v2-${{ github.run_id }}
-          path: |
-            llm-output/v2/
-            results.json
+          name: hasil-v2-${{ github.run_id }}
+          path: results.json
           retention-days: 14
           if-no-files-found: warn
 
-      # Tanpa langkah ini hasil v2 tidak pernah sampai ke dashboard: job `hasil` hanya menulis skema 1.
+      # Satu-satunya langkah yang menerbitkan di jalur v2. Job `hasil` hanya menulis skema 1.
       - name: Terbitkan ke branch security-results
         run: |
           # set -e wajib: tanpa itu kegagalan `publish` (mis. index.json berisi skema lain) tertelan,
@@ -557,14 +725,18 @@ jobs:
     # Seluruh job ini melayani skema 1: mengunduh artifact gemini-output, menggabungnya, lalu
     # menerbitkannya. Di jalur v2 artifact itu tidak pernah dibuat (job analisis dilewati), sehingga
     # unduhannya berakhir "Artifact not found", dan penerbitannya akan menjadi penerbitan KEDUA yang
-    # menimpa hasil skema 2 dari job analisis-v2. Karena itu job ini dilewati seluruhnya di jalur v2,
-    # dan analisis-v2 menjadi satu-satunya penerbit ke branch security-results.
+    # menimpa hasil skema 2 dari job terbit-v2. Karena itu job ini dilewati seluruhnya di jalur v2,
+    # dan terbit-v2 menjadi satu-satunya penerbit ke branch security-results di sana.
+    #
+    # Perkecualiannya mode sast, yaitu skenario A: jalur v2 pun tidak punya penerbit skema 2 karena
+    # tidak ada job LLM yang berjalan, jadi job inilah yang menerbitkan hasil SAST-nya.
     if: >-
       always() && (inputs.jalur != 'v2' || needs.rencana.outputs.mode == 'sast')
       && (needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Satu-satunya job yang boleh menulis: commit results.json ke branch security-results.
+    # Penerbit skema 1. Bersama terbit-v2, hanya kedua job inilah yang boleh menulis ke repo, dan
+    # keduanya tidak pernah berjalan di run yang sama.
     permissions:
       contents: write
       actions: read
