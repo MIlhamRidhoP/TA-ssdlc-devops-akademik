@@ -28,7 +28,22 @@
           "name": "contoh/rekomendasi-ai",
           "dispatch": false,
           "v2": false,
-          "catatan": "Branch contoh khusus mode demo. Isinya run #54 yang nyata ditambah saran lapis 2 yang DISUSUN SENDIRI sebagai contoh, bukan keluaran model."
+          "catatan": "Branch contoh khusus mode demo. Isinya run #54 yang nyata ditambah saran lapis 2 yang DISUSUN SENDIRI sebagai contoh, bukan keluaran model.",
+          "contoh": "Contoh mode demo: saran lapis 2 pada run ini disusun sendiri, bukan keluaran model."
+        },
+        {
+          "name": "contoh/gabungan",
+          "dispatch": false,
+          "v2": false,
+          "catatan": "Branch contoh khusus mode demo. Hasil mode gabungan yang disusun dengan menjalankan scripts/llm/gabung.js atas tiga run SUNGGUHAN eksperimen 19 Okt (google, anthropic, openai) pada lima alert yang sama. Yang dibuat-buat hanya identitas runnya: gabungan ini tidak pernah dijalankan sebagai satu run pipeline.",
+          "contoh": "Contoh mode demo: gabungan tiga run eksperimen nyata, bukan satu run pipeline yang pernah berjalan."
+        },
+        {
+          "name": "contoh/skenario-c",
+          "dispatch": false,
+          "v2": false,
+          "catatan": "Branch contoh khusus mode demo. Skenario C disusun dari run eksperimen 19 Okt vendor google dengan bagian verifikasi dibuang: alert dikosongkan dan sumber Sonar dinolkan. Temuan deteksinya asli. Biayanya diperkirakan dengan membagi biaya run menurut jumlah panggilan, bukan diukur.",
+          "contoh": "Contoh mode demo: skenario C disusun dari run B nyata dengan verifikasi dibuang; biayanya perkiraan, bukan hasil ukur."
         }
       ],
       "default_branch": "main"

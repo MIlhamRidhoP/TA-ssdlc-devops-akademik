@@ -23,6 +23,7 @@
         "true_positive": 1,
         "false_positive": 0,
         "uncertain": 0,
+        "tidak_sepakat": 0,
         "tanpa_putusan": 0
       }
     },
@@ -47,6 +48,7 @@
         "true_positive": 1,
         "false_positive": 0,
         "uncertain": 0,
+        "tidak_sepakat": 0,
         "tanpa_putusan": 0
       }
     },
@@ -71,6 +73,7 @@
         "true_positive": 1,
         "false_positive": 4,
         "uncertain": 0,
+        "tidak_sepakat": 0,
         "tanpa_putusan": 0
       }
     },
@@ -95,6 +98,7 @@
         "true_positive": 3,
         "false_positive": 2,
         "uncertain": 0,
+        "tidak_sepakat": 0,
         "tanpa_putusan": 0
       }
     },
@@ -119,6 +123,57 @@
         "true_positive": 2,
         "false_positive": 3,
         "uncertain": 0,
+        "tidak_sepakat": 0,
+        "tanpa_putusan": 0
+      }
+    },
+    {
+      "id": 9002,
+      "nomor": 9002,
+      "branch": "contoh/gabungan",
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "vendor": "gabungan",
+      "model_diminta": null,
+      "model_menjawab": null,
+      "kondisi": "utama",
+      "mulai": "2026-10-19T12:53:28.445Z",
+      "selesai": "2026-10-19T13:08:21.636Z",
+      "durasi_detik": 893,
+      "biaya_usd": 1.37686,
+      "path": "contoh/gabungan.json",
+      "status": "ok",
+      "jumlah": {
+        "alert": 5,
+        "temuan": 24,
+        "true_positive": 1,
+        "false_positive": 4,
+        "uncertain": 0,
+        "tidak_sepakat": 0,
+        "tanpa_putusan": 0
+      }
+    },
+    {
+      "id": 9003,
+      "nomor": 9003,
+      "branch": "contoh/skenario-c",
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "vendor": "google",
+      "model_diminta": "gemini-3.1-pro-preview",
+      "model_menjawab": "gemini-3.1-pro-preview",
+      "kondisi": "utama",
+      "mulai": "2026-10-19T13:02:41.503Z",
+      "selesai": "2026-10-19T13:08:21.636Z",
+      "durasi_detik": 340,
+      "biaya_usd": 0.119469,
+      "path": "contoh/skenario-c.json",
+      "status": "ok",
+      "jumlah": {
+        "alert": 0,
+        "temuan": 7,
+        "true_positive": 0,
+        "false_positive": 0,
+        "uncertain": 0,
+        "tidak_sepakat": 0,
         "tanpa_putusan": 0
       }
     }

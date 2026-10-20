@@ -22,10 +22,14 @@ const fixtureV2 = [1, 2, 3].map((n) => require(`../dashboard/fixtures/v2/eksperi
 // pipeline. Ikut diperiksa di sini supaya index demo dan berkasnya tidak pernah berbeda.
 // Fixture contoh lapis 2: alert dan temuan run #54 ditambah saran yang disusun sendiri sebagai
 // contoh. Ikut diperiksa supaya index demo dan berkasnya tidak pernah berbeda.
+// Fixture contoh mode gabungan dan skenario C ikut diperiksa dengan aturan yang sama: keduanya
+// berkas demo, tetapi bentuknya harus persis sama dengan yang dihasilkan pipeline sungguhan.
 const fixtureSemua = [
   ...fixtureV2,
   require('../dashboard/fixtures/v2/feat/prompt-v2/54.json'),
   require('../dashboard/fixtures/v2/contoh/rekomendasi-ai.json'),
+  require('../dashboard/fixtures/v2/contoh/gabungan.json'),
+  require('../dashboard/fixtures/v2/contoh/skenario-c.json'),
 ];
 const indexV2 = require('../dashboard/fixtures/v2/index.json');
 
@@ -266,10 +270,14 @@ test('index v2 konsisten dengan fixture yang ditunjuknya', () => {
     assert.equal(e.jumlah.alert, fix.alerts.length);
     assert.equal(e.jumlah.temuan, fix.findings.length);
     // Jumlah putusan di index harus cocok dengan isi alerts.
-    const n = (p) => fix.alerts.filter((a) => a.putusan === p).length;
+    // putusan_gabungan dibaca lebih dulu: mode gabungan mengosongkan putusan saat tidak sepakat,
+    // dan index harus menghitungnya terpisah, bukan sebagai panggilan yang gagal.
+    const n = (p) => fix.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan) === p).length;
     assert.equal(e.jumlah.true_positive, n('true_positive'));
     assert.equal(e.jumlah.false_positive, n('false_positive'));
     assert.equal(e.jumlah.uncertain, n('uncertain'));
+    assert.equal(e.jumlah.tidak_sepakat, n('tidak_sepakat'));
+    assert.equal(e.jumlah.tanpa_putusan, n(null));
   }
   // Tiga vendor berbeda di eksperimen, supaya tab Operasional bisa membandingkan model.
   assert.equal(new Set(indexV2.runs.filter((r) => r.branch === 'eksperimen/seeded').map((r) => r.vendor)).size, 3);

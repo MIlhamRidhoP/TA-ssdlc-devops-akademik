@@ -1249,6 +1249,31 @@
     isi($('run-status'));
     $('run-status').hidden = true;
     $('run-lama').hidden = true;
+    $('label-gabungan').hidden = true;
+    $('label-contoh').hidden = true;
+  };
+
+  // Branch contoh mode demo berisi run yang DISUSUN, bukan run yang pernah berjalan. Penandanya
+  // datang dari projects.json dan bukan dari berkas hasil: berkas hasil mengikuti skema 2 yang
+  // tidak punya tempat untuk catatan semacam ini, dan menambahkannya ke sana akan membuat berkas
+  // contoh berbeda bentuk dari berkas sungguhan.
+  const renderLabelContoh = () => {
+    const n = $('label-contoh');
+    const teks = state.branch?.contoh;
+    n.hidden = !teks;
+    if (teks) n.textContent = teks;
+    else isi(n);
+  };
+
+  // Mode gabungan tidak pernah dijalankan di eksperimen TA, jadi angka apa pun yang keluar darinya
+  // tidak punya pembanding dan tidak boleh dibaca setara dengan angka tiga kondisi yang diukur.
+  // Penandanya permanen dan tidak bisa ditutup: ia batas bukti, bukan pemberitahuan sekali lihat.
+  const renderLabelGabungan = () => {
+    const n = $('label-gabungan');
+    const gabungan = gabunganRun(state.hasil?.run);
+    n.hidden = !gabungan;
+    if (gabungan) n.textContent = 'Mode gabungan belum dievaluasi di eksperimen TA.';
+    else isi(n);
   };
 
   const renderMemuat = () => {
@@ -1550,8 +1575,27 @@
     true_positive: { label: 'Dikonfirmasi model', kelas: 'tp' },
     false_positive: { label: 'False positive', kelas: 'fp' },
     uncertain: { label: 'Ragu-ragu', kelas: 'unc' },
+    // Hanya muncul di mode gabungan: tiga model memberi putusan sah tetapi tidak ada yang
+    // mengumpulkan dua suara. Alertnya DIPERTAHANKAN, bukan dianggap false positive.
+    tidak_sepakat: { label: 'Tidak sepakat', kelas: 'unc' },
   };
   const infoPutusan = (p) => PUTUSAN_V2[p] ?? { label: 'Tanpa putusan', kelas: 'none' };
+
+  // ---------- Bentuk run ----------
+  // Run yang diterbitkan sebelum sumbu skenario ada tidak punya run.skenario maupun run.mode_model.
+  // Saat keduanya belum ada, satu-satunya bentuk yang pernah dihasilkan pipeline adalah skenario B
+  // dengan satu vendor, jadi itulah yang diasumsikan. Asumsinya ditulis di satu tempat ini supaya
+  // tidak tersebar menjadi belasan `?? 'B'` yang bisa berbeda-beda.
+  const skenarioRun = (r) => r?.skenario ?? 'B';
+  const modeModelRun = (r) => r?.mode_model ?? 'tunggal';
+  const gabunganRun = (r) => modeModelRun(r) === 'gabungan';
+  const vendorDipakai = (r) => (Array.isArray(r?.vendor_dipakai) ? r.vendor_dipakai : []);
+  const vendorGagal = (r) => (Array.isArray(r?.vendor_gagal) ? r.vendor_gagal : []);
+  const LABEL_SKENARIO = {
+    A: { nama: 'SAST saja', ket: 'SonarCloud saja, tanpa panggilan LLM' },
+    B: { nama: 'SAST + LLM', ket: 'Tiap alert SonarCloud diverifikasi model' },
+    C: { nama: 'LLM saja', ket: 'Deteksi model tanpa SonarCloud' },
+  };
 
   // Nama yang dibaca manusia selalu dari models.json. Id mentah seperti "gemini-3.1-pro-preview"
   // hanya muncul sebagai metadata kecil atau tooltip, tidak pernah sebagai judul.
@@ -1601,7 +1645,16 @@
       ? el('a', { href: urlRepo, target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` })
       : el('span', { text: `${p.owner} / ${p.repo}` });
     isi($('crumb'), repoLink, pemisahCrumb(), r.objek_uji.branch ?? state.branch.name, pemisahCrumb(), `Run #${r.nomor}`);
-    $('run-title').textContent = `Run #${r.nomor} · ${labelVendor(r.vendor)} · ${state.hasil.alerts.length} alert · ${state.hasil.findings.length} temuan`;
+    const sk = skenarioRun(r);
+    const gabungan = gabunganRun(r);
+    const dipakai = vendorDipakai(r);
+    // Skenario C tidak punya alert sama sekali, jadi menyebut "0 alert" di judul membaca seolah
+    // Sonar dijalankan dan tidak menemukan apa-apa. Yang benar: alert memang tidak ikut.
+    const bagianAlert = sk === 'C' ? 'tanpa alert Sonar' : `${state.hasil.alerts.length} alert`;
+    const bagianModel = gabungan
+      ? `${dipakai.length} model${dipakai.length ? ` (${dipakai.join(', ')})` : ''}`
+      : labelVendor(r.vendor);
+    $('run-title').textContent = `Run #${r.nomor} · ${bagianModel} · ${bagianAlert} · ${state.hasil.findings.length} temuan`;
     renderStatusRun(r);
 
     const sel = (label, nilai, opsi = {}) => el('div', { class: `meta-chip${opsi.warn ? ' warn' : ''}`, title: opsi.title },
@@ -1614,12 +1667,24 @@
     // SHA pendek yang terbaca, SHA penuh di title chipnya, dan tautan ke halaman commit itu.
     const commit = tautanGh(urlCommitGh(p, r.objek_uji.commit), pendek(r.objek_uji.commit),
       `Buka commit ${pendek(r.objek_uji.commit)} di GitHub, tab baru`);
-    isi($('title-block'),
-      sel('Model', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
+    // Mode gabungan tidak punya satu model yang menjawab, jadi chipnya menyebut siapa saja yang
+    // ikut. Vendor yang gagal tidak disembunyikan: justru itu yang mengubah arti angka kesepakatan.
+    const gagal = vendorGagal(r);
+    const chipModel = gabungan
+      ? sel('Model', `Gabungan ${dipakai.length} model`, {
+        ikon: IKON.bolt,
+        warn: gagal.length > 0,
+        title: `Ikut: ${dipakai.join(', ') || 'tidak ada'}${gagal.length ? `. Gagal: ${gagal.map((g) => `${g.vendor ?? 'tidak dikenal'} (${g.alasan ?? 'tanpa alasan'})`).join('; ')}` : ''}`,
+      })
+      : sel('Model', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
         ikon: IKON.bolt,
         warn: bedaModel,
         title: bedaModel ? `${r.model_menjawab}, padahal yang diminta ${r.model_diminta}` : (r.model_menjawab ?? r.model_diminta),
-      }),
+      });
+    const infoSk = LABEL_SKENARIO[sk] ?? { nama: sk, ket: '' };
+    isi($('title-block'),
+      sel('Skenario', `${sk} · ${infoSk.nama}`, { ikon: IKON.labu, title: infoSk.ket }),
+      chipModel,
       sel('Commit', commit, { data: true, ikon: IKON.commit, title: `Objek uji ${r.objek_uji.commit}` }),
       sel('Durasi', durasi(r.durasi_detik), { data: true, ikon: IKON.jam }),
       sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true, ikon: IKON.biaya }),
@@ -1633,7 +1698,9 @@
   const renderRingkasanV2 = () => {
     const h = state.hasil;
     $('summary').hidden = false; // renderMemuat dan renderKosong menyembunyikannya
-    const n = (p) => h.alerts.filter((a) => a.putusan === p).length;
+    // Sama seperti di halaman Verifikasi: putusan akhir mode gabungan ada di putusan_gabungan,
+    // dan "tidak sepakat" tidak boleh ikut terhitung sebagai "tanpa putusan".
+    const n = (p) => h.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan) === p).length;
     // Warna severity hanya untuk angka di atas nol: nol merah membuat mata berhenti di tempat
     // yang justru tidak perlu ditindaklanjuti.
     const kartu = (label, nilai, catatan, kelas) => el('div', { class: `cell${kelas && nilai > 0 ? ` ${kelas}` : ''}${nilai === 0 ? ' nol' : ''}` },
@@ -1650,6 +1717,20 @@
     const sevLain = h.alerts.filter((a) => !SEV_DIKENAL.includes(String(a.severity_sonar).toUpperCase())).length;
     const ditinjau = (v) => h.findings.filter((t) => state.keputusan[t.fingerprint]?.v === v).length;
 
+    // Skenario C tidak memakai SonarCloud, jadi dua kelompok pertama akan berisi nol semua.
+    // Deretan nol membaca sebagai "diperiksa dan bersih"; yang benar adalah "tidak ikut diperiksa".
+    if (skenarioRun(h.run) === 'C') {
+      isi($('summary'),
+        el('section', { class: 'kartu-grup' },
+          el('div', { class: 'kartu-kepala' }, el('h3', { text: 'Alert SonarCloud' }),
+            el('span', { class: 'kartu-total', text: 'tidak dipakai' })),
+          el('p', { class: 'note', text: 'Skenario C tidak memakai SonarCloud. Run ini hanya memanggil deteksi mandiri LLM, jadi tidak ada alert yang diverifikasi dan tidak ada alert di hasilnya.' })),
+        grup('Sumber dan tindak lanjut', 'satu himpunan',
+          kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
+          kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
+      return;
+    }
+
     isi($('summary'),
       grup('Keparahan alert Sonar', `${h.alerts.length} alert`,
         kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
@@ -1657,10 +1738,11 @@
         kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
         kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
         sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
-      grup('Putusan model atas alert', `${h.alerts.filter((a) => a.putusan).length} dari ${h.alerts.length} berputusan`,
+      grup('Putusan model atas alert', `${h.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan)).length} dari ${h.alerts.length} berputusan`,
         kartu('Dikonfirmasi model', n('true_positive'), 'alert dinyatakan nyata', 'crit'),
         kartu('False positive', n('false_positive'), 'alert ditolak model', 'ok'),
         kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan', 'high'),
+        gabunganRun(h.run) ? kartu('Tidak sepakat', n('tidak_sepakat'), 'tanpa dua suara; dipertahankan', 'high') : null,
         kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal')),
       grup('Sumber dan tindak lanjut', 'dua himpunan terpisah',
         kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
@@ -1694,16 +1776,22 @@
         el('span', { class: 'ringkas-lokasi data' }, teksLokasi(t.file, t.baris))))))
       : el('p', { class: 'note', text: 'Tidak ada temuan LLM pada run ini.' }));
 
-    const n = (p) => h.alerts.filter((a) => a.putusan === p).length;
+    // Sama seperti di halaman Verifikasi: putusan akhir mode gabungan ada di putusan_gabungan,
+    // dan "tidak sepakat" tidak boleh ikut terhitung sebagai "tanpa putusan".
+    const n = (p) => h.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan) === p).length;
     isi($('ringkas-alert'), h.alerts.length
       ? el('div', { class: 'ringkas-putusan' },
         [['true_positive', 'Dikonfirmasi model'], ['false_positive', 'False positive'],
-          ['uncertain', 'Ragu-ragu'], [null, 'Tanpa putusan']].map(([k, label]) => el('div', { class: 'ringkas-angka' },
+          ['uncertain', 'Ragu-ragu'],
+          ...(gabunganRun(h.run) ? [['tidak_sepakat', 'Tidak sepakat']] : []),
+          [null, 'Tanpa putusan']].map(([k, label]) => el('div', { class: 'ringkas-angka' },
           // Warna hanya untuk angka di atas nol, aturan yang sama dengan kartu statistik: nol
           // berwarna membuat mata berhenti di tempat yang justru tidak perlu ditindaklanjuti.
           el('b', { class: n(k) > 0 ? `putusan p-${infoPutusan(k).kelas}` : 'ringkas-nol', text: String(n(k)) }),
           el('span', { text: label }))))
-      : el('p', { class: 'note', text: 'Tidak ada alert Sonar pada run ini.' }));
+      : el('p', { class: 'note', text: skenarioRun(h.run) === 'C'
+        ? 'Skenario C tidak memakai SonarCloud, jadi run ini tidak punya alert untuk diverifikasi.'
+        : 'Tidak ada alert Sonar pada run ini.' }));
   };
 
   // Penanda run lama: kalau yang dibuka bukan run terbaru di branch ini, katakan dan sediakan
@@ -1822,7 +1910,16 @@
       return { teks: String(h.findings.length), kelas: rentan ? 'l-crit' : 'l-netral',
         label: `${h.findings.length} temuan LLM${rentan ? ', ada yang bersifat vulnerability' : ''}` };
     }
-    if (key === 'verifikasi') return h ? { teks: String(h.alerts.length), kelas: 'l-netral', label: `${h.alerts.length} alert Sonar` } : null;
+    if (key === 'verifikasi') {
+      if (!h) return null;
+      // Skenario C tidak punya alert sama sekali. Lencana "0" membaca sebagai hasil pemindaian
+      // yang bersih; yang benar adalah halaman itu tidak berlaku untuk run ini. Tanda hubung
+      // dipakai agar bentuknya pun berbeda, tidak hanya angkanya.
+      if (skenarioRun(h.run) === 'C') {
+        return { teks: '–', kelas: 'l-netral', label: 'Tidak berlaku: skenario C tidak memakai SonarCloud' };
+      }
+      return { teks: String(h.alerts.length), kelas: 'l-netral', label: `${h.alerts.length} alert Sonar` };
+    }
     if (key === 'riwayat') {
       if (!state.index) return null;
       const n = entriBranch().length;
@@ -1854,26 +1951,84 @@
 
   // Satu baris per alert: severity Sonar (dengan sumbernya), putusan model, keyakinan, dan alasan
   // yang bisa dibuka. Alert tanpa putusan sah ditampilkan apa adanya sebagai "Tanpa putusan".
+  // Satu baris per vendor: putusannya, atau sebabnya tidak ada putusan. Dua keadaan yang mudah
+  // tertukar dibedakan tegas, karena artinya berlawanan:
+  //   vendor GAGAL        — tidak pernah sempat menilai alert ini; ia tidak menolak apa pun.
+  //   putusan TIDAK SAH   — vendor ikut dan menjawab, tetapi jawabannya tidak bisa dipakai.
+  // Menyamakan keduanya membuat "2 dari 3" terbaca sebagai satu model yang berbeda pendapat.
+  const blokPutusanVendor = (a) => {
+    const r = state.hasil.run;
+    if (!gabunganRun(r)) return null;
+    const peta = a.putusan_vendor && typeof a.putusan_vendor === 'object' ? a.putusan_vendor : {};
+    const keyakinan = a.keyakinan_vendor ?? {};
+    const alasan = a.alasan_vendor ?? {};
+    const gagal = vendorGagal(r);
+    const baris = [];
+    for (const vendor of vendorDipakai(r)) {
+      const p = peta[vendor] ?? null;
+      const inf = infoPutusan(p);
+      baris.push(el('div', { class: 'pv-baris' },
+        el('span', { class: 'pv-vendor data', text: vendor }),
+        el('span', { class: `putusan p-${inf.kelas}`, text: p === null ? 'Putusan tidak sah' : inf.label }),
+        el('span', { class: 'pv-key', text: keyakinan[vendor] ? `keyakinan ${keyakinan[vendor]}` : '—' }),
+        el('p', { class: 'pv-alasan', text: alasan[vendor] || (p === null ? 'Model ini menjawab, tetapi jawabannya tidak bisa dipakai.' : 'Model ini tidak memberi alasan.') })));
+    }
+    for (const g of gagal) {
+      baris.push(el('div', { class: 'pv-baris pv-gagal' },
+        el('span', { class: 'pv-vendor data', text: g.vendor ?? 'tidak dikenal' }),
+        el('span', { class: 'putusan p-none', text: 'Tidak ikut' }),
+        el('span', { class: 'pv-key', text: '—' }),
+        el('p', { class: 'pv-alasan', text: `Model ini gagal sebelum sempat menilai alert mana pun: ${g.alasan ?? 'tanpa alasan tercatat'}. Ia tidak menolak temuan ini.` })));
+    }
+    const inf = infoPutusan(a.putusan_gabungan ?? a.putusan);
+    return el('section', { class: 'pv-kotak', 'aria-label': 'Putusan tiap model' },
+      el('p', { class: 'alasan-kepala' }, ikon(IKON.bolt), el('b', { text: 'Putusan tiap model' }),
+        el('span', { class: 'alasan-model', text: `putusan akhir: ${inf.label}` })),
+      el('p', { class: 'note', text: a.putusan_gabungan === 'tidak_sepakat'
+        ? 'Tidak ada putusan yang mengumpulkan dua suara, jadi alert ini dipertahankan. Tidak sepakat bukan false positive.'
+        : `Diambil dari suara terbanyak, minimal dua suara dari ${vendorDipakai(r).length} model yang ikut.` }),
+      el('div', { class: 'pv-daftar' }, baris));
+  };
+
   const renderAlertV2 = () => {
     const alerts = state.hasil.alerts;
+    const sk = skenarioRun(state.hasil.run);
     $('alerts-box').hidden = false;
 
-    const urut = ['true_positive', 'false_positive', 'uncertain', null];
+    // Skenario C tidak memakai SonarCloud sama sekali, jadi halaman ini tidak punya isi dan
+    // kekosongannya harus DIJELASKAN. Tanpa ini, "tidak ada alert" terbaca sebagai hasil
+    // pemindaian yang bersih, padahal pemindaiannya memang tidak ikut dibaca model.
+    if (sk === 'C') {
+      isi($('alerts-ringkas'));
+      isi($('alerts-body'), el('div', { class: 'state' },
+        el('p', { text: 'Skenario C tidak memakai SonarCloud.' }),
+        el('p', { class: 'note', text: 'Run ini hanya memanggil deteksi mandiri LLM. Tidak ada alert yang diverifikasi, dan tidak ada alert di hasilnya. Temuannya ada di halaman Temuan.' })));
+      return;
+    }
+
+    // Putusan akhir mode gabungan hidup di putusan_gabungan, karena putusan dikosongkan saat tidak
+    // ada suara terbanyak. Tanpa membacanya, "tidak sepakat" akan tampil sebagai "tanpa putusan",
+    // yaitu dua keadaan yang berbeda sebabnya.
+    const putusanTampil = (a) => a.putusan_gabungan ?? a.putusan;
+    const gabungan = gabunganRun(state.hasil.run);
+    const urut = gabungan
+      ? ['true_positive', 'false_positive', 'uncertain', 'tidak_sepakat', null]
+      : ['true_positive', 'false_positive', 'uncertain', null];
     isi($('alerts-ringkas'), urut.map((p) => {
       const inf = infoPutusan(p);
-      const n = alerts.filter((a) => a.putusan === p).length;
+      const n = alerts.filter((a) => putusanTampil(a) === p).length;
       return el('span', { class: 'ringkas-item' },
         el('b', { class: `putusan p-${inf.kelas}`, text: String(n) }), el('span', { text: inf.label }));
     }));
 
     isi($('alerts-body'), alerts.length
       ? el('ul', { class: 'alist' }, alerts.map((a) => {
-        const inf = infoPutusan(a.putusan);
+        const inf = infoPutusan(putusanTampil(a));
         const idDetail = `ad-${a.id}`;
         const r = state.hasil.run;
         const hash = r.hash_prompt?.user_deteksi ?? null;
         const detail = el('div', { class: 'adetail', id: idDetail, hidden: true },
-          el('div', { class: 'alasan-kotak' },
+          blokPutusanVendor(a) ?? el('div', { class: 'alasan-kotak' },
             el('p', { class: 'alasan-kepala' },
               ikon(IKON.bolt),
               el('b', { text: 'Alasan dan analisis model' }),
@@ -1936,15 +2091,40 @@
     { key: 'high', label: 'Keyakinan high', cocok: (t) => t.keyakinan === 'high' },
     { key: 'medium', label: 'Keyakinan medium', cocok: (t) => t.keyakinan === 'medium' },
     { key: 'low', label: 'Keyakinan low', cocok: (t) => t.keyakinan === 'low' },
+    // Hanya berarti di mode gabungan: run satu model membuat setiap temuan bernilai 1 dari 1, dan
+    // saringan ini akan selalu kosong. Karena itu ia disembunyikan di luar mode gabungan,
+    // bukan ditampilkan sebagai saringan yang tidak pernah menghasilkan apa pun.
+    {
+      key: 'sepakat2', label: 'Minimal 2 model', hanyaGabungan: true,
+      cocok: (t) => Number(t.kesepakatan) >= 2,
+    },
   ];
-  const filterV2Aktif = () => FILTER_V2.find((x) => x.key === state.filter) ?? FILTER_V2[0];
+  const filterTersedia = () => FILTER_V2.filter((x) => !x.hanyaGabungan || gabunganRun(state.hasil?.run));
+  const filterV2Aktif = () => filterTersedia().find((x) => x.key === state.filter) ?? FILTER_V2[0];
 
   const renderFilterV2 = () => {
     const f = state.hasil.findings;
-    isi($('filters'), FILTER_V2.map((x) => el('button', {
+    isi($('filters'), filterTersedia().map((x) => el('button', {
       class: 'btn btn-sm', type: 'button', 'aria-pressed': state.filter === x.key ? 'true' : 'false',
       onclick: () => { state.filter = x.key; state.terbuka = null; renderFilterV2(); renderTemuanV2(); },
     }, x.label, ' ', el('span', { class: 'count', text: String(f.filter(x.cocok).length) }))));
+  };
+
+  // Lencana kesepakatan: berapa dari model yang BENAR-BENAR IKUT melaporkan temuan ini. Penyebutnya
+  // jumlah vendor yang ikut, bukan tiga tetap: kalau satu vendor gagal, "2 dari 3" akan membaca
+  // seolah satu model menolak temuan itu, padahal ia tidak pernah sempat melihatnya.
+  const lencanaKesepakatan = (t) => {
+    const r = state.hasil?.run;
+    if (!gabunganRun(r)) return null;
+    const n = Number(t.kesepakatan);
+    if (!Number.isFinite(n)) return null;
+    const dari = vendorDipakai(r).length || n;
+    const penemu = Array.isArray(t.vendor_penemu) ? t.vendor_penemu : [];
+    const kelas = n >= dari ? 'sepakat-penuh' : (n >= 2 ? 'sepakat-sebagian' : 'sepakat-tunggal');
+    return el('span', {
+      class: `chip chip-sepakat ${kelas}`,
+      title: penemu.length ? `Dilaporkan oleh ${penemu.join(', ')} dari ${dari} model yang ikut` : null,
+    }, `${n}/${dari} model`);
   };
 
   // CWE ditautkan ke definisi resmi MITRE. Ini tautan biasa, bukan permintaan jaringan: CSP
@@ -1989,6 +2169,28 @@
     isi($('temuan-isi'), detailTemuanV2(t));
   };
 
+  // Di mode gabungan penjelasan setiap model ditampilkan UTUH dan terpisah, tidak diringkas menjadi
+  // satu. Justru perbedaan alasan antarmodel yang berguna dibaca: dua model bisa menunjuk baris yang
+  // sama karena sebab yang berbeda, dan meleburnya menghapus satu-satunya hal yang membedakan mode
+  // gabungan dari satu model.
+  const blokPenjelasanTemuan = (t) => {
+    const perVendor = t.penjelasan_vendor && typeof t.penjelasan_vendor === 'object'
+      ? Object.entries(t.penjelasan_vendor) : [];
+    if (!perVendor.length) {
+      return el('div', { class: 'alasan-kotak' },
+        el('p', { class: 'alasan-kepala' }, ikon(IKON.bolt), el('b', { text: 'Penjelasan dan analisis model' })),
+        el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan untuk temuan ini.' }));
+    }
+    return el('div', { class: 'alasan-kotak' },
+      el('p', { class: 'alasan-kepala' }, ikon(IKON.bolt),
+        el('b', { text: 'Penjelasan tiap model' }),
+        el('span', { class: 'alasan-model', text: `${perVendor.length} dari ${vendorDipakai(state.hasil.run).length} model` })),
+      el('dl', { class: 'alasan-vendor' }, perVendor.map(([vendor, teks]) => [
+        el('dt', { class: 'data', text: vendor }),
+        el('dd', { class: 'alasan', text: teks || 'Model ini melaporkan temuan tanpa penjelasan.' }),
+      ])));
+  };
+
   const detailTemuanV2 = (t) => {
     const pk = t.potongan_kode;
     const kode = pk && pk.baris?.length
@@ -2016,15 +2218,16 @@
         chip(t.sifat, t.sifat === 'hardening' ? 'chip-hardening' : 'chip-vuln'),
         ...t.cwe.map(tautanCwe),
         t.kategori_owasp ? chip(t.kategori_owasp === 'Other' ? 'OWASP lainnya' : `${t.kategori_owasp}:2025`, 'chip-owasp') : null,
-        chip(`keyakinan ${t.keyakinan}`, 'chip-keyakinan')),
-      el('p', { class: 'note data', text: labelModelId(state.hasil.run.model_menjawab ?? state.hasil.run.model_diminta) }),
+        chip(`keyakinan ${t.keyakinan}`, 'chip-keyakinan'),
+        lencanaKesepakatan(t)),
+      gabunganRun(state.hasil.run)
+        ? el('p', { class: 'note data', text: `${(t.vendor_penemu ?? []).join(', ') || 'tidak ada'} dari ${vendorDipakai(state.hasil.run).join(', ')}` })
+        : el('p', { class: 'note data', text: labelModelId(state.hasil.run.model_menjawab ?? state.hasil.run.model_diminta) }),
       el('div', { class: 'lokasi-kotak' },
         el('div', {}, el('p', { class: 'block-h', text: 'Lokasi sumber kode' }),
           el('p', { class: 'floc' }, teksLokasi(t.file, t.baris))),
         tautanGithub(t)),
-      el('div', { class: 'alasan-kotak' },
-        el('p', { class: 'alasan-kepala' }, ikon(IKON.bolt), el('b', { text: 'Penjelasan dan analisis model' })),
-        el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan untuk temuan ini.' })),
+      blokPenjelasanTemuan(t),
       el('p', { class: 'block-h', text: 'Kode di sekitar baris' }), kode,
       blokRekomendasi(t.cwe),
       blokSaranAi(t, state.hasil.run),
@@ -2054,7 +2257,8 @@
           // Taksonomi yang diminta prompt v2 adalah OWASP Top 10:2025; tahunnya ditulis supaya
           // tidak tertukar dengan daftar 2021 yang kodenya berbeda arti.
           t.kategori_owasp ? chip(t.kategori_owasp === 'Other' ? 'OWASP lainnya' : `${t.kategori_owasp}:2025`, 'chip-owasp') : null,
-          chip(`keyakinan ${t.keyakinan}`, 'chip-keyakinan')),
+          chip(`keyakinan ${t.keyakinan}`, 'chip-keyakinan'),
+          lencanaKesepakatan(t)),
         el('span', { class: 'ftitle', text: t.jenis }),
         el('span', { class: 'floc' }, teksLokasi(t.file, t.baris)),
         putusan
@@ -2077,6 +2281,8 @@
     ['true_positive', 'Dikonfirmasi model', 'var(--crit)'],
     ['false_positive', 'False positive', 'var(--ok)'],
     ['uncertain', 'Ragu-ragu', 'var(--high)'],
+    // Run satu model tidak pernah punya segmen ini: nilainya 0 dan segmennya tidak digambar.
+    ['tidak_sepakat', 'Tidak sepakat', 'var(--high)'],
     ['tanpa_putusan', 'Tanpa putusan', 'var(--rule-2)'],
   ];
   const renderSampingV2 = () => {
@@ -2402,6 +2608,8 @@
     renderSampingV2();
     renderRingkasSingkat();
     renderPenandaRunLama();
+    renderLabelGabungan();
+    renderLabelContoh();
     // Tampilan yang sedang dibuka dipertahankan saat run berganti; kalau tidak berlaku untuk run
     // ini (misalnya Eksperimen pada run tanpa blok eksperimen), router menggesernya ke Ringkasan.
     terapkanTampilan(state.diminta ?? bacaTampilan() ?? TAMPILAN_BAWAAN, { pindahFokus: false });

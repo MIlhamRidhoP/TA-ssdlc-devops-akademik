@@ -51,7 +51,7 @@
             "user_deteksi": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
           }
         },
-        "sumber_sonar": { "enum": ["beku", "api"] },
+        "sumber_sonar": { "enum": ["beku", "api", null], "description": "Asal laporan SonarCloud. null untuk run yang memang tidak mengambilnya sama sekali: kondisi komentar_menyesatkan, dan skenario C yang tidak memakai alert Sonar. analisis_sonar dan sonar_beku sudah mengizinkan null untuk alasan yang sama." },
         "analisis_sonar": {
           "type": ["object", "null"],
           "description": "Analisis SonarCloud yang dipakai run ini. tree_src harus sama dengan objek_uji.tree_src; itulah yang menjamin data Sonar cocok dengan kode yang dianalisis.",

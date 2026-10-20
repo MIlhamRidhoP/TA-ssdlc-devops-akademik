@@ -1,0 +1,242 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 9003,
+    "nomor": 9003,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "asal": "cli",
+    "vendor": "google",
+    "model_diminta": "gemini-3.1-pro-preview",
+    "model_menjawab": "gemini-3.1-pro-preview",
+    "kondisi": "utama",
+    "mulai": "2026-10-19T13:02:41.503Z",
+    "selesai": "2026-10-19T13:08:21.636Z",
+    "durasi_detik": 340,
+    "objek_uji": {
+      "commit": "97cfb00349e7d3ff40b04834e97a95339902cf65",
+      "branch": "contoh/skenario-c",
+      "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+    },
+    "commit_kode": {
+      "head": "353634a6b3e52ca31a1ea02284b8825a06969a71",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "sumber_sonar": null,
+    "analisis_sonar": null,
+    "sonar_beku": null,
+    "biaya_usd": 0.119469,
+    "status_panggilan": {
+      "total": 1,
+      "ok": 1,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0
+    },
+    "skenario": "C",
+    "mode_model": "tunggal"
+  },
+  "alerts": [],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 54,
+      "fungsi": "listFrom",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Variabel pola (parameter pencarian q) digabungkan secara langsung menggunakan string template ke dalam query pencarian tanpa disanitasi kutip tunggalnya. Hal ini memungkinkan penyerang menyisipkan perintah SQL arbitrer, yang berpotensi memaparkan atau memanipulasi keseluruhan data pada basis data.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "000d7157e043d8f9",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 51,
+        "baris": [
+          "const listFrom = (pola) => `",
+          "  FROM mahasiswa m",
+          "  JOIN users u ON u.id = m.user_id",
+          "  WHERE ('${pola}' IS NULL",
+          "    OR m.nim ILIKE '${pola}' OR m.nama ILIKE '${pola}' OR u.email ILIKE '${pola}')`;",
+          "",
+          "exports.list = async ({ pola, orderBy, limit, offset }) => {"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 143,
+      "fungsi": "updateByUserId",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Kunci dari objek body JSON permintaan diekstrak secara otomatis untuk kemudian disisipkan langsung ke klausa SET pada perintah UPDATE. Karena controller tidak memiliki validasi atau pemutihan daftar field (mass assignment allowlist), pihak yang berwenang memperbarui profil dapat memodifikasi properti arbitrer dan memasukkan payload SQL pada nama key JSON.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "0438dc56e2952dbc",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 140,
+        "baris": [
+          "exports.updateByUserId = (userId, d, rekening) =>",
+          "  withTransaction(async (client) => {",
+          "    const kolom = Object.keys(d);",
+          "    const set = kolom.map((k, i) => `${k} = $${i + 2}`).join(', ');",
+          "    const { rows } = await client.query(",
+          "      `UPDATE mahasiswa SET ${set}, updated_at = now()",
+          "       WHERE user_id = $1"
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "file": "src/models/nilaiModel.js",
+      "baris": 133,
+      "fungsi": "publishedBySemester",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter semester yang bersumber dari query string (req.query.semester) disambung ke dalam kueri SQL menggunakan literal tanpa disanitasi terlebih dahulu di kontroler bersangkutan. Penyerang yang memiliki akun mahasiswa bisa melakukan manipulasi SQL, misalnya menghilangkan restriksi mahasiswa_id untuk mengakses nilai mata kuliah milik pihak lain.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "d9fa5fdb7e08aca0",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 130,
+        "baris": [
+          "     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id",
+          "     WHERE ks.mahasiswa_id = $1",
+          "       AND n.status = 'published'",
+          "       AND ks.semester = '${semester}'",
+          "     ORDER BY mk.kode`,",
+          "    [mahasiswaId]",
+          "  );"
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "fungsi": "khs",
+      "jenis": "Reflected Cross-Site Scripting",
+      "cwe": [
+        "CWE-79"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter input semester langsung dipantulkan kembali sebagai konten HTML apabila terjadi kegagalan validasi kosong, tanpa proses filter karakter khusus (HTML encoding). Penyerang dapat merancang sebuah tautan dengan payload berbahaya yang ketika diakses akan menjalankan kode skrip pada peramban korban.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "f14a169dc52d7e18",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 157,
+        "baris": [
+          "exports.khs = async (req, res) => {",
+          "  const semester = typeof req.query.semester === 'string' ? req.query.semester : '';",
+          "  if (!semester) {",
+          "    res.status(400).type('html').send(`<p>Semester \"${semester}\" tidak dikenali</p>`);",
+          "    return;",
+          "  }",
+          "  const mahasiswaId = await krsModel.mahasiswaIdByUserId(req.user.id);"
+        ]
+      }
+    },
+    {
+      "id": "T-05",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 120,
+      "fungsi": "halamanKhs",
+      "jenis": "Stored Cross-Site Scripting",
+      "cwe": [
+        "CWE-79"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Tidak seperti properti data lainnya, variabel i.nama yang merepresentasikan nama mata kuliah ditulis secara mentah pada halaman KHS HTML. Bila akun dengan kendali atas data tersebut menginjeksi vektor XSS ke daftar mata kuliah, maka skrip yang tersimpan tersebut akan senantiasa tereksekusi bagi pengguna yang membukanya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "0d3dad70aaf9e52d",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 117,
+        "baris": [
+          "  const baris = items.map((i) => `",
+          "      <tr>",
+          "        <td>${escapeHtml(i.kode)}</td>",
+          "        <td>${i.nama}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.sks)}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.nilai_huruf)}</td>",
+          "      </tr>`).join('');"
+        ]
+      }
+    },
+    {
+      "id": "T-06",
+      "file": "src/models/profilModel.js",
+      "baris": 38,
+      "fungsi": "removeEmail",
+      "jenis": "Insecure Direct Object Reference",
+      "cwe": [
+        "CWE-862"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Query untuk proses penghapusan email tambahan pada basis data semata-mata bergantung pada filter id email dan mengabaikan parameter id mahasiswa. Kondisi akses yang rusak ini menyebabkan sembarang mahasiswa yang terautentikasi dapat menghapus konfigurasi alamat email pengguna manapun asalkan berhasil mengetahui tebakan ID-nya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "ba92551277ac44bf",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 35,
+        "baris": [
+          "",
+          "exports.removeEmail = async (id, mahasiswaId) => {",
+          "  const { rowCount } = await pool.query(",
+          "    'DELETE FROM email_mahasiswa WHERE id = $1',",
+          "    [id]",
+          "  );",
+          "  return rowCount > 0;"
+        ]
+      }
+    },
+    {
+      "id": "T-07",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Missing Rate Limiting",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint untuk proses otentikasi login sama sekali tidak menerapkan modul pengendalian jumlah lalu lintas atau rate limiting per IP/pengguna. Ketiadaan perlindungan ini memberikan kelonggaran terhadap serangan brute-force, password guessing, maupun credential stuffing untuk membobol akses sistem akademiknya.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "7aeb70d86d293354",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    }
+  ]
+}

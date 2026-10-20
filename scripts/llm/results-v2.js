@@ -278,7 +278,12 @@ const entriIndexV2 = (hasil, relPath) => {
       true_positive: hitung((a) => a.putusan === 'true_positive'),
       false_positive: hitung((a) => a.putusan === 'false_positive'),
       uncertain: hitung((a) => a.putusan === 'uncertain'),
-      tanpa_putusan: hitung((a) => a.putusan === null),
+      // Mode gabungan mengosongkan putusan saat tidak ada suara terbanyak, dan menandainya di
+      // putusan_gabungan. Menghitungnya sebagai "tanpa putusan" menyamakan dua sebab yang berbeda:
+      // panggilan yang gagal, dan tiga model yang menjawab tetapi tidak sepakat. Yang kedua justru
+      // hasil yang sah. Field ini 0 di run satu model, yang tidak pernah punya putusan_gabungan.
+      tidak_sepakat: hitung((a) => a.putusan_gabungan === 'tidak_sepakat'),
+      tanpa_putusan: hitung((a) => a.putusan === null && a.putusan_gabungan !== 'tidak_sepakat'),
     },
   };
 };

@@ -1004,6 +1004,45 @@ nav:has(.projects:empty) { display: none; }
 .alasan-kepala b { font-weight: 600; }
 .alasan-model { margin-left: auto; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
 .adetail .alasan { font-size: 0.875rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
+/* Penjelasan per model di mode gabungan. Nama vendor berdiri sendiri sebagai label, bukan awalan
+   di dalam kalimat, supaya tiga penjelasan bisa dibandingkan dengan menyapu mata ke bawah. */
+.alasan-vendor { display: grid; gap: var(--s-2); margin: 0; }
+.alasan-vendor dt { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.alasan-vendor dd { margin: 0 0 var(--s-2) 0; font-size: 0.875rem; color: var(--ink-2); line-height: 1.6; }
+.alasan-vendor dd:last-child { margin-bottom: 0; }
+/* Putusan tiap model: satu baris per vendor, putusan sejajar supaya perbedaannya terbaca sekilas. */
+.pv-kotak {
+  background: var(--paper-3); border: 1px solid var(--rule); border-radius: var(--radius-ctl);
+  padding: var(--s-3); display: grid; gap: var(--s-2);
+}
+.pv-daftar { display: grid; gap: var(--s-2); }
+.pv-baris {
+  display: grid; gap: var(--s-1) var(--s-2); align-items: center;
+  grid-template-columns: minmax(5rem, auto) auto 1fr;
+  padding: var(--s-2); background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius-chip);
+}
+/* Di layar sempit tiga kolom tidak muat: putusan model punya label panjang seperti "Putusan tidak
+   sah" yang tidak bisa dipendekkan tanpa kehilangan artinya, jadi barisnya ditumpuk. */
+@media (max-width: 30rem) {
+  .pv-baris { grid-template-columns: minmax(0, 1fr); }
+}
+.pv-vendor { font-size: 0.8125rem; color: var(--ink); }
+.pv-key { font-size: 0.8125rem; color: var(--muted); }
+.pv-alasan { grid-column: 1 / -1; margin: 0; font-size: 0.875rem; color: var(--ink-2); line-height: 1.6; }
+/* Vendor yang gagal dibedakan bentuknya, bukan hanya warnanya: ia tidak menolak apa pun. */
+.pv-gagal { border-style: dashed; }
+/* Lencana kesepakatan antarmodel. Tiga tingkatnya dibedakan warna DAN teksnya sendiri (n/m),
+   jadi tetap terbaca tanpa membedakan warna. */
+.chip-sepakat { border: 1px solid var(--rule-2); color: var(--ink-2); }
+.chip-sepakat.sepakat-penuh { border-color: var(--crit); color: var(--crit); }
+.chip-sepakat.sepakat-sebagian { border-color: var(--high); color: var(--high); }
+/* Penanda batas bukti mode gabungan: netral dan tetap, bukan peringatan galat. */
+.label-gabungan {
+  margin: 0; padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--rule-2); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-chip); background: var(--paper-3);
+  font-size: 0.8125rem; color: var(--ink-2);
+}
 .afakta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
 .apesan { font-size: 0.8125rem; color: var(--muted); overflow-wrap: anywhere; }
 .chip-rule { background: var(--netral-soft); color: var(--netral); border: 1px solid var(--netral-rule); }
