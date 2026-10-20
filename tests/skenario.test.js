@@ -43,6 +43,21 @@ test('prompt deteksi skenario B dan C byte-identik', () => {
   assert.deepEqual(kc[0], kb[0], 'entri deteksi di run kering harus identik');
 });
 
+test('skenario C tidak mengambil laporan SonarCloud sama sekali', () => {
+  // Bukan sekadar menghemat satu panggilan API. siapkanSonar juga menolak run bila hash tree src/
+  // pada revisi analisis Sonar berbeda dengan commit yang dianalisis. Kalau C tetap mengambilnya,
+  // run C gagal karena data yang tidak pernah ia pakai, padahal hasilnya memang tidak memuat alert.
+  const { perluSonar } = require('../scripts/llm-scan');
+  assert.equal(perluSonar({ kondisi: 'utama', skenario: 'B' }), true);
+  assert.equal(perluSonar({ kondisi: 'utama', skenario: 'C' }), false);
+  assert.equal(perluSonar({ kondisi: 'sonar_di_deteksi', skenario: 'B' }), true);
+  assert.equal(perluSonar({ kondisi: 'sonar_di_deteksi', skenario: 'C' }), false);
+  // Kondisi komentar_menyesatkan sudah tidak memakai Sonar sejak sebelum sumbu skenario ada;
+  // perilakunya tidak boleh ikut berubah.
+  assert.equal(perluSonar({ kondisi: 'komentar_menyesatkan', skenario: 'B' }), false);
+  assert.equal(perluSonar({ kondisi: 'komentar_menyesatkan', skenario: 'C' }), false);
+});
+
 test('skenario C tidak mengubah prompts/v2', () => {
   // Prompt deteksi harus datang apa adanya dari berkas terkunci, bukan dari varian baru.
   const daftar = fs.readFileSync(path.join(ROOT, 'prompts/v2/HASHES.txt'), 'utf8').trim().split('\n');

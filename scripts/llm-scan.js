@@ -8,7 +8,9 @@
 // Skenario adalah sumbu TERPISAH dari kondisi. Kondisi adalah variabel eksperimen TA (apa yang
 // diberikan ke model); skenario adalah bentuk analisisnya:
 //   B (bawaan) = deteksi LLM + verifikasi tiap alert SonarCloud. Perilaku yang sudah ada.
-//   C          = deteksi LLM saja. Tidak ada panggilan verifikasi dan tidak ada alert di hasil.
+//   C          = deteksi LLM saja. Tidak ada panggilan verifikasi dan tidak ada alert di hasil,
+//                jadi laporan SonarCloud tidak diambil sama sekali dan gerbang kesepadanan
+//                analisis Sonar tidak berlaku. Prompt deteksinya byte-identik dengan B.
 // Skenario A tidak punya panggilan LLM sama sekali, jadi tidak pernah sampai ke skrip ini.
 //                            --objek=<worktree commit yang dianalisis> [--runs=N]
 //
@@ -74,6 +76,16 @@ const periksaObjek = (dir) => {
 const BRANCH_FRAMING = 'eksperimen/framing';
 // Skenario A tidak memanggil LLM, jadi bukan urusan skrip ini; yang sah di sini hanya B dan C.
 const SKENARIO_ALAT = ['B', 'C'];
+
+// Apakah run ini perlu laporan SonarCloud sama sekali. Dua keadaan tidak memerlukannya, dan
+// keduanya karena alasan yang berbeda:
+//   kondisi komentar_menyesatkan — variabel eksperimen: model sengaja tidak diberi laporan Sonar.
+//   skenario C                   — bentuk analisis: tidak ada verifikasi, dan hasilnya tidak
+//                                  memuat alert sama sekali (lihat scripts/llm/results-v2.js).
+// Mengambilnya tetap bukan sekadar pemborosan satu panggilan API: siapkanSonar juga menolak run
+// bila hash tree src/ pada revisi analisis Sonar berbeda dengan commit yang dianalisis. Tanpa
+// pemisahan ini, skenario C gagal karena data yang tidak pernah ia pakai.
+const perluSonar = ({ kondisi, skenario }) => kondisi !== 'komentar_menyesatkan' && skenario !== 'C';
 
 const periksaBranchKondisi = (kondisi, branch) => {
   if (kondisi === 'komentar_menyesatkan' && branch !== BRANCH_FRAMING) {
@@ -323,7 +335,7 @@ const main = async () => {
   let sonar = null;
   let sumberSonar = null;
   let infoBeku = null;
-  if (kondisi !== 'komentar_menyesatkan') {
+  if (perluSonar({ kondisi, skenario })) {
     ({ sonar, sumber: sumberSonar, infoBeku } = await siapkanSonar(objek, ambilArg('sonar-beku')));
     alert = render.pilihAlert(sonar.ringkasan).map((a) => ({ ...a, teks: render.formatAlert(a, template.alert.teks) }));
     sonarTeks = render.laporanSonar(alert.map((a) => a.teks));
@@ -441,4 +453,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, treeSrc, percobaanGagal, biayaPercobaanGagal };
+module.exports = { main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, perluSonar, treeSrc, percobaanGagal, biayaPercobaanGagal };
