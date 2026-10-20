@@ -1023,6 +1023,20 @@ a.chip-cwe { text-decoration: none; }
 .panduan-cek .icon { width: 0.875rem; height: 0.875rem; margin-top: 0.1rem; flex: none; }
 .panduan-kosong { background: transparent; border-style: dashed; }
 
+/* Lapis 2: saran dari model. Dibedakan dari panduan lapis 1 lewat garis tepi beraksen, supaya
+   batas antara "pola baku yang bersumber" dan "saran yang belum diverifikasi" terlihat sekilas. */
+.saran {
+  display: grid; gap: var(--s-2); margin-top: var(--s-2); padding: var(--s-3);
+  border: 1px solid var(--accent-soft); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-ctl); background: var(--paper-2);
+}
+.saran-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0; }
+.saran-kepala b { font-size: 0.875rem; color: var(--ink); }
+.saran-model { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.saran-risiko { margin: 0; font-size: 0.75rem; color: var(--ink-2); line-height: 1.55; }
+.saran-risiko b { color: var(--ink); }
+.saran-kosong { border-left-color: var(--rule-2); border-color: var(--rule); }
+
 /* ---------- Tab Eksperimen ---------- */
 .eks-blok { margin-top: var(--s-6); display: grid; gap: var(--s-3); }
 .eks-kepala { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2); border-bottom: 1px solid var(--rule); padding-bottom: var(--s-2); }

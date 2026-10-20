@@ -774,6 +774,44 @@
         }, new URL(u).hostname, ikon(IKON.luar)))));
   };
 
+  // Saran lapis 2. Hanya digambar kalau field-nya memang ada di berkas hasil: run yang tidak
+  // menjalankan remediasi tidak menampilkan bagian AI sama sekali, bukan menampilkannya kosong.
+  const blokSaranAi = (obj, run) => {
+    if (!('rekomendasi_ai' in obj)) return null;
+    const r = obj.rekomendasi_ai;
+    const kepala = el('p', { class: 'saran-kepala' },
+      el('b', { text: 'Saran spesifik dari AI' }),
+      el('span', { class: 'lencana l-high', text: 'Dihasilkan AI, belum diverifikasi, tidak diterapkan otomatis' }));
+
+    // Field null berarti item ini tidak mendapat saran. Alasannya satu untuk seluruh run, karena
+    // lapis 2 memakai satu panggilan; diambil dari ringkasan run supaya tidak dikarang per item.
+    if (!r) {
+      const sebab = run?.remediasi?.alasan ?? 'Model tidak memberi saran untuk item ini.';
+      return el('section', { class: 'saran saran-kosong', 'aria-label': 'Saran spesifik dari AI' },
+        kepala, el('p', { class: 'panduan-teks', text: sebab }));
+    }
+
+    // labelVendor memetakan vendor ke label modelnya, jadi menampilkan keduanya menghasilkan nama
+    // yang sama dua kali. Yang dibaca manusia adalah label model; id mentahnya menjadi tooltip.
+    const idModel = r.model_menjawab ?? r.model_diminta;
+    const model = labelModelId(idModel);
+    return el('section', { class: 'saran', 'aria-label': 'Saran spesifik dari AI' },
+      kepala,
+      el('p', { class: 'saran-model data', title: `${r.vendor} / ${idModel}`, text: model }),
+      r.tidak_konsisten
+        ? el('p', { class: 'panduan-cek' }, ikon(IKON.seru),
+          el('span', { text: `Saran ini merujuk ${r.cwe_dirujuk}, yang tidak termasuk CWE item ini. Periksa ulang sebelum dipakai.` }))
+        : null,
+      el('ol', { class: 'panduan-langkah' }, r.langkah.map((l) => el('li', { text: l }))),
+      r.potongan_kode_usulan
+        ? el('div', {},
+          el('p', { class: 'block-h', text: 'Usulan kode' }),
+          el('pre', { class: 'code' }, el('code', { text: r.potongan_kode_usulan })))
+        : null,
+      el('p', { class: 'saran-risiko' },
+        el('b', { text: 'Catatan risiko: ' }), el('span', { text: r.catatan_risiko })));
+  };
+
   // Bagian "Rekomendasi perbaikan" yang dipakai bersama oleh drawer temuan dan detail alert.
   // Item dengan beberapa CWE mendapat satu blok untuk masing-masing: kode yang berbeda punya
   // pola perbaikan yang berbeda, dan menggabungkannya akan menyesatkan.
@@ -853,6 +891,29 @@
       teks.textContent = `Jumlah alert branch tujuan belum diketahui: rentangnya ${a.alert} sampai ${b.alert} alert.`;
     }
     sumber.textContent = `Titik ukur: ${p.titik.map((x) => `${usd(x.usd)} pada ${x.alert} alert, ${x.sumber}`).join('; ')}. Perkiraan, bukan tarif.`;
+    renderBiayaRekomendasi(m, p);
+  };
+
+  // Perkiraan tambahan untuk lapis 2. Ditampilkan terpisah dari angka utama, dan hanya ikut
+  // dijumlahkan saat pilihannya benar-benar dicentang: angka yang berubah tanpa sebab yang terlihat
+  // membuat pengguna tidak lagi mempercayainya.
+  const renderBiayaRekomendasi = (m, perkiraan) => {
+    const n = $('rekomendasi-biaya');
+    const b = m?.biaya_rekomendasi_usd ?? null;
+    if (!b) {
+      n.textContent = 'Biaya rekomendasi AI untuk model ini belum pernah diperkirakan.';
+      return;
+    }
+    const pilih = $('f-rekomendasi').checked;
+    n.textContent = pilih
+      ? `Termasuk dalam angka di atas: tambahan ${usd(b.min)} sampai ${usd(b.maks)} untuk satu panggilan rekomendasi.`
+      : `Kalau dicentang, biaya bertambah ${usd(b.min)} sampai ${usd(b.maks)} untuk satu panggilan rekomendasi.`;
+    if (pilih && perkiraan) {
+      const angka = $('biaya-angka');
+      const dasar = perkiraan.jenis === 'hitung' ? perkiraan.usd : perkiraan.titik[0].usd;
+      const atas = perkiraan.jenis === 'hitung' ? perkiraan.usd : perkiraan.titik[perkiraan.titik.length - 1].usd;
+      angka.textContent = `${usd(dasar + b.min)} \u2013 ${usd(atas + b.maks)}`;
+    }
   };
 
   // ---------- Form jalankan ----------
@@ -916,7 +977,9 @@
       : 'Tanpa panggilan LLM, tanpa biaya. Hasilnya terbit dalam format lama (skema 1) yang tidak ditampilkan dashboard ini.';
     $('model-field').hidden = !llm;
     $('biaya-field').hidden = !llm;
+    $('rekomendasi-field').hidden = !llm;
     $('konfirmasi-v2-field').hidden = !llm;
+    if (!llm && $('f-rekomendasi').checked) $('f-rekomendasi').checked = false;
     if (!llm && $('f-konfirmasi-v2').checked) $('f-konfirmasi-v2').checked = false;
     renderFormBranch();
     renderModels();
@@ -1535,6 +1598,7 @@
             ...a.cwe.map(tautanCwe),
             a.pesan ? el('span', { class: 'apesan', text: a.pesan }) : null),
           blokRekomendasi(a.cwe),
+          blokSaranAi(a, r),
           hash ? el('p', { class: 'note data', title: 'Sidik jari prompt yang dikirim ke model, dari berkas hasil', text: `prompt ${hash.slice(0, 12)}` }) : null);
         const labelBuka = el('small', { text: 'Lihat alasan' });
         const tombol = el('button', {
@@ -1677,6 +1741,7 @@
         el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan untuk temuan ini.' })),
       el('p', { class: 'block-h', text: 'Kode di sekitar baris' }), kode,
       blokRekomendasi(t.cwe),
+      blokSaranAi(t, state.hasil.run),
       el('p', { class: 'block-h', text: 'Fakta' }),
       el('dl', { class: 'facts' }, fakta.map(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
       el('p', { class: 'block-h', text: 'Catatan lokal' }),
@@ -1836,7 +1901,9 @@
   }
   function bukaDrawer() {
     // Persetujuan biaya berlaku untuk satu run, jadi tidak boleh terbawa ke pembukaan berikutnya.
+    // Begitu pula pilihan rekomendasi AI, yang menambah biaya.
     $('f-konfirmasi-v2').checked = false;
+    $('f-rekomendasi').checked = false;
     renderDrawer();
     bukaPanel($('drawer'), { pemicu: $('buka-drawer'), tutupId: 'drawer-tutup' });
   }
@@ -2184,7 +2251,14 @@
     if (jalur === 'v2') {
       const m = modelJalur().find((x) => x.id === model);
       if (!m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
-      Object.assign(inputs, { vendor_v2: m.vendor, konfirmasi_v2: 'JALANKAN', sonar_branch_v2: sonarBranchV2(branch) });
+      // rekomendasi_ai hanya berarti di jalur v2: langkah remediasi hidup di job analisis-v2.
+      // Mengirimnya di jalur v1 cuma menambah input yang tidak pernah dibaca siapa pun.
+      Object.assign(inputs, {
+        vendor_v2: m.vendor,
+        konfirmasi_v2: 'JALANKAN',
+        sonar_branch_v2: sonarBranchV2(branch),
+        rekomendasi_ai: $('f-rekomendasi').checked,
+      });
     }
     if (!model) throw new GhError('invalid', 'Daftar model tidak terbaca dari models.json. Muat ulang dashboard lalu coba lagi.');
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
@@ -2249,6 +2323,7 @@
     // Tanpa pembungkus, objek Event ikut terkirim sebagai argumen `pesan` dan tercetak di hint.
     $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
+    $('f-rekomendasi').addEventListener('change', renderBiaya);
     $('buka-drawer').addEventListener('click', bukaDrawer);
     $('drawer-tutup').addEventListener('click', tutupDrawerAktif);
     $('drawer-tirai').addEventListener('click', tutupDrawerAktif);

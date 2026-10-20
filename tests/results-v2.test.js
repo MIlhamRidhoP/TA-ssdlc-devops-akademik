@@ -20,7 +20,13 @@ const skemaV1 = require('../docs/design/results.schema.json');
 const fixtureV2 = [1, 2, 3].map((n) => require(`../dashboard/fixtures/v2/eksperimen/seeded/${n}.json`));
 // Rekaman run CI #54: hasil yang benar-benar terbit, dipakai mode demo untuk menggambar graf
 // pipeline. Ikut diperiksa di sini supaya index demo dan berkasnya tidak pernah berbeda.
-const fixtureSemua = [...fixtureV2, require('../dashboard/fixtures/v2/feat/prompt-v2/54.json')];
+// Fixture contoh lapis 2: alert dan temuan run #54 ditambah saran yang disusun sendiri sebagai
+// contoh. Ikut diperiksa supaya index demo dan berkasnya tidak pernah berbeda.
+const fixtureSemua = [
+  ...fixtureV2,
+  require('../dashboard/fixtures/v2/feat/prompt-v2/54.json'),
+  require('../dashboard/fixtures/v2/contoh/rekomendasi-ai.json'),
+];
 const indexV2 = require('../dashboard/fixtures/v2/index.json');
 
 // Berkas skor hidup di branch lain. Runner CI hanya mengambil satu branch, jadi `git show` tidak

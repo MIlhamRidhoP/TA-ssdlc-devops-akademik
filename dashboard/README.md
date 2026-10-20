@@ -54,6 +54,17 @@ memuat satu run dari GitHub Actions:
 | `fixtures/v2/feat/prompt-v2/54.json` | Hasil run #54 apa adanya, disalin dari branch `security-results` |
 | `fixtures/v2/rekaman/run-54.json` | Status, durasi, dan langkah tiap job run #54, diambil sekali lewat GitHub REST API |
 
+Satu fixture lagi khusus memperagakan lapis 2:
+
+| Berkas | Isi |
+|---|---|
+| `fixtures/v2/contoh/rekomendasi-ai.json` | Alert dan temuan run #54 yang nyata, ditambah saran lapis 2 yang **disusun sendiri sebagai contoh** |
+
+Setiap langkah di dalamnya diawali kata "Contoh:" dan **bukan keluaran model sungguhan**. Run ini
+diberi nomor 9001 dengan `asal: "cli"` supaya tidak pernah ditautkan ke GitHub Actions, dan
+branchnya `contoh/rekomendasi-ai` ditandai arsip sehingga tidak bisa dipicu. Satu itemnya sengaja
+dibuat `tidak_konsisten` agar keadaan itu ikut terlihat di mode demo.
+
 Run #54 adalah run Gemini jalur v2 di branch `feat/prompt-v2` yang selesai dengan status success
 pada 20 Oktober 2026. Pilih branch itu di rail untuk melihatnya. Graf pipelinenya diberi lencana
 **"Rekaman run CI #54, bukan run langsung"**: statusnya diambil satu kali lalu dibekukan, bukan
@@ -307,6 +318,16 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
   dihapus. Tombol **Ekspor** dan **Impor** menyediakan satu-satunya jalan memindahkannya.
 - **Branch `security-results` di repo publik bisa dibaca siapa pun**, termasuk daftar temuan dan potongan
   kode.
+- **Rekomendasi perbaikan lapis 2 adalah saran model dan dilabeli demikian.** Bagian "Saran
+  spesifik dari AI" hanya digambar kalau berkas hasil memang memuat field `rekomendasi_ai`; run
+  yang tidak menjalankan remediasi tidak menampilkan bagian AI sama sekali. Labelnya berbunyi
+  "Dihasilkan AI, belum diverifikasi, tidak diterapkan otomatis", dan tidak ada jalan di dashboard
+  untuk menerapkannya ke kode. Saran yang `cwe_dirujuk`-nya tidak termasuk CWE item diberi
+  peringatan dan tetap ditampilkan. Kalau lapis 2 gagal, yang tampil adalah alasannya, bukan
+  langkah yang dikarang.
+- **Pilihan "Sertakan rekomendasi AI" di drawer mati secara bawaan** dan dikosongkan ulang setiap
+  drawer dibuka, sama seperti persetujuan biaya. Mencentangnya menambah satu panggilan berbayar;
+  angka perkiraannya berasal dari `biaya_rekomendasi_usd` di `dashboard/models.json`.
 - **Rekomendasi perbaikan lapis 1 berasal dari pemetaan statis**, bukan dari model. Panduan umum per
   CWE dibaca dari `dashboard/rekomendasi-cwe.json`, yang langkahnya diturunkan dari bagian Potential
   Mitigations di cwe.mitre.org dan dari OWASP Cheat Sheet Series. Panduan itu bersifat umum: pola

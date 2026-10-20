@@ -23,6 +23,12 @@
           "dispatch": false,
           "catatan": "Arsip eksperimen. Workflow branch ini dikunci untuk menjaga data eksperimen.",
           "v2": false
+        },
+        {
+          "name": "contoh/rekomendasi-ai",
+          "dispatch": false,
+          "v2": false,
+          "catatan": "Branch contoh khusus mode demo. Isinya run #54 yang nyata ditambah saran lapis 2 yang DISUSUN SENDIRI sebagai contoh, bukan keluaran model."
         }
       ],
       "default_branch": "main"

@@ -42,7 +42,12 @@
           "usd": 0.7631,
           "sumber": "rata-rata 3 run eksperimen 19 Okt 2026"
         }
-      ]
+      ],
+      "biaya_rekomendasi_usd": {
+        "min": 0.1178,
+        "maks": 0.6962,
+        "sumber": "Perkiraan, bukan tarif. Dihitung dari prompt remediasi yang benar-benar terbentuk untuk run #49 (3 item) dan #53 (7 item); run #52 tidak punya item yang memenuhi syarat sehingga tidak memanggil sama sekali. Token input diturunkan dari panjang prompt dibagi rasio karakter per token yang diukur per vendor dari data eksperimen 19 Okt 2026 (google 2,70; anthropic 2,00; openai 3,31). Token keluaran dan thinking diperkirakan dari rasio yang terukur di run deteksi, dan itulah sumber ketidakpastian terbesar."
+      }
     },
     {
       "vendor": "anthropic",
@@ -59,7 +64,12 @@
           "usd": 0.3702,
           "sumber": "rata-rata 3 run eksperimen 19 Okt 2026"
         }
-      ]
+      ],
+      "biaya_rekomendasi_usd": {
+        "min": 0.0137,
+        "maks": 0.0519,
+        "sumber": "Perkiraan, bukan tarif. Dihitung dari prompt remediasi yang benar-benar terbentuk untuk run #49 (3 item) dan #53 (7 item); run #52 tidak punya item yang memenuhi syarat sehingga tidak memanggil sama sekali. Token input diturunkan dari panjang prompt dibagi rasio karakter per token yang diukur per vendor dari data eksperimen 19 Okt 2026 (google 2,70; anthropic 2,00; openai 3,31). Token keluaran dan thinking diperkirakan dari rasio yang terukur di run deteksi, dan itulah sumber ketidakpastian terbesar."
+      }
     },
     {
       "vendor": "openai",
@@ -76,7 +86,12 @@
           "usd": 0.2031,
           "sumber": "rata-rata 3 run eksperimen 19 Okt 2026"
         }
-      ]
+      ],
+      "biaya_rekomendasi_usd": {
+        "min": 0.0184,
+        "maks": 0.0932,
+        "sumber": "Perkiraan, bukan tarif. Dihitung dari prompt remediasi yang benar-benar terbentuk untuk run #49 (3 item) dan #53 (7 item); run #52 tidak punya item yang memenuhi syarat sehingga tidak memanggil sama sekali. Token input diturunkan dari panjang prompt dibagi rasio karakter per token yang diukur per vendor dari data eksperimen 19 Okt 2026 (google 2,70; anthropic 2,00; openai 3,31). Token keluaran dan thinking diperkirakan dari rasio yang terukur di run deteksi, dan itulah sumber ketidakpastian terbesar."
+      }
     }
   ]
 }
