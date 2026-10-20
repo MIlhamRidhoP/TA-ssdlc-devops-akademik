@@ -135,7 +135,9 @@ body {
 ::selection { background: var(--accent); color: var(--accent-ink); }
 
 h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
-h1, h2, h3 { font-family: var(--font-head); color: var(--ink); font-weight: 600; letter-spacing: -0.012em; text-wrap: balance; }
+/* tabular-nums berguna untuk kolom angka, tetapi di judul membuat "3.1" merenggang jadi
+   "3 . 1". Judul memakai angka proporsional. */
+h1, h2, h3 { font-family: var(--font-head); color: var(--ink); font-weight: 600; letter-spacing: -0.012em; text-wrap: balance; font-variant-numeric: normal; }
 ul, ol { padding: 0; list-style: none; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -192,10 +194,21 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
   .rail { border-bottom: 0; border-right: 1px solid var(--rule); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 }
 
-.brand { display: grid; gap: 0.125rem; }
+.brand { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.brand > div { display: grid; gap: 0.125rem; min-width: 0; }
 .brand strong { font: 600 1.0625rem/1.25 var(--font-head); color: var(--ink); }
 .brand span { font-size: 0.8125rem; color: var(--muted); }
 
+.rail-isi { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+@media (min-width: 64rem) {
+  /* Di layar lebar rail selalu terbuka: tombolnya tidak ada, dan isinya mengisi tinggi rail. */
+  #rail-toggle { display: none; }
+  .rail-isi { flex: 1; }
+}
+@media (max-width: 63.99rem) {
+  :root[data-rail="tutup"] .rail-isi { display: none; }
+  .rail { gap: var(--s-3); }
+}
 .rail-h { font: 600 0.8125rem/1.3 var(--font-body); color: var(--muted); margin-bottom: var(--s-2); }
 /* Memilih branch yang dibaca adalah navigasi, bukan aksi: tempatnya di rail bersama Project,
    terpisah dari select branch di drawer yang menentukan tujuan run. */
@@ -392,6 +405,8 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .cell-num small { font: 500 0.9375rem var(--font-body); color: var(--muted); }
 .cell.crit .cell-num { color: var(--crit); }
 .cell.high .cell-num { color: var(--high); }
+/* Nol bukan temuan: warnanya diredam supaya mata berhenti di angka yang memang perlu dibaca. */
+.cell.nol .cell-num { color: var(--muted); }
 .cell-note { font-size: 0.8125rem; color: var(--muted); display: flex; align-items: center; gap: var(--s-1); }
 
 /* ---------- Temuan + samping ---------- */
@@ -432,7 +447,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 }
 .ftitle { grid-area: title; font-weight: 500; color: var(--ink); overflow-wrap: break-word; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
 .fid { grid-area: fid; font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted); }
-.floc { grid-area: loc; font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted); overflow-wrap: anywhere; min-width: 0; }
+.floc { grid-area: loc; font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted); overflow-wrap: break-word; min-width: 0; }
 .fdec, .fdec-empty { grid-area: dec; justify-self: end; font-size: 0.8125rem; }
 .fdec { font-weight: 600; display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem var(--s-2); border-radius: 4px; }
 .fdec[data-v="ok"] { background: var(--crit-soft); color: var(--crit); }
@@ -517,16 +532,20 @@ nav:has(.projects:empty) { display: none; }
 
 /* Baris temuan v2: tanpa kolom severity dan tanpa kolom keputusan. */
 .frow-v2 {
-  display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) max-content;
-  grid-template-areas: "fid title dec" "fid loc dec";
+  display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) max-content max-content;
+  grid-template-areas: "fid title dec buka" "fid loc dec buka";
   gap: var(--s-1) var(--s-3); align-items: center;
   width: 100%; padding: var(--s-3) var(--s-1);
 }
 .frow-v2 .fid { grid-area: fid; }
 .frow-v2 .ftitle { grid-area: title; }
 .frow-v2 .floc { grid-area: loc; }
+.frow-v2 .buka { grid-area: buka; }
 @media (max-width: 40rem) {
-  .frow-v2 { grid-template-columns: 4.5rem minmax(0, 1fr); grid-template-areas: "fid title" "fid loc" "fid dec"; }
+  .frow-v2 {
+    grid-template-columns: 4.5rem minmax(0, 1fr) max-content;
+    grid-template-areas: "fid title title" "fid loc loc" "fid dec buka";
+  }
 }
 
 /* Tabel verifikasi alert v2 */
@@ -535,18 +554,31 @@ nav:has(.projects:empty) { display: none; }
 .alist { list-style: none; margin: 0; padding: 0; }
 .alist > li { border-bottom: 1px solid var(--rule); }
 .alist > li:last-child { border-bottom: 0; }
+/* Tiga kolom saja: id, isi, penanda buka. Fakta utama (putusan, severity, keyakinan) berbaris di
+   atas, lokasi di bawahnya. Versi lima kolom membuat path berebut lebar dengan chip sampai
+   terpecah per beberapa huruf. */
 .arow {
-  display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) max-content max-content max-content;
-  gap: var(--s-1) var(--s-3); align-items: center;
+  display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) max-content;
+  gap: var(--s-1) var(--s-3); align-items: start;
   width: 100%; padding: var(--s-3) var(--s-1); border: 0; border-radius: var(--radius-ctl);
   background: transparent; text-align: left; cursor: pointer; color: inherit;
 }
+.aisi { display: grid; gap: 0.15rem; min-width: 0; }
+.ameta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
 .arow:hover { background: var(--paper-2); }
-/* .fid, .ftitle dan kerabatnya membawa grid-area bernama milik layout .frow; di dalam .arow
-   nama itu tidak ada dan membuat penempatan kacau. Dikembalikan ke penempatan otomatis. */
-.arow > * { grid-area: auto; }
+/* .fid, .ftitle dan kerabatnya membawa grid-area bernama milik layout .frow. Di luar layout itu
+   nama tersebut tidak ada, dan grid justru membuat kolom implisit untuknya: .ftitle terlempar ke
+   kolom kedua .aisi dan path tampak rata kanan dengan lebar seadanya. Dikembalikan ke otomatis,
+   termasuk untuk anak .aisi, bukan hanya anak langsung .arow. */
+.arow > *, .aisi > * { grid-area: auto; }
 /* Path file panjang harus membungkus, bukan mendorong lebar halaman. */
-.arow .ftitle { min-width: 0; overflow-wrap: anywhere; }
+/* Di baris alert, .ftitle hanya memuat path, dan perannya sekunder terhadap putusan di atasnya.
+   Sebagai flex container, potongan teksnya menjadi item anonim dengan min-width:auto yang menolak
+   mengecil, sehingga path meluber menimpa tetangganya. Sebagai blok biasa, pemutusannya bekerja. */
+.arow .ftitle {
+  display: block; min-width: 0; overflow-wrap: break-word; font-weight: 400;
+  font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted);
+}
 .arow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .chip-sev {
   display: inline-flex; align-items: baseline; gap: var(--s-1);
@@ -555,14 +587,17 @@ nav:has(.projects:empty) { display: none; }
 }
 .chip-sev small { font-family: var(--font-body); font-size: 0.6875rem; color: var(--muted); }
 .akey { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+/* Penanda bahwa baris bisa dibuka: ikon saja terlalu samar, teks saja tidak menunjukkan arah. */
+.buka { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--muted); font-size: 0.8125rem; white-space: nowrap; }
+.buka .icon { transition: transform var(--dur-micro) var(--ease-out); }
+[aria-expanded="true"] > .buka .icon { transform: rotate(90deg); }
+@media (hover: hover) { .arow:hover .buka, .frow-v2:hover .buka { color: var(--accent); } }
 .adetail { padding: 0 var(--s-1) var(--s-4) 5.5rem; display: grid; gap: var(--s-2); }
 .adetail .alasan { font-size: 0.875rem; color: var(--ink-2); line-height: 1.55; }
-/* Di layar sempit grid lima kolom tidak muat: beralih ke flex yang membungkus,
-   supaya chip tidak saling tindih dengan path file. */
+/* Di layar sempit kolom id dan penanda buka pindah ke barisnya sendiri. */
 @media (max-width: 52rem) {
-  .arow { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
-  .arow .fid { flex: 0 0 auto; }
-  .arow .ftitle { flex: 1 1 100%; order: 3; }
+  .arow { grid-template-columns: 5.5rem minmax(0, 1fr); }
+  .arow .buka { grid-column: 2; justify-self: start; }
   .adetail { padding-left: var(--s-1); }
 }
 

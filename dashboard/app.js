@@ -104,6 +104,7 @@
       'M3 3l1 1', 'M12 12l1 1', 'M3 13l1-1', 'M12 4l1-1'],
     gelap: 'M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z',
     seru: ['M8 3.5v5.5', 'M8 12h.01'],
+    panah: 'M6 3.5l5 4.5-5 4.5',
     // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
     padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
     nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
@@ -318,6 +319,13 @@
     if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
     pasangIkon($('theme-toggle'), IKON[t ?? 'sistem'], `Tema: ${t ?? 'ikuti sistem'}`);
   };
+  // Di layar sempit, rail setinggi satu layar penuh mendorong isi utama keluar pandangan.
+  // Isinya dilipat di balik tombol Menu; di layar lebar tombolnya tidak ada dan rail selalu terbuka.
+  const terapkanRail = (buka) => {
+    document.documentElement.dataset.rail = buka ? 'buka' : 'tutup';
+    $('rail-toggle').setAttribute('aria-expanded', String(buka));
+  };
+
   const terapkanKepadatan = () => {
     const d = store.get('localStorage', KUNCI.padat) === 'padat' ? 'padat' : 'nyaman';
     document.documentElement.dataset.density = d;
@@ -752,12 +760,14 @@
 
   const renderMemuat = () => {
     bersihkanBlokRun();
+    $('pipeline-box').hidden = false;
     isi($('findings-body'), el('div', { class: 'skeleton', 'aria-label': 'Memuat hasil' }, el('i'), el('i'), el('i'), el('i')));
     renderPipeline();
   };
 
   const renderKosong = (pesanGalatTeks, galat) => {
     bersihkanBlokRun();
+    $('pipeline-box').hidden = false;
     $('run-title').textContent = '';
     isi($('crumb'));
     isi($('history'));
@@ -833,14 +843,22 @@
   };
   const infoPutusan = (p) => PUTUSAN_V2[p] ?? { label: 'Tanpa putusan', kelas: 'none' };
 
-  const renderKepalaV2 = () => {
+  // Nama yang dibaca manusia selalu dari models.json. Id mentah seperti "gemini-3.1-pro-preview"
+  // hanya muncul sebagai metadata kecil atau tooltip, tidak pernah sebagai judul.
+  const labelVendor = (vendor) => state.models.find((m) => m.jalur === 'v2' && m.vendor === vendor)?.label ?? vendor ?? '—';
+  // Id yang sama bisa terdaftar di kedua jalur dengan label berbeda; yang dipakai dashboard
+  // selalu entri jalur v2, karena hanya skema 2 yang ditampilkan di sini.
+  const labelModelId = (id) => (state.models.find((m) => m.jalur === 'v2' && m.id === id)
+    ?? state.models.find((m) => m.id === id))?.label ?? id ?? '—';
+
+  const renderKepalaV2 = (adaPipeline = true) => {
     const p = state.proyek;
     const r = state.hasil.run;
     const repoLink = p.demo_tanpa_workflow || !r.repo
       ? el('span', { text: `${p.owner} / ${p.repo}` })
       : el('a', { href: urlGithub(p.owner, p.repo), target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` });
     isi($('crumb'), repoLink, ` / ${r.objek_uji.branch ?? state.branch.name}`, ` · selesai ${waktu(r.selesai)}`);
-    $('run-title').textContent = `Run #${r.nomor} · ${r.vendor} · ${state.hasil.alerts.length} alert · ${state.hasil.findings.length} temuan`;
+    $('run-title').textContent = `Run #${r.nomor} · ${labelVendor(r.vendor)} · ${state.hasil.alerts.length} alert · ${state.hasil.findings.length} temuan`;
 
     const sel = (label, nilai, opsi = {}) => el('div', {}, el('dt', { text: label }),
       el('dd', { class: [opsi.data ? 'data' : '', opsi.warn ? 'warn' : ''].join(' ').trim() || null, title: opsi.title }, nilai));
@@ -849,11 +867,15 @@
     const sp = r.status_panggilan ?? null;
     const commit = el('span', { text: pendek(r.objek_uji.commit) });
     isi($('title-block'),
-      sel('Model menjawab', r.model_menjawab ?? '—', { warn: bedaModel, title: bedaModel ? `Diminta ${r.model_diminta}` : r.model_diminta }),
+      sel('Model menjawab', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
+        warn: bedaModel,
+        title: bedaModel ? `${r.model_menjawab}, padahal yang diminta ${r.model_diminta}` : (r.model_menjawab ?? r.model_diminta),
+      }),
       sel('Objek uji', commit, { data: true, title: r.objek_uji.commit }),
       sel('Durasi', durasi(r.durasi_detik), { data: true }),
       sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true }),
-      sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, warn: Boolean(sp) && sp.ok !== sp.total }));
+      sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, warn: Boolean(sp) && sp.ok !== sp.total }),
+      adaPipeline ? null : sel('Asal', 'dijalankan dari CLI', { title: 'Run ini tidak dipicu lewat GitHub Actions, jadi tidak ada status job.' }));
   };
 
   // Kartu dikelompokkan tiga baris berlabel supaya keparahan, proses, dan sumber tidak tercampur.
@@ -861,7 +883,9 @@
     const h = state.hasil;
     $('summary').hidden = false; // renderMemuat dan renderKosong menyembunyikannya
     const n = (p) => h.alerts.filter((a) => a.putusan === p).length;
-    const kartu = (label, nilai, catatan, kelas) => el('div', { class: `cell${kelas ? ` ${kelas}` : ''}` },
+    // Warna severity hanya untuk angka di atas nol: nol merah membuat mata berhenti di tempat
+    // yang justru tidak perlu ditindaklanjuti.
+    const kartu = (label, nilai, catatan, kelas) => el('div', { class: `cell${kelas && nilai > 0 ? ` ${kelas}` : ''}${nilai === 0 ? ' nol' : ''}` },
       el('p', { class: 'cell-label', text: label }), el('p', { class: 'cell-num', text: String(nilai) }),
       catatan ? el('p', { class: 'cell-note', text: catatan }) : null);
     const grup = (judul, ...kartuAnak) => el('div', { class: 'kartu-grup' },
@@ -937,20 +961,25 @@
         const detail = el('div', { class: 'adetail', id: idDetail, hidden: true },
           el('p', { class: 'alasan', text: a.alasan ?? 'Model tidak memberi alasan untuk alert ini.' }),
           el('p', { class: 'note', text: [a.rule, a.cwe.join(', ') || null, a.pesan].filter(Boolean).join(' · ') }));
+        const labelBuka = el('small', { text: 'Lihat alasan' });
         const tombol = el('button', {
           class: 'arow', type: 'button', 'aria-expanded': 'false', 'aria-controls': idDetail,
           onclick: (e) => {
             const buka = detail.hidden;
             detail.hidden = !buka;
             e.currentTarget.setAttribute('aria-expanded', String(buka));
+            labelBuka.textContent = buka ? 'Tutup alasan' : 'Lihat alasan';
           },
         },
         el('span', { class: 'fid', text: a.id }),
-        el('span', { class: 'ftitle' }, a.file ? teksLokasi(a.file, a.baris) : (a.rule ?? '—')),
-        el('span', { class: 'chip chip-sev', title: 'Severity apa adanya dari SonarCloud, tidak diterjemahkan' },
-          el('span', { text: a.severity_sonar ?? '—' }), el('small', { text: 'dari Sonar' })),
-        el('span', { class: `putusan p-${inf.kelas}`, text: inf.label }),
-        el('span', { class: 'akey', text: a.keyakinan ? `keyakinan ${a.keyakinan}` : '—' }));
+        el('span', { class: 'aisi' },
+          el('span', { class: 'ameta' },
+            el('span', { class: `putusan p-${inf.kelas}`, text: inf.label }),
+            el('span', { class: 'chip chip-sev', title: 'Severity apa adanya dari SonarCloud, tidak diterjemahkan' },
+              el('span', { text: a.severity_sonar ?? '—' }), el('small', { text: 'dari Sonar' })),
+            el('span', { class: 'akey', text: a.keyakinan ? `keyakinan ${a.keyakinan}` : '—' })),
+          el('span', { class: 'ftitle' }, a.file ? teksLokasi(a.file, a.baris) : (a.rule ?? '—'))),
+        el('span', { class: 'buka' }, labelBuka, ikon(IKON.panah)));
         return el('li', {}, tombol, detail);
       }))
       : el('div', { class: 'state' }, el('p', { text: 'Tidak ada alert Sonar pada run ini.' })));
@@ -1057,7 +1086,8 @@
         el('span', { class: 'floc' }, teksLokasi(t.file, t.baris)),
         putusan
           ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai FP' })
-          : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }));
+          : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }),
+        el('span', { class: 'buka' }, el('small', { text: terbuka ? 'Tutup detail' : 'Detail' }), ikon(IKON.panah)));
         return el('li', {}, baris, terbuka ? detailTemuanV2(t) : null);
       }))
       : el('div', { class: 'state' }, el('p', { text: semua.length ? 'Tidak ada temuan yang cocok dengan saringan ini.' : 'Panggilan deteksi tidak melaporkan temuan.' })));
@@ -1094,11 +1124,11 @@
           const gagal = e.status === 'gagal';
           return el('button', {
             class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
-            'aria-label': `Run ${e.nomor}, ${e.vendor}, ${j.temuan ?? 0} temuan, ${rincian}${gagal ? ', run gagal' : ''}`,
+            'aria-label': `Run ${e.nomor}, ${labelVendor(e.vendor)}, ${j.temuan ?? 0} temuan, ${rincian}${gagal ? ', run gagal' : ''}`,
             onclick: () => muatRun(e),
           },
           el('span', { class: 'hnum' }, `#${e.nomor}`, gagal ? el('span', { class: 'hgagal', title: 'Run gagal', text: '!' }) : null),
-          el('span', { class: 'hmeta', text: `${e.vendor ?? '—'} · ${waktu(e.selesai)}` }),
+          el('span', { class: 'hmeta', text: `${labelVendor(e.vendor)} · ${waktu(e.selesai)}` }),
           bar,
           el('span', { class: 'htotal', text: String(j.temuan ?? 0) }));
         }),
@@ -1186,14 +1216,15 @@
   const eksSkenario = (eks) => {
     const kepala = ['Model', 'Skenario', 'Ketat P/R/F1', 'Triase konservatif P/R/F1', 'Triase utama P/R/F1'];
     const baris = [];
+    // Skenario A hanya memakai alert Sonar, jadi angkanya sama untuk setiap model. Mengulangnya
+    // satu baris per model membuatnya terbaca seolah tiga hasil berbeda yang kebetulan sama.
+    const a = eks.per_model[0]?.skenario_a;
+    if (a) baris.push(['Tidak bergantung pada model', 'A — alert Sonar saja', `${n3(a.precision)} / ${n3(a.recall)} / ${n3(a.f1)}`, '—', '—']);
     for (const m of eks.per_model) {
-      const a = m.skenario_a;
-      baris.push([`${m.vendor} (${m.model})`, 'A — alert Sonar saja',
-        `${n3(a?.precision)} / ${n3(a?.recall)} / ${n3(a?.f1)}`, '—', '—']);
       for (const [kunci, nama] of [['skenario_b', 'B — alert dipertahankan + temuan LLM'], ['skenario_c', 'C — temuan LLM saja']]) {
         const r = m.rata_rata[kunci];
         const f = (v) => (v ? `${n3(v.precision)} / ${n3(v.recall)} / ${n3(v.f1)}` : '—');
-        baris.push([`${m.vendor}`, nama, f(r.ketat), f(r.triase_konservatif), f(r.triase_utama)]);
+        baris.push([labelVendor(m.vendor), nama, f(r.ketat), f(r.triase_konservatif), f(r.triase_utama)]);
       }
     }
     return blokEks('1. Skenario A, B, dan C per model',
@@ -1212,7 +1243,7 @@
         const v = pakaiSens ? (r.verifikasi?.sensitivitas ?? null) : (r.verifikasi ?? null);
         const j = v?.jumlah ?? {};
         const mp = v?.metrik_fp_positif ?? {};
-        baris.push([m.vendor, String(r.run), String(j.identified_fp ?? '—'), String(j.missed_fp ?? '—'),
+        baris.push([labelVendor(m.vendor), String(r.run), String(j.identified_fp ?? '—'), String(j.missed_fp ?? '—'),
           String(j.misidentified_fp ?? '—'), String(j.correct_retention ?? '—'),
           `${n3(mp.precision)} / ${n3(mp.recall)} / ${n3(mp.f1)}`]);
       }
@@ -1235,7 +1266,7 @@
 
   const eksTabelItem = (eks) => {
     const vendor = eks.per_model.map((m) => m.vendor);
-    const kepala = ['Item', 'Kelas', 'Klasifikasi', 'Sonar A', 'Sonar B', ...vendor.flatMap((v) => [`${v} B`, `${v} C`])];
+    const kepala = ['Item', 'Kelas', 'Klasifikasi', 'Sonar A', 'Sonar B', ...vendor.flatMap((v) => [`${labelVendor(v)} B`, `${labelVendor(v)} C`])];
     const sel = (x) => (x ? `${x.ketat ?? 0}/${x.dari ?? 0}` : '—');
     const baris = (eks.tabel_per_item ?? []).map((t) => [
       t.id, t.kelas ?? '—', t.klasifikasi ?? '—', t.sonar_a ?? '—', t.sonar_b ?? '—',
@@ -1252,7 +1283,7 @@
     const baris = [];
     for (const m of eks.per_model) {
       const total = m.runs.reduce((s, r) => s + (r.biaya_usd ?? 0), 0);
-      m.runs.forEach((r, i) => baris.push([i === 0 ? m.vendor : '', String(r.run), usd(r.biaya_usd),
+      m.runs.forEach((r, i) => baris.push([i === 0 ? labelVendor(m.vendor) : '', String(r.run), usd(r.biaya_usd),
         i === 0 ? usd(m.biaya_total_usd ?? total) : '']));
     }
     const adaBiaya = baris.some((r) => r[2] !== '—');
@@ -1325,15 +1356,13 @@
     $('catatan-alat').hidden = false;
     $('tabs').hidden = !state.hasil.eksperimen;
     if (!state.hasil.eksperimen && state.tab === 'eksperimen') state.tab = 'operasional';
-    renderKepalaV2();
     // Run v2 bisa berasal dari CLI (tanpa pipeline) atau dari workflow (punya status job).
-    if (state.jobs || state.hasil.run.pipeline) {
-      renderPipeline();
-    } else {
-      $('pipeline-title').textContent = 'Dijalankan dari CLI, tidak lewat pipeline';
-      $('pipeline-total').textContent = '—';
-      isi($('nodes'));
-    }
+    // Tanpa data pipeline, panel gelapnya hanya ruang kosong berisi satu kalimat; keterangannya
+    // pindah ke metadata kepala run, tempat fakta run lain berada.
+    const adaPipeline = Boolean(state.jobs || state.hasil.run.pipeline);
+    renderKepalaV2(adaPipeline);
+    $('pipeline-box').hidden = !adaPipeline;
+    if (adaPipeline) renderPipeline();
     renderRingkasanV2();
     if (!FILTER_V2.some((x) => x.key === state.filter)) state.filter = 'semua';
     renderFilterV2();
@@ -1349,6 +1378,7 @@
   // status alert di skema 1 berasal dari pencocokan, bukan putusan model, sehingga kolom yang sama
   // akan berarti lain tergantung run.
   const renderArsipV1 = () => {
+    $('pipeline-box').hidden = false;
     $('summary').hidden = true;
     $('alerts-box').hidden = true;
     $('catatan-alat').hidden = true;
@@ -1513,6 +1543,7 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
+    $('rail-toggle').addEventListener('click', () => terapkanRail(document.documentElement.dataset.rail !== 'buka'));
     // Tanpa pembungkus, objek Event ikut terkirim sebagai argumen `pesan` dan tercetak di hint.
     $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
@@ -1555,6 +1586,7 @@
   const mulai = async () => {
     terapkanTema();
     terapkanKepadatan();
+    terapkanRail(false);
     muatToken();
     ikat();
     await muatModels();
