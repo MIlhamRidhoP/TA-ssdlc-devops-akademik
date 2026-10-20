@@ -85,20 +85,43 @@ npx playwright install chromium
 Jalankan dashboard lebih dulu (`python -m http.server 8765` di folder `dashboard/`), lalu
 arahkan skrip Playwright ke `http://127.0.0.1:8765/#demo`. Yang perlu diperiksa:
 
+Setiap pemeriksaan dijalankan atas **seluruh kombinasi keadaan x lebar x tema**, bukan satu
+halaman saja. Keadaan yang wajib diperiksa: tampilan operasional, drawer terbuka, tab Eksperimen,
+panel detail temuan dan alert terbuka, branch tanpa run, dan rail terbuka di layar sempit.
+
 | Pemeriksaan | Cara |
 |---|---|
 | Error konsol dan respons gagal | kumpulkan event `console` bertipe `error`, `pageerror`, dan `response` berstatus >= 400 (kecualikan `/favicon.ico`, diminta otomatis browser) |
 | Overflow horizontal | `document.documentElement.scrollWidth > clientWidth` di 375, 768, dan 1280 px |
 | Aksesibilitas | `new AxeBuilder({ page }).analyze()`, tidak boleh ada pelanggaran `serious` atau `critical` |
-| Kontras teks kecil | hitung rasio dari piksel sungguhan (Chrome mengembalikan `oklch()` di computed style; konversikan lewat canvas), ambang 4,5:1 |
-| Tumpang tindih | bandingkan `getBoundingClientRect()` antar anak di `.arow`, `.frow-v2`, `.cell`, dan `.hrow` |
+| Kontras | rasio dihitung dari piksel sungguhan, ambang 4,5:1 (3:1 untuk teks besar) |
+| Tumpang tindih | uji titik dengan `document.elementFromPoint` pada tiap elemen berteks |
+| Teks terpotong | `scrollWidth > clientWidth` pada elemen yang `overflow` tersembunyi dan tidak bisa digulir |
+| Font | tidak boleh ada permintaan ke host selain `127.0.0.1` saat halaman dimuat |
+| Isi dispatch | cegat `**api.github.com/**` dengan `page.route`, jawab tiruan, lalu periksa body `POST .../dispatches` untuk tiap kombinasi mode x branch x vendor |
 
-Dua jebakan yang pernah menipu pemeriksaan di sini, keduanya pernah meloloskan cacat nyata:
+Enam jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
+melaporkan cacat yang tidak ada:
 
 - **Drawer harus dibuka.** Isi `#drawer` tersembunyi saat halaman dimuat, jadi axe maupun
   pemindaian kontras tidak melihatnya. Pernah ada teks putih di atas putih di situ.
 - **Tumpang tindih tidak terdeteksi oleh pemeriksaan overflow.** Elemen bisa saling tindih
   tanpa membuat halaman melebar.
+- **`opacity` menyembunyikan kontras dari pengukuran.** `getComputedStyle().color` tidak
+  memperhitungkan opacity leluhur, jadi tombol dan opsi yang dimatikan lolos padahal 2,5:1.
+  Hitung opacity efektif dan campurkan warna teks ke latarnya sebelum menghitung rasio.
+- **Nilai di dalam `select` dan `input` bukan simpul teks.** Pemindaian yang hanya menelusuri
+  `textContent` melewatkannya; select berlatar gelap dengan teks gelap pernah lolos begitu.
+- **Screenshot `fullPage` menggeser elemen `position: fixed`.** Tautan lewati-ke-konten tampak
+  melayang di tengah halaman padahal posisinya benar. Ukur `getBoundingClientRect`, jangan
+  menyimpulkan dari gambar.
+- **`goto` ke URL yang sama hanya berpindah hash.** Halaman tidak dimuat ulang, dan fokus serta
+  state dari pemeriksaan sebelumnya terbawa. Pakai `reload()`.
+
+Pemeriksaan ini tidak ikut di repo, jadi menyalinnya ke mesin lain berarti menulisnya ulang dari
+tabel di atas. Yang **ada** di repo adalah tes `node --test` di bagian sebelumnya, termasuk dua
+pemeriksaan teks `.github/workflows/devsecops.yml` yang mengunci `--nomor`, `--id`, dan gerbang
+jalur v2 supaya tidak hilang diam-diam saat workflow disunting.
 
 ## Token GitHub
 
@@ -133,13 +156,26 @@ artifact. Itu konsekuensi izin dispatch; perlakukan token seperti kata sandi.
 
 ## Cara kerja dispatch
 
-1. `POST /repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches` dengan input `mode`, `model`,
-   `jalur`, dan `label` unik. Jalur bawaan adalah **v2**; untuk v2 dashboard ikut mengirim
-   `vendor_v2` (dari model terpilih), `konfirmasi_v2`, dan `sonar_branch_v2`. `konfirmasi_v2` hanya
-   terisi kalau centang persetujuan biaya di drawer dicentang: jalur v2 memanggil API berbayar, dan
-   persetujuan itu berlaku untuk satu run saja (ikut dikosongkan setiap drawer dibuka).
-   `sonar_branch_v2` diisi `main` untuk branch selain main, karena paket Free SonarCloud hanya
-   menganalisis main; kecocokan datanya diperiksa workflow lewat hash tree `src/`.
+Drawer hanya punya satu keputusan: **Mode**. Mode menentukan jalur, jadi tidak ada pilihan jalur
+terpisah yang bisa bertentangan dengannya.
+
+| Mode | Jalur | Yang dikirim | Biaya |
+|---|---|---|---|
+| SAST saja | v1 | `mode`, `model` (bawaan v1), `jalur=v1`, `label` | tidak ada panggilan LLM |
+| SAST + LLM | v2 | di atas, ditambah `vendor_v2`, `konfirmasi_v2`, `sonar_branch_v2` | satu panggilan deteksi + satu verifikasi per alert |
+
+1. `POST /repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches` dengan input di atas dan
+   `label` unik. `konfirmasi_v2` hanya terisi kalau centang persetujuan biaya di drawer dicentang:
+   dashboard tidak pernah menyetujui biaya atas nama pengguna, dan persetujuan itu berlaku untuk
+   satu run saja (dikosongkan setiap drawer dibuka). `sonar_branch_v2` diisi `main` untuk branch
+   selain main, karena paket Free SonarCloud hanya menganalisis main; kecocokan datanya diperiksa
+   workflow lewat hash tree `src/` sebelum ada panggilan berbayar.
+   Branch tujuan run hanya memuat branch yang workflow-nya mendukung jalur terpilih; kemampuan itu
+   dicatat per branch di `projects.json` (`"v2": true`) dan dirawat bersama workflow-nya. Memilih
+   branch yang **dilihat** adalah kontrol terpisah di rail, supaya memilih mode tidak pernah
+   menarik pembaca keluar dari hasil yang sedang dibukanya.
+   Hasil mode SAST saja terbit sebagai skema 1 ke `index-v1.json` dan tidak ditampilkan dashboard
+   ini; mode itu berguna untuk memeriksa pipeline tanpa biaya.
 2. Mencari run hasil dispatch lewat `run-name` yang memuat `[label]`.
 3. Memantau `GET .../actions/runs/{id}/jobs` tiap 5 detik sampai run selesai.
 4. Menunggu entri run muncul di `index.json` branch `security-results`, lalu memuat hasilnya.
@@ -165,11 +201,14 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
 
 - Isi laporan berasal dari LLM dan dianggap tidak tepercaya: semua data dirender dengan `textContent`
   atau `createElement`, tidak pernah `innerHTML`.
-- Content-Security-Policy lewat meta tag: `script-src 'self'`, `style-src 'self'` + Google Fonts,
-  `font-src` Google Fonts, `connect-src 'self' https://api.github.com`. `'self'` dibutuhkan untuk
-  membaca `projects.json` dan `fixtures/` dari folder dashboard sendiri; tidak ada host pihak ketiga.
-- Tidak ada script pihak ketiga. Semua request API melewati satu fungsi yang menolak host selain
-  `api.github.com`.
+- Content-Security-Policy lewat meta tag: `default-src 'none'`, `script-src 'self'`,
+  `style-src 'self'`, `font-src 'self'`, `connect-src 'self' https://api.github.com`. Satu-satunya
+  host luar adalah `api.github.com`; selebihnya dibaca dari folder dashboard sendiri.
+- Tidak ada script maupun font pihak ketiga. Ketiga keluarga font (Hanken Grotesk, Schibsted
+  Grotesk, JetBrains Mono, semuanya SIL Open Font License 1.1) dipasang sendiri di `fonts/` dengan
+  `@font-face` di `fonts.css`, subset latin dan latin-ext. Selain menutup host luar, ini membuat
+  halaman tetap tampil utuh saat jaringan tidak bisa diandalkan.
+- Semua request API melewati satu fungsi yang menolak host selain `api.github.com`.
 - Path hasil dari `index.json` divalidasi sebelum dipakai.
 
 ## Keterbatasan

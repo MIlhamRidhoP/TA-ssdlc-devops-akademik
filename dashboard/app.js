@@ -601,7 +601,8 @@
   // Branch hanya bisa dipicu kalau workflow di branch itu memuat jalur yang dipilih. Kemampuan v2
   // tidak bisa ditanyakan ke API tanpa izin membaca isi berkas workflow, jadi dicatat per branch
   // di projects.json dan dirawat bersama workflow-nya.
-  const branchSesuai = (b) => Boolean(b.dispatch) && (jalurTerpilih() !== 'v2' || b.v2 === true);
+  // Project tanpa branch yang bisa dipicu sama sekali membuat b bernilai null di sini.
+  const branchSesuai = (b) => Boolean(b?.dispatch) && (jalurTerpilih() !== 'v2' || b.v2 === true);
   const sebabBranch = (b) => {
     if (!b.dispatch) return 'arsip';
     if (jalurTerpilih() === 'v2' && b.v2 !== true) return b.catatan_v2 ?? 'belum memuat jalur v2';
@@ -611,9 +612,12 @@
 
   // Select di rail: seluruh branch, termasuk arsip, karena ini soal apa yang dibaca.
   const renderRailBranch = () => {
-    isi($('f-branch-lihat'), state.proyek.branches.map((b) => el('option', {
+    const sel = $('f-branch-lihat');
+    isi(sel, state.proyek.branches.map((b) => el('option', {
       value: b.name, text: b.dispatch ? b.name : `${b.name} · arsip`, selected: b === state.branch,
     })));
+    // Rail hanya selebar 15rem: nama branch panjang terpotong, jadi judul penuhnya disediakan.
+    sel.title = state.branch?.name ?? '';
   };
 
   // Select di drawer: hanya branch yang bisa dipicu, dan yang tidak mendukung mode terpilih
@@ -635,10 +639,9 @@
   };
 
   // Satu tempat yang menyusun seluruh isi drawer sesuai mode: apa yang ditampilkan, apa yang
-  // dijelaskan, dan apakah tombol boleh ditekan. Branch yang tidak mendukung mode terpilih
-  // sengaja TIDAK diganti otomatis: pilihan branch juga menentukan hasil run mana yang sedang
-  // dibaca, jadi memindahkannya diam-diam akan menarik pengguna keluar dari halaman yang dilihat.
-  // Yang dilakukan: opsinya dimatikan, dan tombol Jalankan menjelaskan sebabnya.
+  // dijelaskan, dan apakah tombol boleh ditekan. Branch TUJUAN RUN yang tidak mendukung mode
+  // terpilih akan digeser ke branch bawaan oleh renderFormBranch, sedangkan branch yang sedang
+  // DIBACA tidak pernah ikut berpindah: itu kontrol terpisah di rail.
   const renderDrawer = () => {
     const llm = modeTerpilih() === 'sast-llm';
     $('mode-hint').textContent = llm
@@ -651,7 +654,7 @@
     renderFormBranch();
     renderModels();
     // Keterangan sumber analisis Sonar hanya relevan untuk branch yang memang bisa dijalankan.
-    $('branch-hint').textContent = llm && branchSesuai(branchJalan()) && branchJalan().name !== 'main'
+    $('branch-hint').textContent = llm && branchSesuai(branchJalan()) && branchJalan()?.name !== 'main'
       ? 'Analisis Sonar diambil dari main; kecocokan kode diperiksa lewat hash tree src/ sebelum ada panggilan berbayar.'
       : '';
     perbaruiTombolJalankan();
@@ -904,15 +907,15 @@
         kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
         kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
         sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
-      grup('Proses',
-        kartu('Ditolak model', n('false_positive'), 'putusan false_positive'),
+      grup('Putusan model atas alert',
+        kartu('Dikonfirmasi model', n('true_positive'), 'alert dinyatakan nyata'),
+        kartu('False positive', n('false_positive'), 'alert ditolak model'),
         kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan'),
-        kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal'),
-        kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal, hanya di browser ini, tidak tersinkron')),
-      grup('Sumber',
+        kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal')),
+      grup('Sumber dan tindak lanjut',
         kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
         kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
-        kartu('Dikonfirmasi model', n('true_positive'), 'putusan true_positive')));
+        kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
   };
 
   // ---------- Navigasi rail ----------
@@ -1060,8 +1063,7 @@
           el('p', { class: 'block-h', text: 'Fakta' }),
           el('dl', { class: 'facts' }, fakta.map(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
           el('p', { class: 'block-h', text: 'Catatan lokal' }),
-          el('div', { class: 'decide' }, tombol('ok', 'Konfirmasi rentan'), tombol('fp', 'Tandai false positive')),
-          el('p', { class: 'note', text: 'Catatan lokal, hanya di browser ini, tidak tersinkron.' }))));
+          el('div', { class: 'decide' }, tombol('ok', 'Konfirmasi rentan'), tombol('fp', 'Tandai false positive')))));
   };
 
   const renderTemuanV2 = (fokusFp) => {
@@ -1085,7 +1087,7 @@
           chip(t.keyakinan, 'chip-keyakinan')),
         el('span', { class: 'floc' }, teksLokasi(t.file, t.baris)),
         putusan
-          ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai FP' })
+          ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai false positive' })
           : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }),
         el('span', { class: 'buka' }, el('small', { text: terbuka ? 'Tutup detail' : 'Detail' }), ikon(IKON.panah)));
         return el('li', {}, baris, terbuka ? detailTemuanV2(t) : null);
@@ -1108,8 +1110,11 @@
   ];
   const renderSampingV2 = () => {
     const daftar = entriBranch();
+    // Nomor run tidak berurutan karena beberapa branch berbagi penomoran GitHub. Urutannya
+    // waktu selesai, terbaru di atas, dan itu dikatakan supaya tidak terbaca sebagai acak.
     isi($('history'), daftar.length
       ? [
+        el('p', { class: 'note', text: 'Terbaru di atas, menurut waktu selesai.' }),
         ...daftar.slice(0, 12).map((e) => {
           const j = e.jumlah ?? {};
           const tot = SEG_RIWAYAT.reduce((s, [k]) => s + (j[k] ?? 0), 0);
@@ -1520,12 +1525,14 @@
         state.sibuk = false;
         state.pantau = null;
         await muatIndex(run.id);
-        perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.${state.hasil?.run?.gemini?.status === 'gagal' ? ' Analisis LLM gagal, lihat catatan di daftar temuan.' : ''}`));
+        const llmGagal = (state.hasil?.run?.status_panggilan?.error ?? 0) > 0 || state.hasil?.run?.gemini?.status === 'gagal';
+        perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.${llmGagal ? ' Panggilan LLM gagal, lihat catatan di daftar temuan.' : ''}`));
         return;
       }
       await tunggu(JEDA_HASIL);
     }
-    throw new GhError('invalid', `Run #${run.run_number} selesai tetapi hasilnya belum ada di branch security-results. Lihat log job "Gabung dan terbitkan hasil" di GitHub.`);
+    const jobTerbit = jalur === 'v2' ? 'Analisis LLM v2 (deteksi dan verifikasi)' : 'Gabung dan terbitkan hasil';
+    throw new GhError('invalid', `Run #${run.run_number} selesai tetapi hasilnya belum ada di branch security-results. Lihat log job "${jobTerbit}" di GitHub.`);
   };
 
   // ---------- Mulai ----------
