@@ -773,7 +773,7 @@
     $('pipeline-box').hidden = false;
     $('run-title').textContent = '';
     isi($('crumb'));
-    isi($('history'));
+    isi($('history'), el('p', { class: 'note', text: 'Belum ada run di branch ini.' }));
     renderPipeline();
     $('summary').hidden = true;
     isi($('filters'));
@@ -791,9 +791,20 @@
         : 'Hasil eksperimen branch ini tersimpan di folder hasil-eksperimen/ pada branch itu, bukan di security-results. Buka mode demo untuk melihatnya di dashboard.';
       if (!state.demo) aksi = el('button', { class: 'btn btn-sm btn-line', type: 'button', text: 'Buka mode demo', onclick: () => masukDemo() });
     } else {
-      judul = 'Belum ada run untuk branch ini';
-      const jobTerakhir = nodeJalur(jalurTerpilih()).slice(-1)[0].nama;
-      teks = alasanTidakBisa() ?? `Tekan Jalankan analisis untuk membuat run pertama. Hasilnya muncul di sini setelah job ${jobTerakhir} selesai.`;
+      // Judul harus sesuai sebabnya. "Belum ada run untuk branch ini" dengan badan "repo ini belum
+      // punya devsecops.yml" saling bertentangan: yang pertama soal riwayat, yang kedua soal izin
+      // menjalankan. Dan kalau memang tidak bisa dijalankan, panel pipeline yang semua nodenya
+      // "menunggu" hanya menjanjikan sesuatu yang tidak akan terjadi.
+      const terhalang = alasanTidakBisa();
+      if (terhalang) {
+        judul = 'Belum bisa menjalankan analisis di sini';
+        teks = terhalang;
+        $('pipeline-box').hidden = true;
+      } else {
+        judul = 'Belum ada run untuk branch ini';
+        const jobTerakhir = nodeJalur(jalurTerpilih()).slice(-1)[0].nama;
+        teks = `Tekan Jalankan analisis untuk membuat run pertama. Hasilnya muncul di sini setelah job ${jobTerakhir} selesai.`;
+      }
     }
     isi($('findings-body'), el('div', { class: 'state' }, el('h3', { text: judul }), el('p', { text: teks }), aksi));
   };

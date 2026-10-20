@@ -649,7 +649,17 @@ nav:has(.projects:empty) { display: none; }
 .tabel-bungkus:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 table.eks { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.8125rem; }
 table.eks th, table.eks td { padding: var(--s-2) var(--s-3); text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
-table.eks th { font-weight: 600; color: var(--ink-2); background: var(--paper-2); }
+/* Kepala kolom dan kolom jangkar boleh membungkus. Sejak nama model dipakai apa adanya
+   ("Gemini 3.1 Pro Preview" menggantikan "google"), menahannya satu baris melebarkan tabel jauh
+   melampaui layar dan menyisakan sedikit ruang untuk angkanya. Angka tetap tidak membungkus. */
+table.eks th { font-weight: 600; color: var(--ink-2); background: var(--paper-2); white-space: normal; }
+table.eks th:not(:first-child) { min-width: 5rem; }
+/* Kolom jangkar: cukup lebar untuk memuat nama model satu baris, tidak lebih. Terlalu sempit
+   membuat tiap nama pecah tiga baris dan barisnya menjulang. */
+table.eks td:first-child, table.eks th:first-child { white-space: normal; min-width: 6rem; max-width: 12rem; }
+@media (max-width: 40rem) {
+  table.eks td:first-child, table.eks th:first-child { max-width: 10rem; }
+}
 /* Kolom pertama menempel: tanpa itu, menggeser ke kanan membuat angka kehilangan identitas barisnya. */
 table.eks th:first-child, table.eks td:first-child {
   position: sticky; left: 0; z-index: 1; background: var(--paper);
