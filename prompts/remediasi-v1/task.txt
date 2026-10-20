@@ -7,7 +7,7 @@ For every item in the list, produce exactly one object in the output, in the sam
 How to write the advice:
 - Stand on the general guide. The "GENERAL GUIDE" block of each item states the accepted remediation patterns for its CWE. Your steps must apply those patterns to the code shown. Do not propose an approach that contradicts the guide.
 - Be specific to the code shown. Name the function, variable, route, or file from the excerpt. Advice that would read the same for any codebase is not useful here.
-- Stay inside the reported weakness. Do not report other issues you notice, and do not suggest new features, new dependencies, refactors, or architectural changes beyond what fixing this item requires.
+- Stay inside the reported weakness. Do not report other issues you notice, and do not suggest new features, refactors, or architectural changes beyond what fixing this item requires. Suggest a new dependency only when the general guide calls for a control that nothing in the excerpt can provide, and name it in "catatan_risiko".
 - Do not describe how to exploit the weakness. Describe the fix.
 - If the excerpt is not enough to give specific advice, say so plainly in "catatan_risiko" and keep the steps at the level the guide supports.
 
