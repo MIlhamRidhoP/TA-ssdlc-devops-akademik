@@ -18,7 +18,7 @@ on:
         options: [auto, sast, sast-llm]
         default: auto
       model:
-        description: 'Model untuk jalur v1 (mode sast-llm). Daftar sahnya ada di dashboard/models.json.'
+        description: 'Model untuk jalur v1 (mode sast-llm; diabaikan di jalur v2). Daftar sahnya ada di dashboard/models.json.'
         type: choice
         options: [gemini-3.8-flash, gemini-3.1-pro-preview]
         default: gemini-3.8-flash
@@ -52,6 +52,23 @@ on:
 permissions:
   contents: read
 
+# Versi action dipin ke tag mayor, mengikuti gaya repo ini. Semuanya sudah memakai runs.using:
+# node24; versi v4/v5 lama berjalan di Node 20 dan SonarSource/sonarqube-scan-action@v5 ditandai
+# GitHub mengandung kerentanan. Perubahan antarversi yang relevan untuk workflow ini:
+#   - actions/checkout v5-v7: hanya memblokir checkout fork pada pull_request_target dan
+#     workflow_run (tidak dipakai di sini). https://github.com/actions/checkout/releases
+#   - actions/setup-node v7: migrasi ESM dan NODE_AUTH_TOKEN tiruan dihapus; input node-version dan
+#     cache tidak berubah. https://github.com/actions/setup-node/releases
+#   - actions/upload-artifact v7: tambahan input archive; name, path, retention-days,
+#     if-no-files-found tetap. https://github.com/actions/upload-artifact/releases
+#   - actions/download-artifact v8: digest-mismatch kini gagal secara bawaan dan berkas non-zip
+#     tidak lagi otomatis diekstrak; input name dan path tetap.
+#     https://github.com/actions/download-artifact/releases
+#   - SonarSource/sonarqube-scan-action v6: action ditulis ulang ke JavaScript sehingga `args` tidak
+#     lagi diurai dengan sintaks bash penuh; argumen -D... di bawah tanpa spasi, jadi tetap sah.
+#     https://github.com/SonarSource/sonarqube-scan-action/releases/tag/v6.0.0
+#     v8: skipSignatureVerification kembali ke false, jadi binari scanner diverifikasi OpenPGP.
+#     https://github.com/SonarSource/sonarqube-scan-action#readme
 jobs:
   build-test:
     name: Build dan uji API
@@ -60,10 +77,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -147,7 +164,7 @@ jobs:
       commit_tree_src: ${{ steps.siap.outputs.commit_tree_src }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -161,8 +178,15 @@ jobs:
       # jadi gate merah tidak boleh menghentikan pipeline. Konsekuensinya, langkah ini juga menelan
       # kegagalan analisis yang sesungguhnya, sehingga result job tidak cukup jadi bukti. Langkah
       # berikutnya yang memisahkan "gate merah" dari "analisis tidak jadi".
+      #
+      # Paket Free SonarCloud hanya menganalisis branch main
+      # (https://docs.sonarsource.com/sonarqube-cloud/enriching/branch-analysis), sehingga scan di
+      # branch lain selalu berakhir "Organization is not allowed to access data from non main
+      # branches" (exit 3). Kalau jalur v2 memang sudah memilih analisis main lewat sonar_branch_v2,
+      # scan itu tidak dipakai siapa pun: dilewati supaya tidak ada anotasi merah tanpa sebab.
       - name: SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        if: inputs.sonar_branch_v2 != 'main' || github.ref_name == 'main'
+        uses: SonarSource/sonarqube-scan-action@v8
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -172,11 +196,15 @@ jobs:
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
 
-      # Paket Free SonarCloud hanya menganalisis branch main
-      # (https://docs.sonarsource.com/sonarqube-cloud/enriching/branch-analysis).
-      # Pada dispatch di branch lain, langkah scan di atas memang gagal; itu bukan pipeline rusak.
+      - name: Jelaskan mengapa scan dilewati
+        if: inputs.sonar_branch_v2 == 'main' && github.ref_name != 'main'
+        run: |
+          echo "::notice::Scan SonarCloud dilewati dengan sengaja. Branch $GITHUB_REF_NAME bukan main dan paket Free hanya menganalisis main, sedangkan input sonar_branch_v2=main berarti jalur v2 memakai analisis main yang sudah ada. Kecocokan datanya tetap dijamin pemeriksaan hash tree src/ pada langkah berikutnya, bukan oleh scan ini."
+
+      # Dispatch mode=sast di branch non-main: scan tetap dijalankan seperti sebelumnya dan memang
+      # gagal di paket Free. continue-on-error menahannya, notice ini menjelaskan sebabnya.
       - name: Catat scan branch non-main yang memang gagal di paket Free
-        if: github.ref_name != 'main'
+        if: github.ref_name != 'main' && inputs.sonar_branch_v2 != 'main'
         run: |
           echo "::notice::Branch $GITHUB_REF_NAME bukan main. Paket Free SonarCloud hanya menganalisis main, jadi scan branch ini wajar gagal dan sengaja tidak menggagalkan pipeline. Jalur v2 dapat memakai input sonar_branch_v2=main; kecocokan datanya dijamin pemeriksaan hash tree src/."
 
@@ -241,10 +269,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -288,7 +316,7 @@ jobs:
 
       - name: Unggah output analisis
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gemini-output-${{ github.run_id }}
           path: gemini-output/
@@ -329,7 +357,7 @@ jobs:
           exit 1
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # actions/checkout memakai fetch-depth 1, jadi revisi analisis Sonar (yang berasal dari branch
       # lain, mis. main) tidak ikut terbawa. llm-scan membutuhkannya untuk membandingkan hash tree
@@ -368,7 +396,7 @@ jobs:
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -449,7 +477,7 @@ jobs:
 
       - name: Unggah output v2
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: llm-v2-${{ github.run_id }}
           path: |
@@ -484,7 +512,14 @@ jobs:
   hasil:
     name: Gabung dan terbitkan hasil
     needs: [rencana, build-test, sonarcloud, analisis]
-    if: always() && (needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm')
+    # Seluruh job ini melayani skema 1: mengunduh artifact gemini-output, menggabungnya, lalu
+    # menerbitkannya. Di jalur v2 artifact itu tidak pernah dibuat (job analisis dilewati), sehingga
+    # unduhannya berakhir "Artifact not found", dan penerbitannya akan menjadi penerbitan KEDUA yang
+    # menimpa hasil skema 2 dari job analisis-v2. Karena itu job ini dilewati seluruhnya di jalur v2,
+    # dan analisis-v2 menjadi satu-satunya penerbit ke branch security-results.
+    if: >-
+      always() && inputs.jalur != 'v2'
+      && (needs.rencana.outputs.mode == 'sast' || needs.rencana.outputs.mode == 'sast-llm')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Satu-satunya job yang boleh menulis: commit results.json ke branch security-results.
@@ -496,16 +531,16 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
       - name: Unduh output analisis
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: gemini-output-${{ github.run_id }}
           path: gemini-output
@@ -528,7 +563,7 @@ jobs:
         run: node scripts/merge-results.js merge --input=gemini-output --out=results.json --summary="$GITHUB_STEP_SUMMARY"
 
       - name: Unggah results.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: security-results-${{ github.run_id }}
           path: results.json
