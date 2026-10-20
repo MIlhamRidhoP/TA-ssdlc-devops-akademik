@@ -84,9 +84,12 @@
     --ink: oklch(91% 0.014 254);
 
     --accent: oklch(72% 0.15 258);
-    --accent-kuat: oklch(62% 0.2 262);
+    /* Tombol primer: isi biru terang dengan teks biru tua, seperti pasangan
+       primary-container/on-primary-container di desain. Isi pekat dengan teks putih
+       hanya mencapai 3,8:1 di atas kanvas gelap. */
+    --accent-kuat: oklch(76% 0.14 258);
     --accent-soft: oklch(34% 0.08 262);
-    --accent-ink: oklch(100% 0 0);
+    --accent-ink: oklch(22% 0.1 262);
     --focus: oklch(72% 0.15 258);
 
     --crit: oklch(72% 0.16 24);
@@ -124,9 +127,12 @@
   --ink: oklch(91% 0.014 254);
 
   --accent: oklch(72% 0.15 258);
-  --accent-kuat: oklch(62% 0.2 262);
+  /* Tombol primer: isi biru terang dengan teks biru tua, seperti pasangan
+     primary-container/on-primary-container di desain. Isi pekat dengan teks putih
+     hanya mencapai 3,8:1 di atas kanvas gelap. */
+  --accent-kuat: oklch(76% 0.14 258);
   --accent-soft: oklch(34% 0.08 262);
-  --accent-ink: oklch(100% 0 0);
+  --accent-ink: oklch(22% 0.1 262);
   --focus: oklch(72% 0.15 258);
 
   --crit: oklch(72% 0.16 24);
@@ -207,6 +213,9 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .btn-icon { width: 2.25rem; padding: 0; }
 .btn-icon .icon { width: 1.125rem; height: 1.125rem; }
 .btn-line { border-color: var(--accent); color: var(--accent); }
+.btn-utama { background: var(--accent-kuat); border-color: var(--accent-kuat); color: var(--accent-ink); font-weight: 600; }
+@media (hover: hover) { .btn-utama:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--accent-kuat); } }
+.btn-utama:disabled { background: var(--paper-3); border-color: var(--rule); color: var(--muted); opacity: 1; }
 .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .btn-text { border: 0; padding: 0; min-height: 2.25rem; background: none; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; }
 
@@ -315,19 +324,43 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .banner[data-kind="info"] { border-style: solid; background: var(--accent-soft); color: var(--ink); }
 .banner p { max-width: 80ch; }
 
-/* Kepala run */
+/* Kepala run: remah jejak, judul besar, lencana status, lalu sebaris chip metadata. */
 .sheet-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
-.crumb { font-size: 0.875rem; color: var(--muted); overflow-wrap: anywhere; }
-.crumb a { color: inherit; }
-.run-title { font-size: clamp(1.5rem, 1.15rem + 1.2vw, 1.75rem); line-height: 1.15; margin-top: var(--s-1); }
-.title-block {
-  display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin: 0;
-  padding-top: var(--s-3); border-top: 1px solid var(--rule);
+.sheet-atas { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.sheet-judul { display: grid; gap: var(--s-1); min-width: 0; }
+.crumb {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s-2);
+  font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); overflow-wrap: anywhere;
 }
-.title-block > div { display: flex; gap: var(--s-2); align-items: baseline; min-width: 0; }
-.title-block dt { font-size: 0.8125rem; color: var(--muted); }
-.title-block dd { color: var(--ink); overflow-wrap: anywhere; }
-.title-block dd.warn { color: var(--high); font-weight: 500; }
+.crumb a { color: inherit; }
+.crumb-pisah { color: var(--muted); }
+.run-title { font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2rem); line-height: 1.2; letter-spacing: -0.02em; }
+.run-status:empty { display: none; }
+
+/* Lencana status: titik berwarna selalu ditemani teks, tidak pernah warna saja. */
+.lencana {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  font-family: var(--font-data); font-size: 0.75rem; letter-spacing: 0.02em;
+  padding: 0.15rem var(--s-2); border-radius: var(--radius-chip); border: 1px solid;
+}
+.lencana i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor; flex: none; }
+.lencana.l-ok { color: var(--ok); background: var(--ok-soft); border-color: var(--ok-rule); }
+.lencana.l-crit { color: var(--crit); background: var(--crit-soft); border-color: var(--crit-rule); }
+.lencana.l-high { color: var(--high); background: var(--high-soft); border-color: var(--high-rule); }
+.lencana.l-netral { color: var(--netral); background: var(--netral-soft); border-color: var(--netral-rule); }
+
+/* Chip metadata run: kotak bergaris tipis berisi ikon, label, dan nilai. */
+.title-block { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; }
+.meta-chip {
+  display: flex; align-items: center; gap: var(--s-2); min-width: 0;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule); border-radius: var(--radius-ctl); background: var(--paper-2);
+}
+.meta-chip .icon { color: var(--muted); }
+.meta-chip dt { font-size: 0.8125rem; color: var(--muted); }
+.meta-chip dd { color: var(--ink); overflow-wrap: anywhere; font-weight: 500; }
+.meta-chip.warn { border-color: var(--high-rule); background: var(--high-soft); }
+.meta-chip.warn dd, .meta-chip.warn .icon { color: var(--high); }
 
 /* ---------- Form jalankan analisis ---------- */
 

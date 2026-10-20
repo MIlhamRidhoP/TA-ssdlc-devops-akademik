@@ -105,6 +105,12 @@
     gelap: 'M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z',
     seru: ['M8 3.5v5.5', 'M8 12h.01'],
     panah: 'M6 3.5l5 4.5-5 4.5',
+    jam: ['M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11z', 'M8 5v3.2l2 1.3'],
+    commit: ['M8 5.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z', 'M8 2v3.5', 'M8 10.5V14'],
+    biaya: ['M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11z', 'M9.8 6.2A2 2 0 0 0 6.4 7.4c0 1.9 3.2 1 3.2 2.9A2 2 0 0 1 6.2 9.8', 'M8 4.6v6.8'],
+    panggilan: ['M14 8A6 6 0 1 1 8 2', 'M5.6 7.9l1.9 1.9L14 3.3'],
+    asal: ['M2.5 3.5h11v9h-11z', 'M2.5 6.2h11'],
+    bolt: 'M8.8 2.2L4.4 8.7h3l-.4 5.1 4.4-6.5h-3z',
     // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
     padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
     nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
@@ -758,6 +764,8 @@
     isi($('alerts-body'));
     isi($('filters'));
     isi($('title-block'));
+    isi($('run-status'));
+    $('run-status').hidden = true;
     state.tab = 'operasional';
   };
 
@@ -870,16 +878,33 @@
   // salah, dan pembaca kehilangan jejak run mana di Actions yang menghasilkannya.
   const asalRun = (r) => {
     if (r.asal === 'cli') {
-      return el('div', {}, el('dt', { text: 'Asal' }),
-        el('dd', { title: 'Run ini tidak dipicu lewat GitHub Actions, jadi tidak ada status job.' }, 'dijalankan dari CLI'));
+      return el('div', { class: 'meta-chip', title: 'Run ini tidak dipicu lewat GitHub Actions, jadi tidak ada status job.' },
+        ikon(IKON.asal), el('dt', { text: 'Asal' }), el('dd', {}, 'dijalankan dari CLI'));
     }
     if (r.asal !== 'workflow') return null;
     const p = state.proyek;
     const tautan = r.repo && !p.demo_tanpa_workflow
       ? el('a', { href: urlGithub(p.owner, p.repo, 'actions', 'runs', String(r.id)), target: '_blank', rel: 'noopener noreferrer' }, `run #${r.nomor}`, ' ', ikon(IKON.luar))
       : `run #${r.nomor}`;
-    return el('div', {}, el('dt', { text: 'Asal' }),
-      el('dd', { title: 'Status tiap job hanya bisa dibaca lewat GitHub API, jadi butuh token.' }, 'GitHub Actions ', tautan));
+    return el('div', { class: 'meta-chip', title: 'Status tiap job hanya bisa dibaca lewat GitHub API, jadi butuh token.' },
+      ikon(IKON.asal), el('dt', { text: 'Asal' }), el('dd', {}, 'GitHub Actions ', tautan));
+  };
+
+  // Pemisah remah jejak dibuat sebagai elemen sendiri supaya tidak ikut terbaca pembaca layar
+  // sebagai bagian nama branch.
+  const pemisahCrumb = () => el('span', { class: 'crumb-pisah', 'aria-hidden': 'true' }, '\u203a');
+
+  // Status run yang jujur: satu-satunya yang kita tahu dari berkas hasil adalah apakah ada
+  // panggilan yang gagal. Status job pipeline tidak ada di sini, jadi tidak diklaim.
+  const renderStatusRun = (r) => {
+    const sp = r.status_panggilan ?? null;
+    const gagal = (sp?.error ?? 0) > 0 || (sp?.parse_gagal ?? 0) > 0 || (sp?.refusal ?? 0) > 0;
+    const n = $('run-status');
+    if (!sp) { isi(n); n.hidden = true; return; }
+    n.hidden = false;
+    isi(n, el('span', { class: `lencana ${gagal ? 'l-crit' : 'l-ok'}` },
+      el('i', { 'aria-hidden': 'true' }),
+      gagal ? 'Selesai dengan panggilan gagal' : 'Selesai'));
   };
 
   const renderKepalaV2 = (adaPipeline = true) => {
@@ -888,24 +913,28 @@
     const repoLink = p.demo_tanpa_workflow || !r.repo
       ? el('span', { text: `${p.owner} / ${p.repo}` })
       : el('a', { href: urlGithub(p.owner, p.repo), target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` });
-    isi($('crumb'), repoLink, ` / ${r.objek_uji.branch ?? state.branch.name}`, ` · selesai ${waktu(r.selesai)}`);
+    isi($('crumb'), repoLink, pemisahCrumb(), r.objek_uji.branch ?? state.branch.name, pemisahCrumb(), `Run #${r.nomor}`);
     $('run-title').textContent = `Run #${r.nomor} · ${labelVendor(r.vendor)} · ${state.hasil.alerts.length} alert · ${state.hasil.findings.length} temuan`;
+    renderStatusRun(r);
 
-    const sel = (label, nilai, opsi = {}) => el('div', {}, el('dt', { text: label }),
-      el('dd', { class: [opsi.data ? 'data' : '', opsi.warn ? 'warn' : ''].join(' ').trim() || null, title: opsi.title }, nilai));
+    const sel = (label, nilai, opsi = {}) => el('div', { class: `meta-chip${opsi.warn ? ' warn' : ''}`, title: opsi.title },
+      opsi.ikon ? ikon(opsi.ikon) : null,
+      el('dt', { text: label }),
+      el('dd', { class: opsi.data ? 'data' : null }, nilai));
     const bedaModel = r.model_menjawab && r.model_menjawab !== r.model_diminta;
     // status_panggilan dan biaya_usd opsional di skema; berkas sah tanpa keduanya tidak boleh merusak render.
     const sp = r.status_panggilan ?? null;
     const commit = el('span', { text: pendek(r.objek_uji.commit) });
     isi($('title-block'),
-      sel('Model menjawab', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
+      sel('Model', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
+        ikon: IKON.bolt,
         warn: bedaModel,
         title: bedaModel ? `${r.model_menjawab}, padahal yang diminta ${r.model_diminta}` : (r.model_menjawab ?? r.model_diminta),
       }),
-      sel('Objek uji', commit, { data: true, title: r.objek_uji.commit }),
-      sel('Durasi', durasi(r.durasi_detik), { data: true }),
-      sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true }),
-      sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, warn: Boolean(sp) && sp.ok !== sp.total }),
+      sel('Commit', commit, { data: true, ikon: IKON.commit, title: `Objek uji ${r.objek_uji.commit}` }),
+      sel('Durasi', durasi(r.durasi_detik), { data: true, ikon: IKON.jam }),
+      sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true, ikon: IKON.biaya }),
+      sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, ikon: IKON.panggilan, warn: Boolean(sp) && sp.ok !== sp.total }),
       adaPipeline ? null : asalRun(r));
   };
 

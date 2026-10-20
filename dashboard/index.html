@@ -93,12 +93,15 @@
 
       <div class="workspace" id="workspace" hidden>
         <header class="sheet-head">
-          <div>
-            <p class="crumb" id="crumb"></p>
-            <h1 class="run-title" id="run-title"></h1>
+          <div class="sheet-atas">
+            <div class="sheet-judul">
+              <p class="crumb" id="crumb"></p>
+              <h1 class="run-title" id="run-title"></h1>
+              <p class="run-status" id="run-status"></p>
+            </div>
+            <button class="btn btn-utama" type="button" id="buka-drawer" aria-haspopup="dialog" aria-expanded="false">Jalankan analisis</button>
           </div>
           <dl class="title-block" id="title-block" aria-label="Identitas run"></dl>
-          <button class="btn btn-line" type="button" id="buka-drawer" aria-haspopup="dialog" aria-expanded="false">Jalankan analisis</button>
         </header>
 
         <section class="pipeline-box" id="pipeline-box" aria-labelledby="pipeline-h2">
