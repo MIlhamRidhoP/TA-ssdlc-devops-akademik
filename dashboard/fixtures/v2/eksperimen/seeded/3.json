@@ -4,6 +4,7 @@
     "id": 3,
     "nomor": 3,
     "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "asal": "cli",
     "vendor": "openai",
     "model_diminta": "gpt-6.1-sol",
     "model_menjawab": "gpt-6.1-sol",

@@ -205,9 +205,10 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
   `style-src 'self'`, `font-src 'self'`, `connect-src 'self' https://api.github.com`. Satu-satunya
   host luar adalah `api.github.com`; selebihnya dibaca dari folder dashboard sendiri.
 - Tidak ada script maupun font pihak ketiga. Ketiga keluarga font (Hanken Grotesk, Schibsted
-  Grotesk, JetBrains Mono, semuanya SIL Open Font License 1.1) dipasang sendiri di `fonts/` dengan
-  `@font-face` di `fonts.css`, subset latin dan latin-ext. Selain menutup host luar, ini membuat
-  halaman tetap tampil utuh saat jaringan tidak bisa diandalkan.
+  Grotesk, JetBrains Mono) dipasang sendiri di `fonts/` dengan `@font-face` di `fonts.css`, subset
+  latin dan latin-ext. Selain menutup host luar, ini membuat halaman tetap tampil utuh saat
+  jaringan tidak bisa diandalkan. Sumber, pemegang hak cipta, dan teks lengkap SIL Open Font
+  License 1.1 tiap keluarga ada di [`fonts/README.md`](fonts/README.md) dan berkas `fonts/OFL-*.txt`.
 - Semua request API melewati satu fungsi yang menolak host selain `api.github.com`.
 - Path hasil dari `index.json` divalidasi sebelum dipakai.
 

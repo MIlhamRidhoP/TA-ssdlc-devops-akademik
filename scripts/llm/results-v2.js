@@ -85,6 +85,10 @@ const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null
     id: id ?? nomor,
     nomor,
     repo,
+    // Hanya workflow yang meneruskan --id (run id GitHub), jadi keberadaannya adalah penanda asal
+    // yang paling jujur. Tanpa ini dashboard tidak punya cara membedakan run CI dari run CLI,
+    // dan run CI yang pipeline-nya belum tercatat akan dikira dijalankan dari CLI.
+    asal: id ? 'workflow' : 'cli',
     vendor: summary.vendor,
     model_diminta: run.model_diminta ?? summary.model_diminta,
     model_menjawab: d.model_menjawab ?? null,

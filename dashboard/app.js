@@ -865,6 +865,23 @@
   const labelModelId = (id) => (state.models.find((m) => m.jalur === 'v2' && m.id === id)
     ?? state.models.find((m) => m.id === id))?.label ?? id ?? '—';
 
+  // Asal run hanya boleh dinyatakan kalau memang diketahui. Run lewat GitHub Actions yang status
+  // jobnya belum tercatat di berkas hasil pernah dilabeli "dijalankan dari CLI": itu klaim yang
+  // salah, dan pembaca kehilangan jejak run mana di Actions yang menghasilkannya.
+  const asalRun = (r) => {
+    if (r.asal === 'cli') {
+      return el('div', {}, el('dt', { text: 'Asal' }),
+        el('dd', { title: 'Run ini tidak dipicu lewat GitHub Actions, jadi tidak ada status job.' }, 'dijalankan dari CLI'));
+    }
+    if (r.asal !== 'workflow') return null;
+    const p = state.proyek;
+    const tautan = r.repo && !p.demo_tanpa_workflow
+      ? el('a', { href: urlGithub(p.owner, p.repo, 'actions', 'runs', String(r.id)), target: '_blank', rel: 'noopener noreferrer' }, `run #${r.nomor}`, ' ', ikon(IKON.luar))
+      : `run #${r.nomor}`;
+    return el('div', {}, el('dt', { text: 'Asal' }),
+      el('dd', { title: 'Status tiap job hanya bisa dibaca lewat GitHub API, jadi butuh token.' }, 'GitHub Actions ', tautan));
+  };
+
   const renderKepalaV2 = (adaPipeline = true) => {
     const p = state.proyek;
     const r = state.hasil.run;
@@ -889,7 +906,7 @@
       sel('Durasi', durasi(r.durasi_detik), { data: true }),
       sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true }),
       sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, warn: Boolean(sp) && sp.ok !== sp.total }),
-      adaPipeline ? null : sel('Asal', 'dijalankan dari CLI', { title: 'Run ini tidak dipicu lewat GitHub Actions, jadi tidak ada status job.' }));
+      adaPipeline ? null : asalRun(r));
   };
 
   // Kartu dikelompokkan tiga baris berlabel supaya keparahan, proses, dan sumber tidak tercampur.

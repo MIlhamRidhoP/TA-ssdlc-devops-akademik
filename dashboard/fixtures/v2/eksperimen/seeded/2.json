@@ -4,6 +4,7 @@
     "id": 2,
     "nomor": 2,
     "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "asal": "cli",
     "vendor": "anthropic",
     "model_diminta": "claude-sonnet-5-5",
     "model_menjawab": "claude-sonnet-5-5",

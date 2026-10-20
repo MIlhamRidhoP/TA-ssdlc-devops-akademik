@@ -152,3 +152,51 @@ test('kedua langkah penerbitan berhenti saat publish gagal, bukan berakhir hijau
     assert.match(blok, /diff --cached --quiet/);
   }
 });
+
+// Durasi run v2 dan asalnya. Keduanya metadata kecil yang mudah hilang diam-diam dan baru
+// ketahuan setelah run berbayar: durasi dihitung dari panggilan pertama sampai terakhir, dan
+// asal menentukan apakah dashboard boleh menyebut run itu dijalankan dari CLI.
+test('durasi run v2 dihitung dari panggilan pertama sampai terakhir', () => {
+  const { susunHasilV2 } = require('../scripts/llm/results-v2');
+  const dasar = {
+    summary: {
+      vendor: 'google', model_diminta: 'gemini-3.1-pro-preview', kondisi: 'utama',
+      objek_uji: { commit: 'a'.repeat(40), branch: 'feat/prompt-v2', tree_src: 'b'.repeat(40) },
+    },
+    alert: [],
+    parseCwe: () => [],
+  };
+  const run = {
+    deteksi: { waktu_mulai: '2026-10-20T00:52:14.869Z', waktu_selesai: '2026-10-20T00:53:00.000Z' },
+    verifikasi: [{ metadata: { waktu_mulai: '2026-10-20T00:53:01.000Z', waktu_selesai: '2026-10-20T00:55:58.949Z' } }],
+    temuan: [],
+  };
+  const h = susunHasilV2({ ...dasar, run, nomor: 49, id: 39350138907 });
+  assert.equal(h.run.mulai, '2026-10-20T00:52:14.869Z');
+  assert.equal(h.run.selesai, '2026-10-20T00:55:58.949Z');
+  assert.equal(h.run.durasi_detik, 224, 'durasi run #49 yang sebenarnya');
+
+  // Tanpa waktu, durasi null dan bukan angka karangan.
+  const kosong = susunHasilV2({ ...dasar, run: { deteksi: {}, verifikasi: [], temuan: [] }, nomor: 1 });
+  assert.equal(kosong.run.durasi_detik, null);
+});
+
+test('asal run dicatat, supaya run pipeline tidak dilabeli dijalankan dari CLI', () => {
+  const { susunHasilV2 } = require('../scripts/llm/results-v2');
+  const dasar = {
+    summary: {
+      vendor: 'google', model_diminta: 'gemini-3.1-pro-preview', kondisi: 'utama',
+      objek_uji: { commit: 'a'.repeat(40), branch: 'feat/prompt-v2', tree_src: 'b'.repeat(40) },
+    },
+    run: { deteksi: {}, verifikasi: [], temuan: [] },
+    alert: [],
+    parseCwe: () => [],
+  };
+  // --id hanya diteruskan workflow, jadi keberadaannya menandai run CI.
+  assert.equal(susunHasilV2({ ...dasar, nomor: 49, id: 39350138907 }).run.asal, 'workflow');
+  assert.equal(susunHasilV2({ ...dasar, nomor: 3 }).run.asal, 'cli');
+  // Fixture demo memang run CLI, dan dashboard memakainya untuk menyatakan asal.
+  for (const n of [1, 2, 3]) {
+    assert.equal(require(`../dashboard/fixtures/v2/eksperimen/seeded/${n}.json`).run.asal, 'cli');
+  }
+});
