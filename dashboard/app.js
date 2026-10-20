@@ -236,7 +236,10 @@
       case 'ratelimit': return `Batas permintaan GitHub habis. Coba lagi ${err.reset ? `setelah pukul ${fmtJam.format(err.reset)}` : 'beberapa menit lagi'}.`;
       case 'forbidden': return 'GitHub menolak akses (403). Pastikan token punya izin Actions: Read and write dan Contents: Read-only untuk repo ini.';
       case 'notfound': return 'Tidak ditemukan (404). Repo tidak ada, atau token tidak diberi akses ke repo ini.';
-      case 'unprocessable': return 'Workflow menolak permintaan (422). Biasanya devsecops.yml di branch ini belum memuat input mode, model, dan label; perubahan workflow perlu di-push atau di-merge ke branch tersebut.';
+      case 'unprocessable': return ['Workflow menolak permintaan (422).',
+        err.rinci ? `GitHub menyebut: ${err.rinci}.` : null,
+        'Biasanya devsecops.yml di branch tujuan belum memuat input yang dikirim, atau ada nilai di luar daftar opsinya; perubahan workflow perlu di-push atau di-merge ke branch itu.',
+      ].filter(Boolean).join(' ');
       case 'network': return 'Tidak bisa terhubung ke GitHub. Periksa koneksi internet, lalu coba lagi.';
       case 'lokal': case 'format': case 'invalid': return err.message;
       default: return `GitHub mengembalikan galat ${err?.status ?? 'tak dikenal'}. Coba lagi beberapa saat lagi.`;
@@ -267,7 +270,21 @@
     if ((res.status === 403 || res.status === 429) && (sisa === '0' || res.headers.get('retry-after'))) throw new GhError('ratelimit', 'rate', { status: res.status, reset });
     if (res.status === 403) throw new GhError('forbidden', '403', { status: 403 });
     if (res.status === 404) throw new GhError('notfound', '404', { status: 404 });
-    if (res.status === 422) throw new GhError('unprocessable', '422', { status: 422 });
+    // 422 pada dispatch hampir selalu soal input: nama yang tidak dikenal, atau nilai di luar
+    // daftar opsi. GitHub menyebutkan yang mana di body-nya, dan tanpa membacanya pengguna hanya
+    // diberi tebakan. Body dibaca dengan hati-hati: ia tidak selalu JSON, dan kegagalan membacanya
+    // tidak boleh menutupi galat aslinya.
+    if (res.status === 422) {
+      let rinci = null;
+      try {
+        const d = JSON.parse(await res.text());
+        const daftar = Array.isArray(d?.errors)
+          ? d.errors.map((e) => (typeof e === 'string' ? e : e?.message ?? e?.field)).filter(Boolean).join('; ')
+          : '';
+        rinci = [d?.message, daftar].filter(Boolean).join(' — ') || null;
+      } catch { rinci = null; }
+      throw new GhError('unprocessable', '422', { status: 422, rinci });
+    }
     throw new GhError('server', String(res.status), { status: res.status });
   };
 
@@ -2754,7 +2771,16 @@
     } catch (err) {
       if (pantau.batal) return;
       state.sibuk = false;
-      perbaruiTombolJalankan(pesanGalat(err), 'error');
+      const pesan = pesanGalat(err);
+      perbaruiTombolJalankan(pesan, 'error');
+      // #run-hint hidup DI DALAM drawer, dan drawer sudah ditutup beberapa baris di atas supaya
+      // graf pipeline terlihat. Jadi menulis galat ke sana saja berarti menulisnya ke tempat yang
+      // tidak dilihat siapa pun: dispatch yang ditolak 422 tampak seolah tidak terjadi apa-apa.
+      // Banner adalah satu-satunya tempat yang pasti terlihat di semua tampilan.
+      tampilBanner('error', `Run tidak jadi dijalankan. ${pesan}`, {
+        label: 'Buka drawer lagi',
+        fn: () => { tutupBanner('error'); bukaDrawer(); },
+      });
       return;
     }
   };
@@ -2779,6 +2805,39 @@
     const arsip = state.proyek.branches.find((b) => !b.dispatch);
     perbaruiTombolJalankan(el('span', {}, 'Simulasi selesai. Mode demo tidak membuat hasil baru. ',
       arsip ? el('button', { class: 'btn-text', type: 'button', text: `Lihat contoh hasil di ${arsip.name}`, onclick: () => { state.branch = arsip; renderRailBranch(); muatIndex(); } }) : null));
+  };
+
+  // Satu-satunya tempat yang menyusun isi dispatch. Dipisahkan sebagai fungsi murni supaya bisa
+  // diuji langsung terhadap daftar input dan daftar opsi di .github/workflows/devsecops.yml, tanpa
+  // browser dan tanpa menyentuh GitHub.
+  //
+  // Aturan yang paling mudah dilanggar ada di sini: input `model` adalah choice berisi daftar model
+  // JALUR V1 saja. Jalur v2 memilih vendornya lewat vendor_v2 dan tidak mengirim `model` sama
+  // sekali. Mengirim id model v2 ke input itu membuat GitHub menolak SELURUH dispatch dengan 422
+  // sebelum satu pun job berjalan; pernah terjadi untuk anthropic dan openai, yang id modelnya
+  // memang tidak ada di daftar v1.
+  const susunInputDispatch = ({
+    mode, jalur, skenario, label, model, vendor, gabungan,
+    rekomendasiAi, vendorRekomendasi, sonarBranch,
+  }) => {
+    const inputs = { mode, label, jalur, skenario };
+    if (jalur !== 'v2') {
+      inputs.model = model;
+      return inputs;
+    }
+    // rekomendasi_ai hanya berarti di jalur v2: langkah remediasi hidup di job terbit-v2.
+    // Mengirimnya di jalur v1 cuma menambah input yang tidak pernah dibaca siapa pun.
+    Object.assign(inputs, {
+      vendor_v2: gabungan ? 'gabungan' : vendor,
+      konfirmasi_v2: 'JALANKAN',
+      sonar_branch_v2: sonarBranch,
+      rekomendasi_ai: Boolean(rekomendasiAi),
+    });
+    // Workflow mengabaikan input ini di mode tunggal maupun saat rekomendasi tidak diminta.
+    // Mengirimnya hanya saat berarti membuat body dispatch bisa dibaca sebagai catatan apa yang
+    // sebenarnya diminta, bukan sebagai daftar input yang sebagian tidak berpengaruh.
+    if (gabungan && inputs.rekomendasi_ai) inputs.vendor_rekomendasi = vendorRekomendasi;
+    return inputs;
   };
 
   // Paket Free SonarCloud hanya menganalisis main, jadi run di branch lain memakai analisis main.
@@ -2808,28 +2867,21 @@
     // hanya tersembunyi, nilainya masih utuh, dan baru di-reset saat drawer dibuka lagi.
     const skenario = skenarioTerpilih();
     const gabungan = modeModelTerpilih() === 'gabungan';
-    const inputs = { mode, model, label, jalur, skenario };
-    if (jalur === 'v2') {
-      // Mode gabungan tidak memilih satu model, jadi id modelnya tidak perlu dikenali. Mode tunggal
-      // harus: id yang tidak ada di daftar membuat job gagal pada langkah validasinya.
-      const m = gabungan ? null : modelJalur().find((x) => x.id === model);
-      if (!gabungan && !m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
-      // rekomendasi_ai hanya berarti di jalur v2: langkah remediasi hidup di job terbit-v2.
-      // Mengirimnya di jalur v1 cuma menambah input yang tidak pernah dibaca siapa pun.
-      Object.assign(inputs, {
-        vendor_v2: gabungan ? 'gabungan' : m.vendor,
-        konfirmasi_v2: 'JALANKAN',
-        sonar_branch_v2: sonarBranchV2(branch),
-        rekomendasi_ai: $('f-rekomendasi').checked,
-      });
-      // Workflow mengabaikan input ini di mode tunggal maupun saat rekomendasi tidak diminta.
-      // Mengirimnya hanya saat berarti membuat body dispatch bisa dibaca sebagai catatan apa yang
-      // sebenarnya diminta, bukan sebagai daftar input yang sebagian tidak berpengaruh.
-      if (gabungan && inputs.rekomendasi_ai) {
-        inputs.vendor_rekomendasi = vendorRekomendasiTerpilih()?.vendor ?? 'google';
-      }
-    }
-    if (!model) throw new GhError('invalid', 'Daftar model tidak terbaca dari models.json. Muat ulang dashboard lalu coba lagi.');
+    // Mode gabungan tidak memilih satu model, jadi id modelnya tidak perlu dikenali. Mode tunggal
+    // harus: id yang tidak ada di daftar berarti daftar modelnya rusak, dan itu lebih baik
+    // ketahuan di sini daripada jadi dispatch yang ditolak GitHub.
+    const m = (jalur === 'v2' && !gabungan) ? modelJalur().find((x) => x.id === model) : null;
+    if (jalur === 'v2' && !gabungan && !m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
+    if (jalur !== 'v2' && !model) throw new GhError('invalid', 'Daftar model tidak terbaca dari models.json. Muat ulang dashboard lalu coba lagi.');
+
+    const inputs = susunInputDispatch({
+      mode, jalur, skenario, label, model,
+      vendor: m?.vendor ?? null,
+      gabungan,
+      rekomendasiAi: $('f-rekomendasi').checked,
+      vendorRekomendasi: vendorRekomendasiTerpilih()?.vendor ?? 'google',
+      sonarBranch: sonarBranchV2(branch),
+    });
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
     perbaruiTombolJalankan('Permintaan diterima. Menunggu GitHub membuat run…');
 
