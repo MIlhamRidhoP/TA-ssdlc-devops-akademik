@@ -33,6 +33,8 @@
   --src-sonar: oklch(52% 0.14 300);
   --src-gemini: oklch(54% 0.2 256);
   --src-both: oklch(52% 0.1 195);
+  /* Bayangan tepi wadah guliran: di tema gelap, bayangan hitam tidak terlihat di atas latar gelap. */
+  --bayang-tepi: oklch(0% 0 0 / 0.18);
 
   --font-body: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-head: "Schibsted Grotesk", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -83,6 +85,7 @@
     --src-sonar: oklch(76% 0.11 300);
     --src-gemini: oklch(74% 0.14 256);
     --src-both: oklch(78% 0.09 195);
+    --bayang-tepi: oklch(0% 0 0 / 0.5);
     color-scheme: dark;
   }
 }
@@ -112,6 +115,7 @@
   --src-sonar: oklch(76% 0.11 300);
   --src-gemini: oklch(74% 0.14 256);
   --src-both: oklch(78% 0.09 195);
+  --bayang-tepi: oklch(0% 0 0 / 0.5);
   color-scheme: dark;
 }
 
@@ -590,10 +594,33 @@ nav:has(.projects:empty) { display: none; }
 .eks-blok > h3 { font-size: 1.0625rem; margin: 0 0 var(--s-2); }
 .eks-ket { font-size: 0.8125rem; color: var(--ink-2); margin: 0 0 var(--s-3); line-height: 1.55; }
 .eks-sumber { font-size: 0.75rem; color: var(--muted); margin-top: var(--s-2); }
-.tabel-bungkus { overflow-x: auto; }
-table.eks { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
+/* Tabel eksperimen lebih lebar dari layar pada lebar mana pun. Yang membuatnya terbaca bukan
+   memaksanya muat, melainkan: kolom pertama tetap di tempat sebagai jangkar, bayangan di tepi
+   yang menandakan masih ada kolom lain, dan satu kalimat yang mengatakannya. */
+.tabel-kotak { display: grid; gap: var(--s-2); }
+.tabel-geser { margin: 0; }
+.tabel-bungkus {
+  overflow-x: auto; background: var(--paper);
+  background-image:
+    linear-gradient(to right, var(--paper) 40%, transparent),
+    linear-gradient(to left, var(--paper) 40%, transparent),
+    linear-gradient(to right, var(--bayang-tepi), transparent),
+    linear-gradient(to left, var(--bayang-tepi), transparent);
+  background-position: left center, right center, left center, right center;
+  background-size: 2.5rem 100%, 2.5rem 100%, 0.75rem 100%, 0.75rem 100%;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}
+.tabel-bungkus:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+table.eks { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.8125rem; }
 table.eks th, table.eks td { padding: var(--s-2) var(--s-3); text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
 table.eks th { font-weight: 600; color: var(--ink-2); background: var(--paper-2); }
+/* Kolom pertama menempel: tanpa itu, menggeser ke kanan membuat angka kehilangan identitas barisnya. */
+table.eks th:first-child, table.eks td:first-child {
+  position: sticky; left: 0; z-index: 1; background: var(--paper);
+  border-right: 1px solid var(--rule);
+}
+table.eks th:first-child { z-index: 2; background: var(--paper-2); }
 table.eks td.num { font-family: var(--font-data); }
 table.eks tr:last-child td { border-bottom: 0; }
 .eks-pilih { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-bottom: var(--s-3); }

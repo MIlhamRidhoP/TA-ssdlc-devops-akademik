@@ -126,6 +126,10 @@
   };
   const waktu = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? fmtWaktu.format(t) : '—'; };
   const pendek = (sha, n = 7) => (typeof sha === 'string' ? sha.slice(0, n) : '—');
+  // Path file hanya boleh patah di garis miring. Dengan overflow-wrap bebas, "nilaiController.js"
+  // terbaca "nilaiC / ontroller.js" dan pembaca salah menyimpulkan lokasi temuan.
+  const teksPath = (file) => String(file).split('/').flatMap((bagian, i, semua) => (i < semua.length - 1 ? [`${bagian}/`, el('wbr')] : [bagian]));
+  const teksLokasi = (file, baris) => (file ? [...teksPath(file), `:${baris ?? '?'}`] : ['—']);
   const urlGithub = (owner, repo, ...seg) => `https://github.com/${enc(owner)}/${enc(repo)}${seg.length ? `/${seg.map(enc).join('/')}` : ''}`;
 
   // ---------- State ----------
@@ -942,7 +946,7 @@
           },
         },
         el('span', { class: 'fid', text: a.id }),
-        el('span', { class: 'ftitle', text: a.file ? `${a.file}:${a.baris ?? '?'}` : (a.rule ?? '—') }),
+        el('span', { class: 'ftitle' }, a.file ? teksLokasi(a.file, a.baris) : (a.rule ?? '—')),
         el('span', { class: 'chip chip-sev', title: 'Severity apa adanya dari SonarCloud, tidak diterjemahkan' },
           el('span', { text: a.severity_sonar ?? '—' }), el('small', { text: 'dari Sonar' })),
         el('span', { class: `putusan p-${inf.kelas}`, text: inf.label }),
@@ -993,10 +997,8 @@
     const r = state.hasil.run;
     if (!t.file || p.demo_tanpa_workflow || !r.repo) return null;
     const url = `${urlGithub(p.owner, p.repo, 'blob', r.objek_uji.commit, ...t.file.split('/'))}${t.baris ? `#L${t.baris}` : ''}`;
-    return el('a', {
-      class: 'btn-text', href: url, target: '_blank', rel: 'noopener noreferrer',
-      text: `Buka ${t.file}${t.baris ? `:${t.baris}` : ''} di GitHub`,
-    });
+    return el('a', { class: 'btn-text', href: url, target: '_blank', rel: 'noopener noreferrer' },
+      'Buka ', ...teksLokasi(t.file, t.baris), ' di GitHub');
   };
 
   const detailTemuanV2 = (t) => {
@@ -1052,7 +1054,7 @@
           t.kategori_owasp ? chip(t.kategori_owasp, 'chip-owasp') : null,
           chip(t.sifat, t.sifat === 'hardening' ? 'chip-hardening' : 'chip-vuln'),
           chip(t.keyakinan, 'chip-keyakinan')),
-        el('span', { class: 'floc', text: t.file ? `${t.file}:${t.baris ?? '?'}` : '—' }),
+        el('span', { class: 'floc' }, teksLokasi(t.file, t.baris)),
         putusan
           ? el('span', { class: 'fdec', dataset: { v: putusan }, text: putusan === 'ok' ? 'Dikonfirmasi developer' : 'Ditandai FP' })
           : el('span', { class: 'fdec-empty', text: 'Belum ditinjau' }));
@@ -1153,14 +1155,27 @@
   const n3 = (v) => (typeof v === 'number' ? v.toFixed(3).replace('.', ',') : '—');
   const usd = (v) => (typeof v === 'number' ? `US$${v.toFixed(4).replace('.', ',')}` : '—');
 
-  const tabel = (kepala, baris, label) => el('div', {
-    class: 'tabel-bungkus', tabindex: '0', role: 'region', 'aria-label': label ?? 'Tabel eksperimen',
-  },
+  const tabel = (kepala, baris, label) => el('div', { class: 'tabel-kotak' },
+    el('p', { class: 'tabel-geser note', hidden: true, text: 'Geser tabel ke samping untuk melihat kolom lainnya. Kolom pertama tetap di tempat.' }),
+    el('div', {
+      class: 'tabel-bungkus', tabindex: '0', role: 'region', 'aria-label': label ?? 'Tabel eksperimen',
+    },
     el('table', { class: 'eks' },
       el('thead', {}, el('tr', {}, kepala.map((h) => el('th', { scope: 'col', text: h })))),
       el('tbody', {}, baris.map((r) => el('tr', {}, r.map((c, i) => el('td', {
         class: i > 0 && typeof c !== 'object' ? 'num' : null,
-      }, c)))))));
+      }, c))))))));
+
+  // Wadah guliran hanya diberi penanda kalau isinya memang lebih lebar dari kotaknya. Penanda
+  // yang selalu tampil mengajari pembaca mengabaikannya.
+  const tandaiGulir = () => {
+    for (const n of document.querySelectorAll('.tabel-bungkus')) {
+      const perlu = n.scrollWidth > n.clientWidth + 1;
+      n.dataset.gulir = perlu ? 'ya' : 'tidak';
+      const tanda = n.parentElement.querySelector('.tabel-geser');
+      if (tanda) tanda.hidden = !perlu;
+    }
+  };
 
   const blokEks = (judul, keterangan, isiBlok, sumberTeks) => el('section', { class: 'eks-blok' },
     el('h3', { text: judul }),
@@ -1256,6 +1271,7 @@
       return;
     }
     isi(panel, eksSkenario(eks), eksVerifikasi(eks), eksTabelItem(eks), eksBiaya(eks));
+    tandaiGulir();
   };
 
   const pilihTab = (tab) => {
