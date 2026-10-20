@@ -88,6 +88,51 @@
           "type": ["object", "null"],
           "description": "Status job GitHub Actions. null untuk run CLI yang tidak lewat pipeline.",
           "additionalProperties": { "type": ["string", "null"] }
+        },
+        "remediasi": {
+          "type": "object",
+          "description": "Ringkasan panggilan rekomendasi lapis 2. Biaya, token, dan status panggilannya terpisah dari deteksi dan verifikasi. Tidak ada pada run yang tidak menjalankan remediasi.",
+          "additionalProperties": false,
+          "required": ["status", "versi_prompt", "hash_prompt", "vendor", "model_diminta", "item_dikirim", "item_terisi", "tidak_konsisten", "status_panggilan"],
+          "properties": {
+            "status": { "enum": ["ok", "gagal", "tidak_dijalankan"] },
+            "alasan": { "type": ["string", "null"] },
+            "versi_prompt": { "type": "string" },
+            "hash_prompt": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["system", "task", "schema"],
+              "properties": {
+                "system": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "task": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "vendor": { "type": "string" },
+            "model_diminta": { "type": "string" },
+            "model_menjawab": { "type": ["string", "null"] },
+            "item_dikirim": { "type": "integer", "minimum": 0 },
+            "item_terisi": { "type": "integer", "minimum": 0 },
+            "tidak_konsisten": { "type": "integer", "minimum": 0 },
+            "usage": { "type": ["object", "null"] },
+            "biaya_usd": { "type": ["number", "null"] },
+            "status_panggilan": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["total", "ok", "refusal", "truncated", "error", "parse_gagal"],
+              "properties": {
+                "total": { "type": "integer", "minimum": 0 },
+                "ok": { "type": "integer", "minimum": 0 },
+                "refusal": { "type": "integer", "minimum": 0 },
+                "truncated": { "type": "integer", "minimum": 0 },
+                "error": { "type": "integer", "minimum": 0 },
+                "parse_gagal": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "waktu_mulai": { "type": ["string", "null"] },
+            "waktu_selesai": { "type": ["string", "null"] },
+            "durasi_ms": { "type": ["integer", "null"] }
+          }
         }
       }
     },
@@ -114,7 +159,35 @@
           "putusan_asal": { "enum": ["verifikasi-model", null] },
           "keyakinan": { "enum": ["high", "medium", "low", null] },
           "alasan": { "type": ["string", "null"] },
-          "tanda": { "type": "array", "items": { "type": "string" } }
+          "tanda": { "type": "array", "items": { "type": "string" } },
+          "rekomendasi_ai": {
+            "type": ["object", "null"],
+            "description": "Saran perbaikan lapis 2 dari model untuk item ini. Tidak ada pada run yang tidak menjalankan remediasi; null bila item ini tidak diberi saran.",
+            "additionalProperties": false,
+            "required": ["asal", "vendor", "model_diminta", "versi_prompt", "hash_prompt", "cwe_dirujuk", "langkah", "catatan_risiko", "tidak_konsisten"],
+            "properties": {
+              "asal": { "const": "model" },
+              "vendor": { "type": "string" },
+              "model_diminta": { "type": "string" },
+              "model_menjawab": { "type": ["string", "null"] },
+              "versi_prompt": { "type": "string" },
+              "hash_prompt": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["system", "task", "schema"],
+                "properties": {
+                  "system": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "task": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                }
+              },
+              "cwe_dirujuk": { "type": "string", "pattern": "^CWE-\\d+$" },
+              "langkah": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 4 },
+              "potongan_kode_usulan": { "type": ["string", "null"] },
+              "catatan_risiko": { "type": "string" },
+              "tidak_konsisten": { "type": "boolean", "description": "true bila cwe_dirujuk tidak termasuk CWE item ini" }
+            }
+          }
         }
       }
     },
@@ -146,6 +219,34 @@
             "properties": {
               "mulai": { "type": "integer", "minimum": 1 },
               "baris": { "type": "array", "items": { "type": "string" }, "maxItems": 7 }
+            }
+          },
+          "rekomendasi_ai": {
+            "type": ["object", "null"],
+            "description": "Saran perbaikan lapis 2 dari model untuk item ini. Tidak ada pada run yang tidak menjalankan remediasi; null bila item ini tidak diberi saran.",
+            "additionalProperties": false,
+            "required": ["asal", "vendor", "model_diminta", "versi_prompt", "hash_prompt", "cwe_dirujuk", "langkah", "catatan_risiko", "tidak_konsisten"],
+            "properties": {
+              "asal": { "const": "model" },
+              "vendor": { "type": "string" },
+              "model_diminta": { "type": "string" },
+              "model_menjawab": { "type": ["string", "null"] },
+              "versi_prompt": { "type": "string" },
+              "hash_prompt": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["system", "task", "schema"],
+                "properties": {
+                  "system": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "task": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                }
+              },
+              "cwe_dirujuk": { "type": "string", "pattern": "^CWE-\\d+$" },
+              "langkah": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 4 },
+              "potongan_kode_usulan": { "type": ["string", "null"] },
+              "catatan_risiko": { "type": "string" },
+              "tidak_konsisten": { "type": "boolean", "description": "true bila cwe_dirujuk tidak termasuk CWE item ini" }
             }
           }
         }
