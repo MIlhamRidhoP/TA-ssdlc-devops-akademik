@@ -307,8 +307,13 @@ Di Pages, mode demo dan mode live sama-sama berjalan karena semuanya statis.
   dihapus. Tombol **Ekspor** dan **Impor** menyediakan satu-satunya jalan memindahkannya.
 - **Branch `security-results` di repo publik bisa dibaca siapa pun**, termasuk daftar temuan dan potongan
   kode.
-- **Rekomendasi perbaikan** belum tersedia: prompt eksperimen tidak memintanya, jadi field `rekomendasi`
-  selalu kosong sampai tahap rekomendasi ditambahkan ke pipeline.
+- **Rekomendasi perbaikan lapis 1 berasal dari pemetaan statis**, bukan dari model. Panduan umum per
+  CWE dibaca dari `dashboard/rekomendasi-cwe.json`, yang langkahnya diturunkan dari bagian Potential
+  Mitigations di cwe.mitre.org dan dari OWASP Cheat Sheet Series. Panduan itu bersifat umum: pola
+  perbaikan untuk kelas kerentanan, bukan analisis atas kode yang sedang dibaca. Labelnya menyebut
+  itu apa adanya, dan setiap entri membawa tautan sumbernya sehingga bisa diperiksa sendiri.
+  Field `rekomendasi` di berkas hasil tetap kosong: prompt eksperimen tidak memintanya dan tidak
+  boleh diubah.
 - **Status alert berasal dari putusan verifikasi model** (`true_positive`, `false_positive`,
   `uncertain`), bukan dari pencocokan file, baris, dan CWE seperti skema 1. Putusan yang tidak sah
   (panggilan gagal, parse gagal, enum tidak valid) ditampilkan sebagai "Tanpa putusan", tidak ditebak.

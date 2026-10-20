@@ -734,6 +734,59 @@
       state.models = [];
     }
   };
+
+  // ---------- Panduan perbaikan lapis 1 ----------
+  // Pemetaan CWE statis, dibaca sekali dari origin sendiri. Isinya panduan umum yang diturunkan
+  // dari cwe.mitre.org dan OWASP Cheat Sheet Series, bukan analisis atas kode mana pun. Kalau
+  // berkasnya gagal dibaca, bagian rekomendasi hanya hilang; tidak ada yang lain yang ikut rusak.
+  const muatPanduan = async () => {
+    try {
+      const d = await jsonLokal('rekomendasi-cwe.json');
+      state.panduan = d && typeof d.cwe === 'object' ? d : null;
+    } catch {
+      state.panduan = null;
+    }
+  };
+
+  const panduanUntuk = (kode) => state.panduan?.cwe?.[kode] ?? null;
+
+  // Satu blok panduan untuk satu CWE. Judul, langkah bernomor, lalu tautan sumbernya, supaya
+  // pembaca bisa memeriksa sendiri dari mana langkah itu berasal.
+  const blokPanduanSatu = (kode) => {
+    const g = panduanUntuk(kode);
+    if (!g) {
+      return el('div', { class: 'panduan panduan-kosong' },
+        el('p', { class: 'panduan-judul', text: `Panduan umum (${kode})` }),
+        el('p', { class: 'panduan-teks', text: 'Belum ada panduan untuk CWE ini.' }));
+    }
+    return el('div', { class: 'panduan' },
+      el('p', { class: 'panduan-judul', text: `Panduan umum (${g.id})` }),
+      el('p', { class: 'panduan-sub', text: g.judul }),
+      el('ol', { class: 'panduan-langkah' }, g.langkah.map((l) => el('li', { text: l }))),
+      g.perlu_dicek
+        ? el('p', { class: 'panduan-cek' }, ikon(IKON.seru), el('span', { text: g.alasan_perlu_dicek }))
+        : null,
+      el('p', { class: 'panduan-sumber' },
+        el('span', { text: 'Sumber: ' }),
+        g.sumber.map((u) => el('a', {
+          href: u, target: '_blank', rel: 'noopener noreferrer',
+          'aria-label': `Buka sumber panduan ${g.id} di ${new URL(u).hostname}, tab baru`,
+        }, new URL(u).hostname, ikon(IKON.luar)))));
+  };
+
+  // Bagian "Rekomendasi perbaikan" yang dipakai bersama oleh drawer temuan dan detail alert.
+  // Item dengan beberapa CWE mendapat satu blok untuk masing-masing: kode yang berbeda punya
+  // pola perbaikan yang berbeda, dan menggabungkannya akan menyesatkan.
+  const blokRekomendasi = (daftarCwe) => {
+    const kode = (Array.isArray(daftarCwe) ? daftarCwe : []).filter((x) => typeof x === 'string' && x);
+    return el('section', { class: 'rekom', 'aria-label': 'Rekomendasi perbaikan' },
+      el('p', { class: 'rekom-kepala' },
+        el('b', { text: 'Rekomendasi perbaikan' }),
+        el('span', { class: 'lencana l-netral', text: 'Panduan umum berdasarkan CWE, bukan analisis AI' })),
+      kode.length
+        ? kode.map(blokPanduanSatu)
+        : el('p', { class: 'panduan-teks', text: 'Item ini tidak membawa kode CWE, jadi tidak ada panduan umum yang bisa ditautkan.' }));
+  };
   const modelJalur = () => state.models.filter((m) => m.jalur === 'v2');
   const modelTerpilih = () => modelJalur().find((x) => x.id === $('f-model').value) ?? null;
   // Mode SAST saja tetap melewati job jalur v1, yang memvalidasi input model terhadap daftar v1.
@@ -1481,6 +1534,7 @@
             a.rule ? el('span', { class: 'chip chip-rule', text: a.rule }) : null,
             ...a.cwe.map(tautanCwe),
             a.pesan ? el('span', { class: 'apesan', text: a.pesan }) : null),
+          blokRekomendasi(a.cwe),
           hash ? el('p', { class: 'note data', title: 'Sidik jari prompt yang dikirim ke model, dari berkas hasil', text: `prompt ${hash.slice(0, 12)}` }) : null);
         const labelBuka = el('small', { text: 'Lihat alasan' });
         const tombol = el('button', {
@@ -1622,6 +1676,7 @@
         el('p', { class: 'alasan-kepala' }, ikon(IKON.bolt), el('b', { text: 'Penjelasan dan analisis model' })),
         el('p', { class: 'alasan', text: t.penjelasan ?? 'Model tidak memberi penjelasan untuk temuan ini.' })),
       el('p', { class: 'block-h', text: 'Kode di sekitar baris' }), kode,
+      blokRekomendasi(t.cwe),
       el('p', { class: 'block-h', text: 'Fakta' }),
       el('dl', { class: 'facts' }, fakta.map(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
       el('p', { class: 'block-h', text: 'Catatan lokal' }),
@@ -2249,6 +2304,7 @@
     muatToken();
     ikat();
     await muatModels();
+    await muatPanduan();
     renderModels();
     renderAkses(state.token ? 'ok' : 'none', state.token ? teksTokenAktif() : 'Belum ada token');
     $('token-remember').checked = state.tokenDiingat;

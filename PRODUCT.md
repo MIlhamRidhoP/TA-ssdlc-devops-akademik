@@ -38,7 +38,8 @@ Hasil SAST dan LLM digabung dalam satu daftar temuan per run. Setiap temuan meny
 ## Capabilities and Constraints
 
 - Gemini Flash adalah satu-satunya model yang berjalan otomatis. Pro hanya diuji manual di AI Studio karena kuota API free tier bernilai 0.
-- Output Gemini saat ini berisi file, baris, kategori OWASP, CWE, jenis, keyakinan, dan penjelasan. Tidak ada rekomendasi perbaikan atau putusan verifikasi per temuan Sonar. Prompt eksperimen tidak boleh diubah, jadi field ini tampil "tidak tersedia" atau diberi label "diturunkan" dari pencocokan.
+- Output Gemini saat ini berisi file, baris, kategori OWASP, CWE, jenis, keyakinan, dan penjelasan. Prompt eksperimen tidak boleh diubah, jadi field yang tidak dimintanya tampil "tidak tersedia" atau diberi label "diturunkan" dari pencocokan.
+- Rekomendasi perbaikan dibangun dua lapis. Lapis 1 adalah panduan umum per CWE dari pemetaan statis `dashboard/rekomendasi-cwe.json`, bersumber dari cwe.mitre.org dan OWASP Cheat Sheet Series; selalu tampil, tidak melibatkan model, dan berlabel sebagai panduan umum berdasarkan CWE. Lapis 2 adalah saran spesifik dari model yang berpijak pada panduan lapis 1; sifatnya opt-in dan mati secara bawaan.
 - Token GitHub milik pengguna (fine-grained) hanya dipakai di browser dan hanya dikirim ke api.github.com.
 - Keputusan developer atas temuan (konfirmasi rentan atau false positive) disimpan di localStorage per run. Belum tersinkron antar perangkat.
 - Repo publik: branch `security-results` bisa dibaca siapa pun.
