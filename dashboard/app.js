@@ -1541,8 +1541,18 @@
     }
   };
 
-  const blokEks = (judul, keterangan, isiBlok, sumberTeks) => el('section', { class: 'eks-blok' },
-    el('h3', { text: judul }),
+  // Kartu penjelasan: judul berwarna menurut artinya, lalu satu kalimat definisi. Dipakai untuk
+  // menerangkan skenario dan empat kategori verifikasi sebelum angkanya dibaca.
+  const kartuPenjelasan = (kelas, judul, teks) => el('div', { class: `eks-kartu eks-${kelas}` },
+    el('p', { class: 'eks-kartu-judul' }, el('i', { 'aria-hidden': 'true' }), judul),
+    el('p', { class: 'eks-kartu-teks', text: teks }));
+
+  const blokEks = (nomor, judul, metaKanan, keterangan, isiBlok, sumberTeks) => el('section', { class: 'eks-blok' },
+    el('div', { class: 'eks-kepala' },
+      el('div', {},
+        el('p', { class: 'eks-eyebrow', text: `Bagian ${nomor}` }),
+        el('h3', { text: judul })),
+      metaKanan ? el('p', { class: 'eks-meta', text: metaKanan }) : null),
     keterangan ? el('p', { class: 'eks-ket', text: keterangan }) : null,
     isiBlok,
     el('p', { class: 'eks-sumber', text: sumberTeks }));
@@ -1561,10 +1571,14 @@
         baris.push([labelVendor(m.vendor), nama, f(r.ketat), f(r.triase_konservatif), f(r.triase_utama)]);
       }
     }
-    return blokEks('1. Skenario A, B, dan C per model',
+    const penjelasan = el('div', { class: 'eks-kartu-baris' },
+      kartuPenjelasan('netral', 'Skenario A \u2014 alert Sonar saja', 'Hanya alert SonarCloud, tanpa verifikasi maupun temuan model. Acuan dasar yang sama untuk setiap model.'),
+      kartuPenjelasan('accent', 'Skenario B \u2014 alert dipertahankan + temuan LLM', 'Alert yang tidak ditolak model, digabung dengan temuan deteksi mandiri model.'),
+      kartuPenjelasan('accent', 'Skenario C \u2014 temuan LLM saja', 'Hanya temuan deteksi mandiri model, tanpa alert SonarCloud.'));
+    return blokEks('01', 'Skenario A, B, dan C per model', 'Format metrik: presisi / recall / F1',
       'Rata-rata lintas run. Ketat: temuan di luar ground truth dihitung FP. Triase konservatif: kategori teoretis ikut dihitung FP. '
       + 'Triase utama: teoretis tidak dihitung FP. Tidak ada varian yang menambah TP, jadi recall sama di ketiganya.',
-      tabel(kepala, baris, 'Tabel Skenario A, B, dan C per model'),
+      el('div', { class: 'eks-isi' }, penjelasan, tabel(kepala, baris, 'Tabel Skenario A, B, dan C per model')),
       `Sumber: ${eks.sumber.skor_utama}, ${eks.sumber.skor_triase_konservatif ?? '—'}, ${eks.sumber.skor_triase_utama ?? '—'} · kode scoring ${pendek(eks.sumber.commit_kode_scoring ?? '')}`);
   };
 
@@ -1591,10 +1605,17 @@
           disabled: k === 'sensitivitas' && !eks.label_alert_sensitivitas,
           onclick: () => { state.eksLabel = k; renderEksperimen(); },
         }, label)));
-    return blokEks('2. Verifikasi empat kategori',
+    // Definisi diambil apa adanya dari scripts/llm/score.js: label alert menentukan benar atau
+    // salahnya putusan, dan putusan "dipertahankan" mencakup uncertain.
+    const penjelasan = el('div', { class: 'eks-kartu-baris' },
+      kartuPenjelasan('ok', 'Identified FP', 'Alert berlabel false positive yang memang ditolak model.'),
+      kartuPenjelasan('crit', 'Missed FP', 'Alert berlabel false positive yang justru dipertahankan model.'),
+      kartuPenjelasan('high', 'Mis-identified FP', 'Alert nyata yang keliru ditolak model.'),
+      kartuPenjelasan('ok', 'Correct retention', 'Alert nyata yang tepat dipertahankan model.'));
+    return blokEks('02', 'Verifikasi empat kategori', 'FP sebagai kelas positif',
       'FP diperlakukan sebagai kelas positif. Putusan uncertain dihitung sebagai alert yang dipertahankan, bukan kegagalan. '
       + 'Label alert menentukan benar atau salahnya putusan, dan hanya memengaruhi tabel ini, bukan Skenario A, B, atau C.',
-      el('div', {}, pilih, tabel(kepala, baris, 'Tabel verifikasi empat kategori')),
+      el('div', { class: 'eks-isi' }, penjelasan, pilih, tabel(kepala, baris, 'Tabel verifikasi empat kategori')),
       `Sumber: ${pakaiSens ? (eks.sumber.skor_sensitivitas ?? '—') : eks.sumber.skor_utama}`);
   };
 
@@ -1606,7 +1627,7 @@
       t.id, t.kelas ?? '—', t.klasifikasi ?? '—', t.sonar_a ?? '—', t.sonar_b ?? '—',
       ...vendor.flatMap((v) => [sel(t.per_model?.[v]?.skenario_b), sel(t.per_model?.[v]?.skenario_c)]),
     ]);
-    return blokEks('3. Tabel per item seeded',
+    return blokEks('03', 'Tabel per item seeded', `${(eks.tabel_per_item ?? []).length} item ground truth`,
       'Satu baris per item ground truth di SEEDED.md. Angka model berbentuk "run cocok ketat / jumlah run".',
       tabel(kepala, baris, 'Tabel per item seeded'),
       `Sumber: ${eks.sumber.skor_utama} · objek uji ${pendek(eks.sumber.objek_uji_commit ?? '')}`);
@@ -1621,7 +1642,7 @@
         i === 0 ? usd(m.biaya_total_usd ?? total) : '']));
     }
     const adaBiaya = baris.some((r) => r[2] !== '—');
-    return blokEks('4. Biaya per run dan per vendor',
+    return blokEks('04', 'Biaya per run dan per vendor', 'Dari metadata usage tiap panggilan',
       'Dari metadata usage tiap panggilan. Percobaan yang ditolak sebelum diproses tidak mengembalikan usage, jadi biayanya tidak tercatat.',
       adaBiaya ? tabel(kepala, baris, 'Tabel biaya per run dan per vendor')
         : el('p', { class: 'note', text: 'Biaya per run tidak tersedia di berkas skor; lihat kartu Biaya pada tiap run di tab Operasional.' }),

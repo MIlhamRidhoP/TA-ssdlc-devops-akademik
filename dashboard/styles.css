@@ -827,11 +827,27 @@ a.chip-cwe { text-decoration: none; }
 .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
 .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
 
-/* Tabel eksperimen */
-.eks-blok { margin-top: var(--s-5); }
-.eks-blok > h3 { font-size: 1.0625rem; margin: 0 0 var(--s-2); }
-.eks-ket { font-size: 0.8125rem; color: var(--ink-2); margin: 0 0 var(--s-3); line-height: 1.55; }
-.eks-sumber { font-size: 0.75rem; color: var(--muted); margin-top: var(--s-2); }
+/* ---------- Tab Eksperimen ---------- */
+.eks-blok { margin-top: var(--s-6); display: grid; gap: var(--s-3); }
+.eks-kepala { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2); border-bottom: 1px solid var(--rule); padding-bottom: var(--s-2); }
+.eks-eyebrow { font-family: var(--font-data); font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin: 0 0 var(--s-1); }
+.eks-blok > .eks-kepala h3 { font-size: 1.25rem; margin: 0; letter-spacing: -0.015em; }
+.eks-meta { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); margin: 0; }
+.eks-ket { font-size: 0.8125rem; color: var(--ink-2); margin: 0; line-height: 1.6; max-width: 90ch; }
+.eks-isi { display: grid; gap: var(--s-3); }
+.eks-sumber { font-size: 0.75rem; color: var(--muted); margin: 0; font-family: var(--font-data); }
+
+/* Kartu penjelasan sebelum tabel: definisi dulu, angka kemudian. */
+.eks-kartu-baris { display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.eks-kartu { padding: var(--s-3); border: 1px solid var(--rule); border-radius: var(--radius-ctl); background: var(--paper-2); display: grid; gap: var(--s-1); align-content: start; }
+.eks-kartu-judul { display: flex; align-items: center; gap: var(--s-2); margin: 0; font-size: 0.8125rem; font-weight: 600; }
+.eks-kartu-judul i { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; flex: none; }
+.eks-kartu-teks { margin: 0; font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+.eks-ok .eks-kartu-judul { color: var(--ok); }
+.eks-crit .eks-kartu-judul { color: var(--crit); }
+.eks-high .eks-kartu-judul { color: var(--high); }
+.eks-accent .eks-kartu-judul { color: var(--accent); }
+.eks-netral .eks-kartu-judul { color: var(--ink-2); }
 /* Tabel eksperimen lebih lebar dari layar pada lebar mana pun. Yang membuatnya terbaca bukan
    memaksanya muat, melainkan: kolom pertama tetap di tempat sebagai jangkar, bayangan di tepi
    yang menandakan masih ada kolom lain, dan satu kalimat yang mengatakannya. */
