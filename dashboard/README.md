@@ -162,6 +162,16 @@ melaporkan cacat yang tidak ada:
 - **Chrome merender anak `<details>` yang punya `display` eksplisit walaupun panelnya tertutup.**
   Isi yang disangka tersembunyi tetap menempati ruang. Panel yang tertutup perlu
   `display: none` yang ditulis sendiri.
+- **Server uji yang menutup koneksi tiap respons menghabiskan port.** `python -m http.server`
+  tidak memakai keep-alive. Gerbang tampilan membuka 36 konteks browser berurutan, dan ribuan soket
+  menumpuk di TIME_WAIT sampai rentang port ephemeral Windows habis. Browser lalu gagal memuat
+  sumber daya dengan `ERR_ADDRESS_IN_USE`, dan kegagalan itu **menjalar menjadi pelanggaran axe
+  palsu**: halaman yang gagal memuat fixture memang kehilangan nama aksesibilitasnya, sehingga
+  muncul `button-name` dan `aria-prohibited-attr` yang sebenarnya tidak ada. Pakai server statis
+  yang mendukung keep-alive, dan curigai kegagalan axe yang muncul bersamaan dengan error jaringan.
+- **Browser yang ditinggalkan proses gerbang yang dihentikan paksa tetap hidup.** Menghentikan
+  gerbang di tengah jalan meninggalkan puluhan proses Chromium, dan jalannya gerbang berikutnya
+  ikut gagal karena port habis. Pastikan tidak ada sisa sebelum mengulang.
 - **Panel modal menutupi halaman dengan sengaja.** Pemeriksaan tumpang tindih harus dipersempit ke
   panel yang terbuka, baik drawer maupun sidebar di layar sempit, kalau tidak seluruh halaman di
   belakangnya terlaporkan tertutup.
