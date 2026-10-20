@@ -86,3 +86,47 @@ test('jalur tiap node sesuai jalur yang menjalankannya di workflow', () => {
   const blokV2 = wf.slice(wf.indexOf('\n  analisis-v2:'), wf.indexOf('\n  hasil:'));
   assert.match(blokV2, /inputs\.jalur == 'v2'/);
 });
+
+// ---------- Rekaman run CI #54 untuk mode demo ----------
+// Mode demo menggambar graf dari rekaman status job satu run yang benar-benar berjalan. Rekaman
+// itu harus tetap sepadan dengan PIPELINE, dan tidak boleh memuat kredensial apa pun.
+const rekaman = require('../dashboard/fixtures/v2/rekaman/run-54.json');
+
+test('rekaman run CI memuat tepat job yang ada di graf', () => {
+  const graf = bacaPipeline().map((n) => n.job).sort();
+  const direkam = rekaman.jobs.map((j) => j.name).sort();
+  assert.deepEqual(direkam, graf);
+});
+
+test('rekaman run CI menyebut run yang bisa ditelusuri', () => {
+  assert.equal(rekaman.run.nomor, 54);
+  assert.ok(Number.isSafeInteger(rekaman.run.id) && rekaman.run.id > 0, 'run.id harus bilangan bulat positif');
+  assert.match(rekaman.run.commit, /^[0-9a-f]{40}$/);
+  assert.equal(rekaman.run.repo, 'MIlhamRidhoP/TA-ssdlc-devops-akademik');
+  assert.equal(rekaman.run.kesimpulan, 'success');
+  for (const j of rekaman.jobs) {
+    assert.ok(Number.isSafeInteger(j.id) && j.id > 0, `job ${j.name} tanpa id yang sah`);
+    assert.ok(['success', 'skipped', 'failure', 'cancelled'].includes(j.conclusion), `kesimpulan job ${j.name}: ${j.conclusion}`);
+  }
+  // Job yang dilewati memang tidak punya langkah; yang berjalan harus punya.
+  for (const j of rekaman.jobs) {
+    if (j.conclusion === 'skipped') assert.equal(j.steps.length, 0);
+    else assert.ok(j.steps.length > 0, `job ${j.name} berjalan tetapi tanpa langkah`);
+  }
+});
+
+test('rekaman run CI tidak memuat token, URL, atau rahasia', () => {
+  // Nama job dan nama langkah ditulis manusia di workflow, salah satunya menyebut kata "secret".
+  // Yang dilarang adalah NILAI berbentuk kredensial atau URL, jadi nama dikecualikan.
+  const nilai = [];
+  const kumpul = (x, kunci) => {
+    if (Array.isArray(x)) x.forEach((v) => kumpul(v));
+    else if (x && typeof x === 'object') Object.entries(x).forEach(([k, v]) => kumpul(v, k));
+    else if (typeof x === 'string' && kunci !== 'name') nilai.push(x);
+  };
+  kumpul({ run: rekaman.run, jobs: rekaman.jobs });
+  for (const v of nilai) {
+    if (/^[0-9a-f]{40}$/.test(v)) continue; // SHA commit
+    assert.doesNotMatch(v, /(github_pat_|ghs_|ghp_|gho_|Bearer |https?:\/\/|X-Amz|[A-Za-z0-9_-]{40,})/, `nilai mencurigakan: ${v}`);
+  }
+});

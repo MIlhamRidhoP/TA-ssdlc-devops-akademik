@@ -18,6 +18,9 @@ const acuan = require('./fixtures/acuan-skor-20261019.json');
 const skemaV2 = require('../docs/design/results-v2.schema.json');
 const skemaV1 = require('../docs/design/results.schema.json');
 const fixtureV2 = [1, 2, 3].map((n) => require(`../dashboard/fixtures/v2/eksperimen/seeded/${n}.json`));
+// Rekaman run CI #54: hasil yang benar-benar terbit, dipakai mode demo untuk menggambar graf
+// pipeline. Ikut diperiksa di sini supaya index demo dan berkasnya tidak pernah berbeda.
+const fixtureSemua = [...fixtureV2, require('../dashboard/fixtures/v2/feat/prompt-v2/54.json')];
 const indexV2 = require('../dashboard/fixtures/v2/index.json');
 
 // Berkas skor hidup di branch lain. Runner CI hanya mengambil satu branch, jadi `git show` tidak
@@ -249,9 +252,9 @@ test('metadata analisis Sonar tercatat, dan tree src-nya sama dengan objek uji',
 
 test('index v2 konsisten dengan fixture yang ditunjuknya', () => {
   assert.equal(indexV2.schema_version, 2);
-  assert.equal(indexV2.runs.length, 3);
+  assert.equal(indexV2.runs.length, fixtureSemua.length);
   for (const e of indexV2.runs) {
-    const fix = fixtureV2.find((f) => f.run.nomor === e.nomor);
+    const fix = fixtureSemua.find((f) => f.run.nomor === e.nomor);
     assert.ok(fix, `fixture untuk run ${e.nomor} ada`);
     assert.deepEqual(entriIndexV2(fix, e.path), e, `entri index run ${e.nomor} harus cocok dengan fixture`);
     assert.equal(e.jumlah.alert, fix.alerts.length);
@@ -262,6 +265,6 @@ test('index v2 konsisten dengan fixture yang ditunjuknya', () => {
     assert.equal(e.jumlah.false_positive, n('false_positive'));
     assert.equal(e.jumlah.uncertain, n('uncertain'));
   }
-  // Tiga vendor berbeda, supaya tab Operasional bisa membandingkan model.
-  assert.equal(new Set(indexV2.runs.map((r) => r.vendor)).size, 3);
+  // Tiga vendor berbeda di eksperimen, supaya tab Operasional bisa membandingkan model.
+  assert.equal(new Set(indexV2.runs.filter((r) => r.branch === 'eksperimen/seeded').map((r) => r.vendor)).size, 3);
 });

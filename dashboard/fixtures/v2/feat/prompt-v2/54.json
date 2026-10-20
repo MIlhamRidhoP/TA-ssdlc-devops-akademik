@@ -1,0 +1,210 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 39367185645,
+    "nomor": 54,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "asal": "workflow",
+    "vendor": "google",
+    "model_diminta": "gemini-3.1-pro-preview",
+    "model_menjawab": "gemini-3.1-pro-preview",
+    "kondisi": "utama",
+    "mulai": "2026-10-20T04:00:16.409Z",
+    "selesai": "2026-10-20T04:03:18.308Z",
+    "durasi_detik": 182,
+    "objek_uji": {
+      "commit": "8b86320541d7efd95de841ee402b24a8fb358f1d",
+      "branch": "feat/prompt-v2",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "commit_kode": {
+      "head": "8b86320541d7efd95de841ee402b24a8fb358f1d",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "4391e630a966de687eafd051072f41f6f0674cec9170386c825c53680ddaf050"
+    },
+    "sumber_sonar": "api",
+    "analisis_sonar": {
+      "tanggal": "2026-10-10T08:00:24+0000",
+      "revisi": "fe97d23b7c4b20c575d746d9e4df9a8bd2443b32",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "sonar_beku": null,
+    "biaya_usd": 0.534092,
+    "status_panggilan": {
+      "total": 2,
+      "ok": 2,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0
+    },
+    "pipeline": null
+  },
+  "alerts": [
+    {
+      "id": "SONAR-01",
+      "rule": "javascript:S5122",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "pesan": "Make sure that enabling CORS is safe here.",
+      "severity_sonar": "MAJOR",
+      "severity_asal": "sonar",
+      "putusan": "true_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Penggunaan middleware `app.use(cors())` tanpa argumen pada `src/app.js` secara otomatis mengonfigurasi CORS untuk menerima semua origin (`Access-Control-Allow-Origin: *`). Pada sistem informasi akademik yang menangani data pribadi, konfigurasi ini merupakan celah keamanan (CWE-942) karena mengizinkan domain mana pun berinteraksi dengan API.",
+      "tanda": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/controllers/krsController.js",
+      "baris": 110,
+      "fungsi": "exports.submit",
+      "jenis": "Race Condition (TOCTOU)",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Terdapat celah race condition (Time-of-Check to Time-of-Use) antara penambahan item KRS (`addItem`) dan proses pengajuan (`submit`). Jika mahasiswa memanggil `addItem` bersamaan dengan `submit`, SKS baru bisa ditambahkan setelah pengecekan kuota maksimal namun sebelum status KRS dikunci menjadi 'submitted'. Hal ini memungkinkan mahasiswa melebihi kuota SKS yang diizinkan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "ef005bfb29291acf",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 107,
+        "baris": [
+          "      { kuota, diajukan: total });",
+          "  }",
+          "",
+          "  const updated = await model.transition(header.id, 'draft', 'submitted');",
+          "  if (!updated) throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');",
+          "",
+          "  res.json({ success: true, data: updated });"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "file": "src/models/profilModel.js",
+      "baris": 29,
+      "fungsi": "exports.createEmail",
+      "jenis": "Race Condition",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Batas maksimal email (MAKS_EMAIL) diterapkan dengan `SELECT count(*)` di dalam query `INSERT` tanpa penguncian (locking). Pada konkurensi tingkat tinggi, beberapa permintaan serentak akan membaca jumlah baris yang belum ditambahkan, sehingga sistem akan meloloskan penambahan email hingga melebihi batas MAKS_EMAIL.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "f20d13a5f9473cbb",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 26,
+        "baris": [
+          "  const { rows } = await pool.query(",
+          "    `INSERT INTO email_mahasiswa (mahasiswa_id, tipe, email)",
+          "     SELECT $1, $2, $3",
+          "     WHERE (SELECT count(*) FROM email_mahasiswa WHERE mahasiswa_id = $1) < $4",
+          "     RETURNING id, tipe, email, created_at`,",
+          "    [mahasiswaId, tipe, email, maks]",
+          "  );"
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "file": "src/controllers/dokumenController.js",
+      "baris": 48,
+      "fungsi": "exports.upload",
+      "jenis": "Race Condition (TOCTOU)",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Pemeriksaan eksistensi dokumen selain lampiran_cuti (`existsJenis`) dilakukan terpisah dari operasi penyisipan (`model.create`). Apabila pengguna mengirim permintaan unggah dokumen yang sama secara bersamaan, keduanya akan lolos dari pemeriksaan dan tersimpan, sehingga mahasiswa memiliki duplikat untuk dokumen tunggal seperti KTP atau ijazah.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "4d02670a86eda608",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 45,
+        "baris": [
+          "    }",
+          "",
+          "    const mahasiswaId = await getMahasiswaId(req);",
+          "    if (jenis !== 'lampiran_cuti' && (await model.existsJenis(mahasiswaId, jenis))) {",
+          "      throw new AppError(409, 'CONFLICT', `Dokumen ${jenis} sudah diunggah`);",
+          "    }",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Missing Rate Limiting",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint otentikasi (register dan login) tidak memiliki pembatasan laju permintaan (rate limiting) dari klien. Hal ini memungkinkan penyerang untuk melancarkan serangan brute-force terhadap kata sandi secara berulang atau membanjiri sistem dengan pendaftaran akun palsu (DoS).",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "7aeb70d86d293354",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-05",
+      "file": "src/app.js",
+      "baris": 10,
+      "fungsi": "",
+      "jenis": "Overly Permissive CORS",
+      "cwe": [
+        "CWE-942"
+      ],
+      "kategori_owasp": "A02",
+      "penjelasan": "Aplikasi menggunakan middleware `cors()` dengan pengaturan bawaan (default) yang mengizinkan request dari semua asal usul (origin `*`). Ini merupakan kelemahan hardening karena setiap domain dapat melakukan request secara langsung ke API backend ini.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "aaba8647ac44fb6d",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 7,
+        "baris": [
+          "const app = express();",
+          "",
+          "app.use(helmet());",
+          "app.use(cors());",
+          "app.use(express.json());",
+          "",
+          "app.get('/health', (req, res) => {"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,363 @@
+{
+  "catatan": "Rekaman status job run CI #54 di GitHub Actions, diambil sekali lewat GitHub REST API. Dipakai mode demo untuk menggambar graf pipeline dari run yang benar-benar terjadi. Hanya field yang dipakai dashboard yang disalin; tidak ada token, URL bertanda tangan, maupun identitas runner.",
+  "sumber": "GET /repos/MIlhamRidhoP/TA-ssdlc-devops-akademik/actions/runs/39367185645 dan /jobs",
+  "diambil": "2026-10-20T05:46:00Z",
+  "run": {
+    "id": 39367185645,
+    "nomor": 54,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "branch": "feat/prompt-v2",
+    "commit": "8b86320541d7efd95de841ee402b24a8fb358f1d",
+    "peristiwa": "workflow_dispatch",
+    "kesimpulan": "success",
+    "mulai": "2026-10-20T03:59:41Z",
+    "selesai": "2026-10-20T04:03:23Z"
+  },
+  "jobs": [
+    {
+      "id": 118446589588,
+      "name": "Build dan uji API",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-20T03:59:44Z",
+      "completed_at": "2026-10-20T04:00:30Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:45Z",
+          "completed_at": "2026-10-20T03:59:46Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:46Z",
+          "completed_at": "2026-10-20T03:59:46Z"
+        },
+        {
+          "name": "Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:46Z",
+          "completed_at": "2026-10-20T03:59:47Z"
+        },
+        {
+          "name": "Install dependency",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:47Z",
+          "completed_at": "2026-10-20T03:59:51Z"
+        },
+        {
+          "name": "Buat .env sementara",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:51Z",
+          "completed_at": "2026-10-20T03:59:51Z"
+        },
+        {
+          "name": "Jalankan container",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:51Z",
+          "completed_at": "2026-10-20T04:00:08Z"
+        },
+        {
+          "name": "Seed data",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:08Z",
+          "completed_at": "2026-10-20T04:00:09Z"
+        },
+        {
+          "name": "Uji API",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:09Z",
+          "completed_at": "2026-10-20T04:00:18Z"
+        },
+        {
+          "name": "Log aplikasi",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:18Z",
+          "completed_at": "2026-10-20T04:00:18Z"
+        },
+        {
+          "name": "Bersihkan",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:18Z",
+          "completed_at": "2026-10-20T04:00:29Z"
+        },
+        {
+          "name": "Post Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:29Z",
+          "completed_at": "2026-10-20T04:00:29Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:29Z",
+          "completed_at": "2026-10-20T04:00:29Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:29Z",
+          "completed_at": "2026-10-20T04:00:29Z"
+        }
+      ]
+    },
+    {
+      "id": 118446589712,
+      "name": "Tentukan mode analisis",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-20T03:59:44Z",
+      "completed_at": "2026-10-20T03:59:48Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:45Z",
+          "completed_at": "2026-10-20T03:59:45Z"
+        },
+        {
+          "name": "Tentukan mode",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:45Z",
+          "completed_at": "2026-10-20T03:59:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:45Z",
+          "completed_at": "2026-10-20T03:59:45Z"
+        }
+      ]
+    },
+    {
+      "id": 118446618151,
+      "name": "Analisis SonarCloud",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-20T03:59:50Z",
+      "completed_at": "2026-10-20T03:59:55Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:50Z",
+          "completed_at": "2026-10-20T03:59:51Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:51Z",
+          "completed_at": "2026-10-20T03:59:52Z"
+        },
+        {
+          "name": "SonarCloud scan",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-10-20T03:59:52Z",
+          "completed_at": "2026-10-20T03:59:52Z"
+        },
+        {
+          "name": "Jelaskan mengapa scan dilewati",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:52Z",
+          "completed_at": "2026-10-20T03:59:52Z"
+        },
+        {
+          "name": "Catat scan branch non-main yang memang gagal di paket Free",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-10-20T03:59:52Z",
+          "completed_at": "2026-10-20T03:59:52Z"
+        },
+        {
+          "name": "Pastikan analisis Sonar cocok dengan commit ini",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:52Z",
+          "completed_at": "2026-10-20T03:59:53Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:53Z",
+          "completed_at": "2026-10-20T03:59:53Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:53Z",
+          "completed_at": "2026-10-20T03:59:53Z"
+        }
+      ]
+    },
+    {
+      "id": 118446652163,
+      "name": "Analisis LLM v2 (deteksi dan verifikasi)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-20T03:59:58Z",
+      "completed_at": "2026-10-20T04:03:22Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T03:59:58Z",
+          "completed_at": "2026-10-20T04:00:00Z"
+        },
+        {
+          "name": "Tolak tanpa konfirmasi eksplisit",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-10-20T04:00:00Z",
+          "completed_at": "2026-10-20T04:00:00Z"
+        },
+        {
+          "name": "Tolak branch objek uji eksperimen",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-10-20T04:00:00Z",
+          "completed_at": "2026-10-20T04:00:00Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:00Z",
+          "completed_at": "2026-10-20T04:00:01Z"
+        },
+        {
+          "name": "Ambil revisi analisis Sonar ke dalam clone",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:01Z",
+          "completed_at": "2026-10-20T04:00:02Z"
+        },
+        {
+          "name": "Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:02Z",
+          "completed_at": "2026-10-20T04:00:09Z"
+        },
+        {
+          "name": "Install dependency",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:09Z",
+          "completed_at": "2026-10-20T04:00:13Z"
+        },
+        {
+          "name": "Validasi vendor terhadap dashboard/models.json",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:13Z",
+          "completed_at": "2026-10-20T04:00:13Z"
+        },
+        {
+          "name": "Catat analisis Sonar yang dipakai",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:13Z",
+          "completed_at": "2026-10-20T04:00:13Z"
+        },
+        {
+          "name": "Pastikan secret vendor tersedia",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:13Z",
+          "completed_at": "2026-10-20T04:00:13Z"
+        },
+        {
+          "name": "Jalankan llm-scan (1 run, kondisi utama)",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:00:13Z",
+          "completed_at": "2026-10-20T04:03:18Z"
+        },
+        {
+          "name": "Susun results.json skema 2",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:03:18Z",
+          "completed_at": "2026-10-20T04:03:18Z"
+        },
+        {
+          "name": "Unggah output v2",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:03:18Z",
+          "completed_at": "2026-10-20T04:03:19Z"
+        },
+        {
+          "name": "Terbitkan ke branch security-results",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:03:19Z",
+          "completed_at": "2026-10-20T04:03:20Z"
+        },
+        {
+          "name": "Post Setup Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:03:20Z",
+          "completed_at": "2026-10-20T04:03:21Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:03:21Z",
+          "completed_at": "2026-10-20T04:03:21Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-20T04:03:21Z",
+          "completed_at": "2026-10-20T04:03:21Z"
+        }
+      ]
+    },
+    {
+      "id": 118446653471,
+      "name": "Analisis temuan (Sonar dan Gemini)",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-10-20T03:59:56Z",
+      "completed_at": "2026-10-20T03:59:55Z",
+      "steps": []
+    },
+    {
+      "id": 118446828041,
+      "name": "Gabung dan terbitkan hasil",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-10-20T04:00:31Z",
+      "completed_at": "2026-10-20T04:00:31Z",
+      "steps": []
+    }
+  ]
+}
