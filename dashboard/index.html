@@ -12,7 +12,9 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <a class="skip" href="#temuan">Lewati ke daftar temuan</a>
+  <!-- Tombol, bukan tautan ber-hash: hash kini alamat tampilan, dan melompat lewat hash akan
+       ikut mengganti halaman. Yang dibutuhkan hanya memindahkan fokus ke isi yang terbuka. -->
+  <button class="skip" type="button" id="skip">Lewati ke isi halaman</button>
   <div class="shell">
     <aside class="rail" aria-label="Navigasi, repositori, dan akses">
       <div class="rail-kepala">
@@ -123,14 +125,23 @@
       </section>
 
       <div class="workspace" id="workspace" hidden>
+        <!-- Bilah konteks tetap di semua tampilan: remah jejak, penanda run lama, dan satu-satunya
+             tindakan global. Kepala run yang lengkap ada di dalam tampilan Ringkasan. -->
+        <div class="konteks-bar">
+          <p class="crumb" id="crumb"></p>
+          <div class="konteks-aksi">
+            <p class="run-lama" id="run-lama" hidden></p>
+            <button class="btn btn-utama" type="button" id="buka-drawer" aria-haspopup="dialog" aria-expanded="false">Jalankan analisis</button>
+          </div>
+        </div>
+
+        <section class="tampilan" id="v-ringkasan" tabindex="-1" aria-labelledby="run-title" hidden>
         <header class="sheet-head">
           <div class="sheet-atas">
             <div class="sheet-judul">
-              <p class="crumb" id="crumb"></p>
-              <h1 class="run-title" id="run-title"></h1>
+              <h1 class="run-title judul-tampilan" id="run-title" tabindex="-1"></h1>
               <p class="run-status" id="run-status"></p>
             </div>
-            <button class="btn btn-utama" type="button" id="buka-drawer" aria-haspopup="dialog" aria-expanded="false">Jalankan analisis</button>
           </div>
           <dl class="title-block" id="title-block" aria-label="Identitas run"></dl>
         </header>
@@ -145,107 +156,35 @@
           </div>
         </section>
 
-        <div class="drawer" id="drawer" hidden>
-          <div class="drawer-tirai" id="drawer-tirai"></div>
-          <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="runner-h">
-            <div class="drawer-head">
-              <div class="drawer-judul">
-                <p class="drawer-eyebrow">Konfigurasi eksekusi pipeline</p>
-                <h2 id="runner-h">Jalankan analisis</h2>
-              </div>
-              <button class="btn btn-sm" type="button" id="drawer-tutup">Tutup</button>
-            </div>
-            <form class="run-form" id="run-form" novalidate>
-              <fieldset class="field bagian">
-                <div class="bagian-kepala"><legend><span class="bagian-no">1</span>Mode</legend></div>
-                <div class="seg">
-                  <label><input type="radio" name="mode" value="sast"><span>SAST saja</span><small>tanpa biaya</small></label>
-                  <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span><small>berbayar</small></label>
-                  <label><input type="radio" name="mode" value="dast" disabled><span>DAST</span><small>di luar batasan TA</small></label>
-                </div>
-                <p class="go-hint" id="mode-hint"></p>
-              </fieldset>
-              <div class="field bagian">
-                <div class="bagian-kepala">
-                  <label for="f-branch"><span class="bagian-no">2</span>Branch tujuan run</label>
-                  <span class="bagian-meta" id="branch-meta"></span>
-                </div>
-                <select class="select" id="f-branch"></select>
-                <p class="go-hint" id="branch-hint"></p>
-              </div>
-              <div class="field bagian" id="model-field">
-                <div class="bagian-kepala">
-                  <label for="f-model"><span class="bagian-no">3</span>Model (vendor)</label>
-                  <span class="bagian-meta">jalur v2</span>
-                </div>
-                <select class="select" id="f-model"></select>
-              </div>
-              <div class="biaya-kotak" id="biaya-field">
-                <div class="biaya-kepala">
-                  <span class="biaya-judul">Perkiraan biaya satu run</span>
-                  <b class="biaya-angka data" id="biaya-angka"></b>
-                </div>
-                <p class="go-hint" id="biaya-perkiraan"></p>
-                <p class="go-hint go-hint-kecil" id="biaya-sumber"></p>
-              </div>
-              <div class="field" id="rekomendasi-field">
-                <label class="check" for="f-rekomendasi">
-                  <input type="checkbox" id="f-rekomendasi">
-                  <span>Sertakan rekomendasi AI. Satu panggilan berbayar tambahan untuk menyusun saran perbaikan atas temuan yang dikonfirmasi. Panduan umum per CWE tetap tampil tanpa ini.</span>
-                </label>
-                <p class="go-hint go-hint-kecil" id="rekomendasi-biaya"></p>
-              </div>
-              <div class="field" id="konfirmasi-v2-field" hidden>
-                <label class="check" for="f-konfirmasi-v2">
-                  <input type="checkbox" id="f-konfirmasi-v2">
-                  <span>Saya setuju menjalankan panggilan berbayar untuk run ini.</span>
-                </label>
-              </div>
-              <div class="go">
-                <button class="btn btn-sm" type="button" id="run-batal">Tutup</button>
-                <button class="btn btn-run btn-utama" type="submit" id="run-btn"><span class="spin" aria-hidden="true"></span><span id="run-btn-label">Jalankan analisis</span></button>
-                <p class="go-hint" id="run-hint" role="status" aria-live="polite"></p>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="drawer" id="drawer-temuan" hidden>
-          <div class="drawer-tirai" id="drawer-temuan-tirai"></div>
-          <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="temuan-drawer-h">
-            <div class="drawer-head">
-              <div class="drawer-judul">
-                <p class="drawer-eyebrow" id="temuan-eyebrow"></p>
-                <h2 id="temuan-drawer-h"></h2>
-              </div>
-              <button class="btn btn-sm" type="button" id="temuan-tutup">Tutup</button>
-            </div>
-            <div class="drawer-isi" id="temuan-isi"></div>
-          </div>
-        </div>
-
         <section class="summary" id="summary" aria-label="Ringkasan run"></section>
 
-        <div class="tabs" id="tabs" role="tablist" aria-label="Tampilan hasil" hidden>
-          <button class="tab" type="button" id="tab-operasional" role="tab" aria-selected="true" aria-controls="panel-operasional">Operasional</button>
-          <button class="tab" type="button" id="tab-eksperimen" role="tab" aria-selected="false" aria-controls="panel-eksperimen">Eksperimen</button>
-        </div>
-
-        <section id="panel-eksperimen" role="tabpanel" aria-labelledby="tab-eksperimen" hidden></section>
-
-        <div class="body" id="panel-operasional" role="tabpanel" aria-labelledby="tab-operasional">
-          <section class="findings" id="alerts-box" aria-labelledby="alerts-h" hidden>
-            <div class="findings-head">
-              <h2 id="alerts-h">Verifikasi alert Sonar</h2>
-              <p>Setiap alert SonarCloud dikirim ke model dalam panggilan verifikasi tersendiri. Putusan di bawah adalah jawaban model, bukan hasil pencocokan lokasi dan CWE.</p>
+        <!-- Ringkasan singkat: cukup untuk tahu apakah perlu membuka halaman lain, bukan salinannya. -->
+        <div class="ringkas-grid">
+          <section class="box" id="ringkas-temuan-box" aria-labelledby="ringkas-temuan-h">
+            <div class="box-kepala">
+              <h2 id="ringkas-temuan-h">Temuan teratas</h2>
+              <button class="btn-text" type="button" data-ke="temuan">Lihat semua</button>
             </div>
-            <div class="putusan-ringkas" id="alerts-ringkas"></div>
-            <div id="alerts-body" aria-live="polite"></div>
+            <div id="ringkas-temuan"></div>
           </section>
+          <section class="box" id="ringkas-alert-box" aria-labelledby="ringkas-alert-h">
+            <div class="box-kepala">
+              <h2 id="ringkas-alert-h">Status alert Sonar</h2>
+              <button class="btn-text" type="button" data-ke="verifikasi">Lihat semua</button>
+            </div>
+            <div id="ringkas-alert"></div>
+          </section>
+        </div>
+        </section>
 
-          <section class="findings" id="temuan" aria-labelledby="temuan-h" tabindex="-1">
+        <section class="tampilan" id="v-temuan" tabindex="-1" aria-labelledby="temuan-h" hidden>
+          <!-- id sengaja BUKAN "temuan": nama itu dipakai rute #temuan, dan id yang sama
+               membuat peramban memperlakukan hash sebagai fragmen — ia menggulir ke elemen ini
+               dan memindahkan titik awal navigasi fokus ke sini, sehingga Tab pertama melewati
+               tautan lewati-navigasi dan seluruh sidebar. -->
+          <section class="findings" id="temuan-box">
             <div class="findings-head">
-              <h2 id="temuan-h">Temuan</h2>
+              <h2 class="judul-tampilan" id="temuan-h" tabindex="-1">Temuan</h2>
               <p>Temuan model adalah saran AI yang belum diverifikasi. Sistem tidak pernah mengubah kode.</p>
             </div>
             <div class="filters" id="filters" role="group" aria-label="Saring temuan"></div>
@@ -257,15 +196,120 @@
             </div>
             <div id="findings-body" aria-live="polite"></div>
           </section>
+        </section>
 
-          <aside class="side" aria-label="Detail run">
-            <section class="box" aria-labelledby="hist-h">
-              <h2 id="hist-h">Riwayat run</h2>
-              <div class="history" id="history"></div>
-            </section>
-          </aside>
+        <section class="tampilan" id="v-verifikasi" tabindex="-1" aria-labelledby="alerts-h" hidden>
+          <section class="findings" id="alerts-box">
+            <div class="findings-head">
+              <h2 class="judul-tampilan" id="alerts-h" tabindex="-1">Verifikasi alert Sonar</h2>
+              <p>Setiap alert SonarCloud dikirim ke model dalam panggilan verifikasi tersendiri. Putusan di bawah adalah jawaban model, bukan hasil pencocokan lokasi dan CWE.</p>
+            </div>
+            <div class="putusan-ringkas" id="alerts-ringkas"></div>
+            <div id="alerts-body" aria-live="polite"></div>
+          </section>
+        </section>
+
+        <section class="tampilan" id="v-riwayat" tabindex="-1" aria-labelledby="hist-h" hidden>
+          <section class="box">
+            <div class="findings-head">
+              <h2 class="judul-tampilan" id="hist-h" tabindex="-1">Riwayat run</h2>
+              <p>Seluruh run di branch yang sedang dilihat, terbaru di atas menurut waktu selesai. Memilih run memperbarui semua halaman.</p>
+            </div>
+            <div class="history" id="history"></div>
+          </section>
+        </section>
+
+        <section class="tampilan" id="v-eksperimen" tabindex="-1" aria-labelledby="eks-h" hidden>
+          <div class="findings-head">
+            <h2 class="judul-tampilan" id="eks-h" tabindex="-1">Eksperimen</h2>
+            <p>Angka evaluasi tiga model atas objek uji yang sama. Ditampilkan apa adanya, tanpa peringkat.</p>
+          </div>
+          <div id="panel-eksperimen"></div>
+        </section>
+      </div>
+
+      <!-- Kedua panel modal berada di luar seluruh tampilan. Di dalam salah satunya, panel ikut
+           tersembunyi begitu tampilan lain dibuka: atribut hidden-nya sendiri lepas, tetapi
+           induknya yang menutupinya. -->
+      <div class="drawer" id="drawer" hidden>
+        <div class="drawer-tirai" id="drawer-tirai"></div>
+        <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="runner-h">
+          <div class="drawer-head">
+            <div class="drawer-judul">
+              <p class="drawer-eyebrow">Konfigurasi eksekusi pipeline</p>
+              <h2 id="runner-h">Jalankan analisis</h2>
+            </div>
+            <button class="btn btn-sm" type="button" id="drawer-tutup">Tutup</button>
+          </div>
+          <form class="run-form" id="run-form" novalidate>
+            <fieldset class="field bagian">
+              <div class="bagian-kepala"><legend><span class="bagian-no">1</span>Mode</legend></div>
+              <div class="seg">
+                <label><input type="radio" name="mode" value="sast"><span>SAST saja</span><small>tanpa biaya</small></label>
+                <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span><small>berbayar</small></label>
+                <label><input type="radio" name="mode" value="dast" disabled><span>DAST</span><small>di luar batasan TA</small></label>
+              </div>
+              <p class="go-hint" id="mode-hint"></p>
+            </fieldset>
+            <div class="field bagian">
+              <div class="bagian-kepala">
+                <label for="f-branch"><span class="bagian-no">2</span>Branch tujuan run</label>
+                <span class="bagian-meta" id="branch-meta"></span>
+              </div>
+              <select class="select" id="f-branch"></select>
+              <p class="go-hint" id="branch-hint"></p>
+            </div>
+            <div class="field bagian" id="model-field">
+              <div class="bagian-kepala">
+                <label for="f-model"><span class="bagian-no">3</span>Model (vendor)</label>
+                <span class="bagian-meta">jalur v2</span>
+              </div>
+              <select class="select" id="f-model"></select>
+            </div>
+            <div class="biaya-kotak" id="biaya-field">
+              <div class="biaya-kepala">
+                <span class="biaya-judul">Perkiraan biaya satu run</span>
+                <b class="biaya-angka data" id="biaya-angka"></b>
+              </div>
+              <p class="go-hint" id="biaya-perkiraan"></p>
+              <p class="go-hint go-hint-kecil" id="biaya-sumber"></p>
+            </div>
+            <div class="field" id="rekomendasi-field">
+              <label class="check" for="f-rekomendasi">
+                <input type="checkbox" id="f-rekomendasi">
+                <span>Sertakan rekomendasi AI. Satu panggilan berbayar tambahan untuk menyusun saran perbaikan atas temuan yang dikonfirmasi. Panduan umum per CWE tetap tampil tanpa ini.</span>
+              </label>
+              <p class="go-hint go-hint-kecil" id="rekomendasi-biaya"></p>
+            </div>
+            <div class="field" id="konfirmasi-v2-field" hidden>
+              <label class="check" for="f-konfirmasi-v2">
+                <input type="checkbox" id="f-konfirmasi-v2">
+                <span>Saya setuju menjalankan panggilan berbayar untuk run ini.</span>
+              </label>
+            </div>
+            <div class="go">
+              <button class="btn btn-sm" type="button" id="run-batal">Tutup</button>
+              <button class="btn btn-run btn-utama" type="submit" id="run-btn"><span class="spin" aria-hidden="true"></span><span id="run-btn-label">Jalankan analisis</span></button>
+              <p class="go-hint" id="run-hint" role="status" aria-live="polite"></p>
+            </div>
+          </form>
         </div>
       </div>
+
+      <div class="drawer" id="drawer-temuan" hidden>
+        <div class="drawer-tirai" id="drawer-temuan-tirai"></div>
+        <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="temuan-drawer-h">
+          <div class="drawer-head">
+            <div class="drawer-judul">
+              <p class="drawer-eyebrow" id="temuan-eyebrow"></p>
+              <h2 id="temuan-drawer-h"></h2>
+            </div>
+            <button class="btn btn-sm" type="button" id="temuan-tutup">Tutup</button>
+          </div>
+          <div class="drawer-isi" id="temuan-isi"></div>
+        </div>
+      </div>
+
 
       <footer class="foot">
         <span>Framework SSDLC DevOps dengan LLM · Tugas Akhir Telkom University</span>

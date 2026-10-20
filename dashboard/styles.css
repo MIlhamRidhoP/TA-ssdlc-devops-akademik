@@ -338,19 +338,19 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 
 /* Navigasi: ikon, label, lalu lencana angka di kanan. */
 .railnav { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
-.railnav button {
+.railnav a {
   display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 2.5rem;
   padding: 0 var(--s-3); border: 0; border-radius: var(--radius-ctl); background: transparent;
-  color: var(--ink-2); font-size: 0.9375rem; text-align: left;
+  color: var(--ink-2); font-size: 0.9375rem; text-align: left; text-decoration: none;
 }
 .railnav .icon { width: 1.125rem; height: 1.125rem; color: var(--muted); }
 .railnav-label { flex: 1; min-width: 0; }
 .railnav .lencana { flex: none; }
-@media (hover: hover) { .railnav button:hover { background: var(--paper-3); color: var(--ink); } }
-.railnav button:hover .icon { color: var(--ink-2); }
-.railnav button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.railnav button[aria-current="true"] .icon { color: var(--accent); }
-.railnav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (hover: hover) { .railnav a:hover { background: var(--paper-3); color: var(--ink); } }
+.railnav a:hover .icon { color: var(--ink-2); }
+.railnav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.railnav a[aria-current="page"] .icon { color: var(--accent); }
+.railnav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Status koneksi: keadaan sebenarnya, tanpa nomor versi. */
 .koneksi {
@@ -683,19 +683,45 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .cell.nol .cell-num { color: var(--muted); }
 .cell-note { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: var(--s-1); }
 
-/* ---------- Temuan + samping ---------- */
+/* ---------- Tampilan per halaman ----------
+   Satu menu, satu tampilan. Riwayat yang dulu menjadi kolom samping kini halaman tersendiri, jadi
+   tata letak dua kolom tidak lagi diperlukan: tiap halaman memakai lebar penuh. */
 
-.body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
-@media (min-width: 68rem) {
-  .body { grid-template-columns: minmax(0, 1fr) 20rem; }
-  /* Kolom kanan jauh lebih pendek daripada kolom utama. Dibiarkan diam, sisanya jadi ruang kosong
-     panjang; menempel membuat riwayat tetap terbaca selama menggulir daftar temuan. */
-  .side { position: sticky; top: var(--s-4); }
-  /* Tabel alert dan daftar temuan sama-sama di kolom utama; sidebar menempati kolom kanan
-     sepanjang keduanya. Tanpa ini, anak ketiga grid jatuh ke kolom sempit 20rem. */
-  #alerts-box, #temuan { grid-column: 1; }
-  .side { grid-column: 2; grid-row: 1 / -1; }
+.tampilan { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; min-width: 0; }
+/* Fokus pindah ke JUDUL tampilan, bukan ke seluruh kotaknya: kotak sebesar halaman yang digarisi
+   terbaca sebagai galat, bukan sebagai penanda posisi. */
+.tampilan:focus { outline: none; }
+.judul-tampilan:focus { outline: none; }
+.judul-tampilan:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 4px; }
+
+/* Bilah konteks: tetap di semua tampilan, memuat remah jejak, penanda run lama, dan satu-satunya
+   tindakan global. Kepala run yang lengkap tetap milik Ringkasan. */
+.konteks-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--rule);
 }
+.konteks-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.run-lama { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0; }
+
+/* Ringkasan singkat: dua kotak berdampingan di layar lebar, bertumpuk di layar sempit. */
+.ringkas-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+@media (min-width: 60rem) { .ringkas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.box-kepala { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
+.ringkas-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
+.ringkas-temuan-item {
+  display: grid; gap: 0.15rem; width: 100%; text-align: left; min-width: 0;
+  padding: var(--s-2) var(--s-3); border: 1px solid transparent; border-radius: var(--radius-ctl);
+  background: transparent; color: var(--ink-2);
+}
+@media (hover: hover) { .ringkas-temuan-item:hover { background: var(--paper-3); border-color: var(--rule); } }
+.ringkas-atas { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); min-width: 0; }
+.ringkas-judul { color: var(--ink); font-weight: 500; }
+.ringkas-lokasi { color: var(--muted); overflow-wrap: anywhere; }
+.ringkas-putusan { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: var(--s-3); }
+.ringkas-angka { display: grid; gap: 0.1rem; }
+.ringkas-angka b { font-size: 1.25rem; }
+.ringkas-nol { color: var(--muted); font-weight: 600; }
+.ringkas-angka span { font-size: 0.75rem; color: var(--muted); }
 
 .findings, .box {
   border: 1px solid var(--rule); border-radius: var(--radius-card); background: var(--paper-2); min-width: 0;
@@ -808,7 +834,6 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 @media (prefers-reduced-motion: no-preference) { .skeleton i { animation: fade 1.4s ease-in-out infinite alternate; } }
 @keyframes fade { to { opacity: 0.45; } }
 
-.side { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); min-width: 0; }
 .box { padding: var(--s-4); display: grid; gap: var(--s-2); }
 .box h2 { font-size: 1rem; }
 .note { font-size: 0.8125rem; color: var(--muted); }
@@ -980,17 +1005,6 @@ a.chip-cwe { text-decoration: none; }
 .chip-hardening { background: var(--netral-soft); color: var(--netral); border: 1px solid var(--netral-rule); }
 .chip-keyakinan { border: 1px solid var(--rule-2); color: var(--muted); }
 .catatan-alat { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: 0 var(--s-1) var(--s-3); }
-
-/* Tab Operasional / Eksperimen */
-.tabs { display: flex; gap: var(--s-1); border-bottom: 1px solid var(--rule); margin-top: var(--s-5); }
-.tab {
-  appearance: none; border: 0; background: none; cursor: pointer; color: var(--muted);
-  font: inherit; font-weight: 600; font-size: 0.9375rem; padding: var(--s-3) var(--s-4);
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-}
-.tab:hover { color: var(--ink); }
-.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
 
 /* ---------- Rekomendasi perbaikan ----------
    Lapis 1: panduan umum per CWE, statis dan bersumber resmi. Labelnya menempel di kepala bagian

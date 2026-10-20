@@ -103,7 +103,7 @@ Dashboard dibuka lewat server lokal, bukan `file://`:
 
 ```bash
 cd dashboard && python -m http.server 8765
-# lalu http://127.0.0.1:8765/#demo
+# lalu http://127.0.0.1:8765/?demo=1
 ```
 
 ## Cara bekerja di sini

@@ -19,10 +19,38 @@ python -m http.server 8765
 
 Buka `http://127.0.0.1:8765/`. Alternatif tanpa Python: `npx http-server dashboard -p 8765`.
 
+## Navigasi
+
+Dashboard terdiri atas lima tampilan, satu menu satu halaman, dengan alamat di hash URL:
+
+| Hash | Isi |
+|---|---|
+| `#ringkasan` | Kepala run, chip metadata, kartu statistik, graf pipeline, dan ringkasan singkat (tiga temuan teratas dan status alert) dengan tautan **Lihat semua** |
+| `#temuan` | Daftar lengkap temuan LLM, filter, dan panel detail |
+| `#verifikasi` | Alert SonarCloud beserta putusan model, alasannya, dan rekomendasi perbaikan |
+| `#riwayat` | Seluruh run di branch yang dilihat; memilih run memperbarui semua halaman lalu pindah ke Ringkasan |
+| `#eksperimen` | Angka evaluasi tiga model; hanya ada untuk run yang membawa blok `eksperimen` |
+
+Hash dipilih sebagai alamat tampilan karena dashboard ini berkas statis tanpa server yang bisa
+menangani rute: Back, Forward, muat ulang, dan berbagi tautan bekerja tanpa konfigurasi hosting apa
+pun. Hash kosong atau yang tidak dikenal jatuh ke `#ringkasan` dan **alamatnya ikut dibetulkan**,
+supaya yang tertulis selalu sama dengan yang terlihat.
+
+Saat tampilan berpindah: panel yang terbuka ditutup, fokus pindah ke judul tampilan, halaman
+digulir ke atas, dan `document.title` diperbarui. Fokus **tidak** dipindahkan saat halaman pertama
+dimuat, karena mencuri fokus sebelum pengguna menyentuh apa pun hanya menimbulkan cincin fokus yang
+terbaca sebagai galat.
+
 ## Mode demo
 
-Buka `http://127.0.0.1:8765/#demo` atau tekan **Buka mode demo**. Tidak perlu token dan tidak ada
-panggilan ke GitHub. Data di `fixtures/v2/`:
+Buka `http://127.0.0.1:8765/?demo=1` atau tekan **Buka mode demo**. Tidak perlu token dan tidak ada
+panggilan ke GitHub. Mode demo ada di **query**, bukan hash, karena hash sudah dipakai sebagai
+alamat tampilan; keduanya tidak bisa menempati tempat yang sama. `#demo` dan `#demo-v2` tetap
+diterima sebagai alias lama lalu ditulis ulang menjadi `?demo=1#ringkasan`, sehingga tautan dan
+pintasan yang sudah beredar tidak putus. Mode demo ditandai di dua tempat yang terlihat di **setiap**
+tampilan: banner di atas isi halaman, dan baris status **Mode demo** di dasar sidebar.
+
+Data di `fixtures/v2/`:
 
 | Berkas | Isi | Asal |
 |---|---|---|
@@ -117,7 +145,7 @@ npx playwright install chromium
 ```
 
 Jalankan dashboard lebih dulu (`python -m http.server 8765` di folder `dashboard/`), lalu
-arahkan skrip Playwright ke `http://127.0.0.1:8765/#demo`. Yang perlu diperiksa:
+arahkan skrip Playwright ke `http://127.0.0.1:8765/?demo=1#<tampilan>`. Yang perlu diperiksa:
 
 Setiap pemeriksaan dijalankan atas **seluruh kombinasi keadaan x lebar x tema**, bukan satu
 halaman saja. Keadaan yang wajib diperiksa: tampilan operasional, drawer terbuka, tab Eksperimen,

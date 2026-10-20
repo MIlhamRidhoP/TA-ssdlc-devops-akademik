@@ -189,8 +189,8 @@
   const state = {
     demo: false,
     models: [],
-    nav: 'ringkasan',
-    tab: 'operasional',
+    tampilan: null,
+    diminta: null,
     eksLabel: 'utama',
     token: null,
     tokenDiingat: false,
@@ -474,6 +474,14 @@
     + 'Branch feat/prompt-v2 memuat rekaman run CI #54 yang benar-benar berjalan di GitHub Actions, lengkap dengan status tiap job.',
     { label: 'Keluar dari mode demo', fn: () => keluarDemo() });
 
+  // Mode demo ditulis ke query, bukan hash, karena hash sudah dipakai tampilan. Tampilan yang
+  // sedang dibuka ikut dipertahankan supaya masuk dan keluar demo tidak memindahkan halaman.
+  const setelDemoDiUrl = (aktif) => {
+    const u = new URL(location.href);
+    if (aktif) u.searchParams.set('demo', '1'); else u.searchParams.delete('demo');
+    history.replaceState(null, '', u.pathname + u.search + u.hash);
+  };
+
   // ---------- Token ----------
   const muatToken = () => {
     const sesi = store.get('sessionStorage', KUNCI.token);
@@ -556,7 +564,7 @@
     $('token-save').disabled = false;
     renderAkses('ok', teksTokenAktif());
     if (!tersimpan) tampilBanner('info', 'Browser menolak penyimpanan. Token hanya aktif sampai halaman dimuat ulang.');
-    if (state.demo) { state.demo = false; history.replaceState(null, '', location.pathname + location.search); }
+    if (state.demo) { state.demo = false; setelDemoDiUrl(false); }
     masukLive();
   };
 
@@ -600,7 +608,7 @@
   const masukDemo = async () => {
     hentikanPantau();
     state.demo = true;
-    if (location.hash !== '#demo') history.replaceState(null, '', '#demo');
+    setelDemoDiUrl(true);
     renderRailBawah();
     bannerDemo();
     await muatProjects();
@@ -609,7 +617,7 @@
   const keluarDemo = () => {
     hentikanPantau();
     state.demo = false;
-    history.replaceState(null, '', location.pathname + location.search);
+    setelDemoDiUrl(false);
     renderRailBawah();
     $('banner').hidden = true;
     state.banner = null;
@@ -1104,18 +1112,17 @@
     $('summary').hidden = true;
     $('alerts-box').hidden = true;
     $('catatan-alat').hidden = true;
-    $('tabs').hidden = true;
     $('railnav-box').hidden = true;
-    $('panel-operasional').hidden = false;
-    $('panel-eksperimen').hidden = true;
     isi($('panel-eksperimen'));
     isi($('alerts-ringkas'));
     isi($('alerts-body'));
+    isi($('ringkas-temuan'));
+    isi($('ringkas-alert'));
     isi($('filters'));
     isi($('title-block'));
     isi($('run-status'));
     $('run-status').hidden = true;
-    state.tab = 'operasional';
+    $('run-lama').hidden = true;
   };
 
   const renderMemuat = () => {
@@ -1531,14 +1538,147 @@
         kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
   };
 
-  // ---------- Navigasi rail ----------
+  // Ringkasan singkat di halaman Ringkasan: cukup untuk memutuskan apakah perlu membuka halaman
+  // lain. Sengaja dibatasi tiga temuan dan satu baris status alert; kalau isinya lengkap, halaman
+  // Temuan dan Verifikasi kehilangan alasan untuk ada.
+  const RINGKAS_MAKS = 3;
+  const renderRingkasSingkat = () => {
+    const h = state.hasil;
+    // Vulnerability lebih dulu, lalu keyakinan tertinggi: itu urutan yang paling mungkin
+    // ditindaklanjuti, bukan urutan berkas.
+    const bobotSifat = (t) => (t.sifat === 'vulnerability' ? 0 : 1);
+    const bobotKeyakinan = (t) => ({ high: 0, medium: 1, low: 2 }[t.keyakinan] ?? 3);
+    const teratas = h.findings.slice()
+      .sort((a, b) => bobotSifat(a) - bobotSifat(b) || bobotKeyakinan(a) - bobotKeyakinan(b))
+      .slice(0, RINGKAS_MAKS);
+
+    isi($('ringkas-temuan'), teratas.length
+      ? el('ul', { class: 'ringkas-list' }, teratas.map((t) => el('li', {},
+        el('button', {
+          class: 'ringkas-temuan-item', type: 'button',
+          onclick: () => { pergiKe('temuan'); bukaTemuan(t.fingerprint); },
+        },
+        el('span', { class: 'ringkas-atas' },
+          el('span', { class: `chip ${t.sifat === 'hardening' ? 'chip-hardening' : 'chip-vuln'}`, text: t.sifat }),
+          el('b', { class: 'ringkas-judul', text: t.jenis ?? '—' })),
+        el('span', { class: 'ringkas-lokasi data' }, teksLokasi(t.file, t.baris))))))
+      : el('p', { class: 'note', text: 'Tidak ada temuan LLM pada run ini.' }));
+
+    const n = (p) => h.alerts.filter((a) => a.putusan === p).length;
+    isi($('ringkas-alert'), h.alerts.length
+      ? el('div', { class: 'ringkas-putusan' },
+        [['true_positive', 'Dikonfirmasi model'], ['false_positive', 'False positive'],
+          ['uncertain', 'Ragu-ragu'], [null, 'Tanpa putusan']].map(([k, label]) => el('div', { class: 'ringkas-angka' },
+          // Warna hanya untuk angka di atas nol, aturan yang sama dengan kartu statistik: nol
+          // berwarna membuat mata berhenti di tempat yang justru tidak perlu ditindaklanjuti.
+          el('b', { class: n(k) > 0 ? `putusan p-${infoPutusan(k).kelas}` : 'ringkas-nol', text: String(n(k)) }),
+          el('span', { text: label }))))
+      : el('p', { class: 'note', text: 'Tidak ada alert Sonar pada run ini.' }));
+  };
+
+  // Penanda run lama: kalau yang dibuka bukan run terbaru di branch ini, katakan dan sediakan
+  // jalan ke yang terbaru. Tanpa ini, angka lama mudah disangka keadaan sekarang.
+  const renderPenandaRunLama = () => {
+    const n = $('run-lama');
+    const daftar = entriBranch();
+    const terbaru = daftar[0];
+    const kini = state.entri;
+    if (!terbaru || !kini || terbaru.id === kini.id) { n.hidden = true; isi(n); return; }
+    n.hidden = false;
+    isi(n,
+      el('span', { class: 'lencana l-high', text: 'Bukan run terbaru' }),
+      el('button', {
+        class: 'btn-text', type: 'button',
+        onclick: () => { muatRun(terbaru); pergiKe('ringkasan'); },
+      }, `Buka run #${terbaru.nomor}`));
+  };
+
+  // ---------- Navigasi dan router ----------
+  // Satu menu, satu tampilan, satu hash. Hash dipilih sebagai alamat tampilan karena dashboard ini
+  // berkas statis tanpa server yang bisa menangani rute; hash membuat Back, Forward, muat ulang,
+  // dan berbagi tautan bekerja tanpa konfigurasi hosting apa pun.
   const NAV = [
-    { key: 'ringkasan', label: 'Ringkasan', tab: 'operasional', sel: '#summary', ikon: 'kisi' },
-    { key: 'temuan', label: 'Temuan', tab: 'operasional', sel: '#temuan', ikon: 'perisai' },
-    { key: 'verifikasi', label: 'Verifikasi', tab: 'operasional', sel: '#alerts-box', ikon: 'terverifikasi' },
-    { key: 'riwayat', label: 'Riwayat', tab: 'operasional', sel: '#history', ikon: 'riwayat' },
-    { key: 'eksperimen', label: 'Eksperimen', tab: 'eksperimen', sel: '#panel-eksperimen', ikon: 'labu' },
+    { key: 'ringkasan', label: 'Ringkasan', judul: 'Ringkasan run', ikon: 'kisi', fokus: 'run-title' },
+    { key: 'temuan', label: 'Temuan', judul: 'Temuan', ikon: 'perisai', fokus: 'temuan-h' },
+    { key: 'verifikasi', label: 'Verifikasi', judul: 'Verifikasi alert Sonar', ikon: 'terverifikasi', fokus: 'alerts-h' },
+    { key: 'riwayat', label: 'Riwayat', judul: 'Riwayat run', ikon: 'riwayat', fokus: 'hist-h' },
+    { key: 'eksperimen', label: 'Eksperimen', judul: 'Eksperimen', ikon: 'labu', fokus: 'eks-h' },
   ];
+  const KUNCI_TAMPILAN = NAV.map((x) => x.key);
+  const TAMPILAN_BAWAAN = 'ringkasan';
+
+  // Mode demo pindah ke query string. Sebelumnya ia memakai hash, dan hash kini dipakai tampilan;
+  // keduanya tidak bisa menempati tempat yang sama. #demo dan #demo-v2 tetap diterima sebagai alias
+  // lama lalu ditulis ulang, supaya tautan dan pintasan yang sudah beredar tidak putus.
+  const demoDiUrl = () => new URLSearchParams(location.search).has('demo');
+
+  const bacaTampilan = () => {
+    const h = location.hash.replace(/^#/, '');
+    return KUNCI_TAMPILAN.includes(h) ? h : null;
+  };
+
+  // Menyusun URL sendiri, bukan menyentuh location.hash langsung, supaya query (mode demo) tidak
+  // ikut hilang saat tampilan berganti.
+  const urlTampilan = (key) => {
+    const u = new URL(location.href);
+    u.hash = `#${key}`;
+    return u.pathname + u.search + u.hash;
+  };
+
+  const pergiKe = (key, { ganti = false, pindahFokus = true } = {}) => {
+    const tujuan = KUNCI_TAMPILAN.includes(key) ? key : TAMPILAN_BAWAAN;
+    const url = urlTampilan(tujuan);
+    if (ganti) history.replaceState(null, '', url);
+    else if (location.hash !== `#${tujuan}`) history.pushState(null, '', url);
+    terapkanTampilan(tujuan, { pindahFokus });
+  };
+
+  // Tampilan yang tidak tersedia untuk run ini tidak boleh menjadi halaman kosong tanpa sebab.
+  const tampilanTersedia = (key) => {
+    if (key === 'eksperimen') return Boolean(state.hasil?.eksperimen);
+    return true;
+  };
+
+  // pindahFokus dimatikan untuk perpindahan yang bukan tindakan pengguna, yaitu pemuatan awal dan
+  // render ulang saat run berganti. Memindahkan fokus di situ mencuri perhatian dan menggambar
+  // cincin fokus yang terbaca sebagai galat, padahal pengguna belum menyentuh apa pun.
+  function terapkanTampilan(key, { pindahFokus = true } = {}) {
+    // Yang diminta alamat dan yang bisa ditampilkan adalah dua hal berbeda. Saat halaman baru
+    // dimuat, data run belum ada, sehingga Eksperimen belum bisa dinilai tersedia; permintaannya
+    // disimpan supaya tidak hilang, lalu dicoba lagi begitu run termuat. Tanpa ini, muat ulang di
+    // #eksperimen selalu mendarat di Ringkasan.
+    state.diminta = KUNCI_TAMPILAN.includes(key) ? key : TAMPILAN_BAWAAN;
+    const tujuan = tampilanTersedia(state.diminta) ? state.diminta : TAMPILAN_BAWAAN;
+    // Alamat harus selalu sepakat dengan yang terlihat. Kalau permintaannya memang tidak berlaku
+    // untuk run ini, alamatnya dibetulkan, bukan dibiarkan menunjuk halaman yang tidak terbuka.
+    if (tujuan !== state.diminta && state.hasil) {
+      state.diminta = tujuan;
+      history.replaceState(null, '', urlTampilan(tujuan));
+    }
+    if (location.hash !== `#${tujuan}` && state.diminta === tujuan) {
+      history.replaceState(null, '', urlTampilan(tujuan));
+    }
+    state.tampilan = tujuan;
+    // Berpindah tampilan sambil meninggalkan panel terbuka akan membuat fokus terkurung di panel
+    // yang isinya sudah tidak ada hubungannya dengan halaman di belakangnya.
+    if (drawerAktif) tutupDrawerAktif();
+    for (const x of NAV) {
+      const n = $(`v-${x.key}`);
+      if (n) n.hidden = x.key !== tujuan;
+    }
+    if (tujuan === 'eksperimen') renderEksperimen();
+    renderNav();
+    const info = NAV.find((x) => x.key === tujuan);
+    document.title = state.hasil?.run?.nomor
+      ? `${info.judul} · Run #${state.hasil.run.nomor} · Security Dashboard`
+      : `${info.judul} · Security Dashboard`;
+    // Di layar sempit menu adalah panel; membiarkannya terbuka menutupi halaman yang baru dipilih.
+    if (railSempit() && document.documentElement.dataset.rail === 'buka') terapkanRail(false);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    if (!pindahFokus) return;
+    const judul = $(info.fokus);
+    if (judul && judul.offsetParent !== null) judul.focus({ preventScroll: true });
+  }
 
   // Lencana navigasi hanya memuat angka dari run yang sedang dibaca dan dari index branch itu.
   // Yang datanya belum ada tidak dapat lencana sama sekali: lencana berisi 0 terbaca sebagai
@@ -1565,18 +1705,17 @@
     const v2 = state.hasil?.schema_version === 2;
     $('railnav-box').hidden = !v2;
     if (!v2) return;
-    const adaEks = Boolean(state.hasil.eksperimen);
+    const adaEks = tampilanTersedia('eksperimen');
     isi($('railnav'), NAV.filter((x) => x.key !== 'eksperimen' || adaEks).map((x) => {
       const l = lencanaNav(x.key);
-      return el('li', {}, el('button', {
-        type: 'button', 'aria-current': state.nav === x.key ? 'true' : 'false',
-        onclick: () => {
-          state.nav = x.key;
-          if (state.tab !== x.tab) pilihTab(x.tab);
-          renderNav();
-          if (railSempit()) terapkanRail(false);
-          const n = document.querySelector(x.sel);
-          if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Tautan sungguhan, bukan tombol: alamatnya nyata, bisa dibuka di tab baru, dan
+      // disalin. Klik biasa ditangani router supaya tidak ada muat ulang halaman.
+      return el('li', {}, el('a', {
+        href: urlTampilan(x.key), 'aria-current': state.tampilan === x.key ? 'page' : null,
+        onclick: (e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+          e.preventDefault();
+          pergiKe(x.key);
         },
       }, ikon(IKON[x.ikon]), el('span', { class: 'railnav-label', text: x.label }),
       l ? el('span', { class: `lencana ${l.kelas}`, 'aria-label': l.label ?? null, text: l.teks }) : null));
@@ -1834,7 +1973,7 @@
           const tombol = el('button', {
             class: 'hrow', type: 'button', 'aria-current': aktif ? 'true' : 'false',
             'aria-label': `Run ${e.nomor}, ${labelVendor(e.vendor)}, ${j.temuan ?? 0} temuan, ${j.alert ?? 0} alert, ${rincian}${gagal ? ', run gagal' : ''}`,
-            onclick: () => muatRun(e),
+            onclick: () => { muatRun(e); pergiKe('ringkasan'); },
           },
           el('span', { class: 'hkepala' },
             el('b', { class: 'hnum data', text: `#${e.nomor}` }),
@@ -2073,16 +2212,7 @@
     tandaiGulir();
   };
 
-  const pilihTab = (tab) => {
-    state.tab = tab;
-    const eks = tab === 'eksperimen';
-    $('tab-operasional').setAttribute('aria-selected', String(!eks));
-    $('tab-eksperimen').setAttribute('aria-selected', String(eks));
-    $('panel-operasional').hidden = eks;
-    $('panel-eksperimen').hidden = !eks;
-    $('summary').hidden = eks;
-    if (eks) renderEksperimen();
-  };
+
 
   // Ekspor dan impor catatan lokal. Satu-satunya jalan memindahkan catatan antar browser atau perangkat,
   // karena catatan sengaja tidak dikirim ke mana pun.
@@ -2123,8 +2253,6 @@
 
   const renderSemuaV2 = () => {
     $('catatan-alat').hidden = false;
-    $('tabs').hidden = !state.hasil.eksperimen;
-    if (!state.hasil.eksperimen && state.tab === 'eksperimen') state.tab = 'operasional';
     // Run v2 bisa berasal dari CLI (tanpa pipeline) atau dari workflow (punya status job).
     // Tanpa data pipeline, panel gelapnya hanya ruang kosong berisi satu kalimat; keterangannya
     // pindah ke metadata kepala run, tempat fakta run lain berada.
@@ -2138,8 +2266,11 @@
     renderTemuanV2();
     renderAlertV2();
     renderSampingV2();
-    pilihTab(state.tab);
-    renderNav();
+    renderRingkasSingkat();
+    renderPenandaRunLama();
+    // Tampilan yang sedang dibuka dipertahankan saat run berganti; kalau tidak berlaku untuk run
+    // ini (misalnya Eksperimen pada run tanpa blok eksperimen), router menggesernya ke Ringkasan.
+    terapkanTampilan(state.diminta ?? bacaTampilan() ?? TAMPILAN_BAWAAN, { pindahFokus: false });
     perbaruiTombolJalankan();
   };
 
@@ -2151,10 +2282,7 @@
     $('summary').hidden = true;
     $('alerts-box').hidden = true;
     $('catatan-alat').hidden = true;
-    $('tabs').hidden = true;
     $('railnav-box').hidden = true;
-    $('panel-operasional').hidden = false;
-    $('panel-eksperimen').hidden = true;
     isi($('filters'));
     isi($('alur'));
     isi($('alur-teks'));
@@ -2347,8 +2475,20 @@
     $('temuan-tutup').addEventListener('click', tutupDrawerAktif);
     $('run-batal').addEventListener('click', tutupDrawerAktif);
     $('drawer-temuan-tirai').addEventListener('click', tutupDrawerAktif);
-    $('tab-operasional').addEventListener('click', () => pilihTab('operasional'));
-    $('tab-eksperimen').addEventListener('click', () => pilihTab('eksperimen'));
+    // Tautan "Lihat semua" di Ringkasan.
+    for (const b of document.querySelectorAll('[data-ke]')) {
+      b.addEventListener('click', () => pergiKe(b.dataset.ke));
+    }
+    // Back dan Forward: hash berubah tanpa klik, tampilan harus ikut.
+    window.addEventListener('hashchange', () => terapkanTampilan(bacaTampilan() ?? TAMPILAN_BAWAAN));
+    window.addEventListener('popstate', () => terapkanTampilan(bacaTampilan() ?? TAMPILAN_BAWAAN));
+    // Lewati navigasi: memindahkan fokus ke tampilan yang sedang terbuka, tanpa mengubah alamat.
+    $('skip').addEventListener('click', (e) => {
+      e.preventDefault();
+      const info = NAV.find((x) => x.key === state.tampilan) ?? NAV[0];
+      const n = $(info.fokus);
+      if (n && !n.hidden) n.focus();
+    });
     $('catatan-ekspor').addEventListener('click', eksporCatatan);
     $('catatan-impor-btn').addEventListener('click', () => $('catatan-impor').click());
     $('catatan-impor').addEventListener('change', (e) => {
@@ -2403,7 +2543,15 @@
     if (location.protocol === 'file:') {
       tampilBanner('error', 'Dashboard dibuka langsung dari file. Jalankan lewat server lokal (lihat README) supaya projects.json dan mode demo bisa dibaca.');
     }
-    if (location.hash === '#demo' || location.hash === '#demo-v2') masukDemo();
+    // #demo dan #demo-v2 pernah menjadi pintu masuk mode demo, sebelum hash dipakai sebagai
+    // alamat tampilan. Keduanya tetap diterima lalu ditulis ulang ke bentuk baru, supaya tautan
+    // dan pintasan yang sudah beredar tidak putus.
+    const aliasDemo = ['#demo', '#demo-v2'].includes(location.hash);
+    if (aliasDemo) history.replaceState(null, '', `${location.pathname}?demo#${TAMPILAN_BAWAAN}`);
+    // Alamat dinormalkan sejak awal: hash kosong atau tidak dikenal menjadi #ringkasan, sehingga
+    // muat ulang selalu mendarat di tampilan yang sama dengan yang terlihat.
+    pergiKe(bacaTampilan() ?? TAMPILAN_BAWAAN, { ganti: true, pindahFokus: false });
+    if (aliasDemo || demoDiUrl()) masukDemo();
     else if (state.token) masukLive();
     else tampilStart();
   };
