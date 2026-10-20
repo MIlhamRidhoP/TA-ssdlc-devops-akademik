@@ -28,17 +28,38 @@ const cweSekeluarga = (a, b) => a.some((x) => b.some((y) => x === y
 
 const normalFile = (f) => String(f ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 
+// Teks temuan yang dipakai untuk mencari sebutan nama fungsi, bentuk yang sama dengan
+// sebutFungsi di skrip penilaian.
+const teksTemuan = (t) => `${t.jenis ?? ''} ${t.penjelasan ?? ''}`;
+const sebutFungsi = (teks, nama) => new RegExp(`\\b${nama}\\b`).test(teks);
+
+const dekat = (a, b) => {
+  const ba = Number(a.baris);
+  const bb = Number(b.baris);
+  return Number.isFinite(ba) && Number.isFinite(bb) && Math.abs(ba - bb) <= JENDELA_BARIS;
+};
+
 // Dua temuan dianggap temuan yang sama bila berada di file yang sama, di lokasi yang sama, dan
 // kelas kerentanannya sekeluarga. CWE yang berbeda kelas di baris berdekatan tetap dua temuan:
 // menggabungkannya akan menyembunyikan salah satunya.
+//
+// Aturan lokasinya mengikuti bentuk yang dipakai skrip penilaian. Di sana, ketika nama fungsi
+// tidak bisa ditentukan, pencocokan TIDAK langsung gugur melainkan jatuh ke apakah teks temuan
+// menyebut nama fungsi itu. Perlakuan yang sama dipakai di sini untuk kasus yang nyata terjadi:
+// satu vendor melaporkan fungsi, vendor lain mengosongkannya.
 const temuanCocok = (a, b) => {
   if (normalFile(a.file) !== normalFile(b.file)) return false;
   if (!cweSekeluarga(angkaCwe(a.cwe), angkaCwe(b.cwe))) return false;
   if (a.fungsi && b.fungsi) return a.fungsi === b.fungsi;
-  const ba = Number(a.baris);
-  const bb = Number(b.baris);
-  if (!Number.isFinite(ba) || !Number.isFinite(bb)) return false;
-  return Math.abs(ba - bb) <= JENDELA_BARIS;
+  // Tepat satu yang melaporkan fungsi: cocok bila yang lain menyebut nama itu di teksnya,
+  // atau, kalau tidak, bila barisnya berdekatan.
+  if (a.fungsi || b.fungsi) {
+    const nama = a.fungsi || b.fungsi;
+    const lain = a.fungsi ? b : a;
+    return sebutFungsi(teksTemuan(lain), nama) || dekat(a, b);
+  }
+  // Keduanya tanpa fungsi: hanya kedekatan baris yang tersisa sebagai sinyal lokasi.
+  return dekat(a, b);
 };
 
 // Suara terbanyak dari putusan yang sah, minimal dua suara sama. Kalau tidak tercapai, alert

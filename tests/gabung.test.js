@@ -232,3 +232,37 @@ test('skrip penilaian tidak disentuh penggabung', () => {
     }
   }
 });
+
+// ---------- Satu vendor melaporkan fungsi, vendor lain tidak ----------
+// Keadaan ini nyata: tiap vendor mengisi field fungsi sesukanya. Perlakuannya mengikuti bentuk
+// yang dipakai skrip penilaian, yang ketika nama fungsi tidak bisa ditentukan tidak langsung
+// menggugurkan pencocokan melainkan jatuh ke apakah teks temuan menyebut nama fungsi itu.
+const sebagian = (fungsiA, bOpsi) => G.gabungkan([
+  { vendor: 'google', hasil: hasilVendor('google', { findings: [temuan('T-01', { fungsi: fungsiA })] }) },
+  { vendor: 'anthropic', hasil: hasilVendor('anthropic', { findings: [temuan('T-02', bOpsi)] }) },
+  { vendor: 'openai', alasan: 'tidak ditemukan' },
+], {});
+
+test('fungsi hanya di satu vendor: cocok bila teks vendor lain menyebut nama fungsinya', () => {
+  const h = sebagian('cari', { fungsi: null, baris: 400, penjelasan: 'Query di fungsi cari tidak diparameterkan.' });
+  assert.equal(h.findings.length, 1, 'sebutan nama fungsi di teks sudah cukup, sejauh apa pun barisnya');
+  assert.equal(h.findings[0].kesepakatan, 2);
+});
+
+test('fungsi hanya di satu vendor: cocok bila barisnya berdekatan', () => {
+  const h = sebagian('cari', { fungsi: null, baris: 12, penjelasan: 'tanpa menyebut nama fungsi' });
+  assert.equal(h.findings.length, 1);
+  assert.equal(h.findings[0].kesepakatan, 2);
+});
+
+test('fungsi hanya di satu vendor: tidak cocok bila tidak menyebut dan barisnya jauh', () => {
+  const h = sebagian('cari', { fungsi: null, baris: 400, penjelasan: 'tanpa menyebut nama fungsi' });
+  assert.equal(h.findings.length, 2, 'tanpa sinyal lokasi apa pun, keduanya temuan berbeda');
+  assert.equal(h.findings[0].kesepakatan, 1);
+});
+
+test('sebutan nama fungsi harus utuh, bukan potongan kata', () => {
+  // "pencarian" memuat "cari" sebagai substring, tetapi bukan sebutan fungsi itu.
+  const h = sebagian('cari', { fungsi: null, baris: 400, penjelasan: 'ada masalah pada pencarian data' });
+  assert.equal(h.findings.length, 2, 'batas kata harus dihormati, sama seperti skrip penilaian');
+});
