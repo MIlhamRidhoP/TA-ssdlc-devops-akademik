@@ -1089,8 +1089,10 @@
     const kartu = (label, nilai, catatan, kelas) => el('div', { class: `cell${kelas && nilai > 0 ? ` ${kelas}` : ''}${nilai === 0 ? ' nol' : ''}` },
       el('p', { class: 'cell-label', text: label }), el('p', { class: 'cell-num', text: String(nilai) }),
       catatan ? el('p', { class: 'cell-note', text: catatan }) : null);
-    const grup = (judul, ...kartuAnak) => el('div', { class: 'kartu-grup' },
-      el('h3', { text: judul }), el('div', { class: 'kartu-baris' }, kartuAnak));
+    const grup = (judul, catatanKanan, ...kartuAnak) => el('section', { class: 'kartu-grup' },
+      el('div', { class: 'kartu-kepala' }, el('h3', { text: judul }),
+        catatanKanan ? el('span', { class: 'kartu-total', text: catatanKanan }) : null),
+      el('div', { class: 'kartu-baris' }, kartuAnak.flat()));
 
     const SEV_DIKENAL = ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
     const sev = (daftar) => h.alerts.filter((a) => daftar.includes(String(a.severity_sonar).toUpperCase())).length;
@@ -1099,18 +1101,18 @@
     const ditinjau = (v) => h.findings.filter((t) => state.keputusan[t.fingerprint]?.v === v).length;
 
     isi($('summary'),
-      grup('Keparahan alert Sonar',
+      grup('Keparahan alert Sonar', `${h.alerts.length} alert`,
         kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
         kartu('Critical', sev(['CRITICAL']), 'severity apa adanya dari Sonar', 'high'),
         kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
         kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
         sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
-      grup('Putusan model atas alert',
-        kartu('Dikonfirmasi model', n('true_positive'), 'alert dinyatakan nyata'),
-        kartu('False positive', n('false_positive'), 'alert ditolak model'),
-        kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan'),
+      grup('Putusan model atas alert', `${h.alerts.filter((a) => a.putusan).length} dari ${h.alerts.length} berputusan`,
+        kartu('Dikonfirmasi model', n('true_positive'), 'alert dinyatakan nyata', 'crit'),
+        kartu('False positive', n('false_positive'), 'alert ditolak model', 'ok'),
+        kartu('Ragu-ragu', n('uncertain'), 'dipertahankan, bukan kegagalan', 'high'),
         kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal')),
-      grup('Sumber dan tindak lanjut',
+      grup('Sumber dan tindak lanjut', 'alert Sonar dan temuan LLM adalah dua himpunan terpisah',
         kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
         kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
         kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
@@ -1383,15 +1385,20 @@
               return i;
             }));
           const gagal = e.status === 'gagal';
+          const aktif = state.entri?.id === e.id;
           return el('button', {
-            class: 'hrow', type: 'button', 'aria-current': state.entri?.id === e.id ? 'true' : 'false',
-            'aria-label': `Run ${e.nomor}, ${labelVendor(e.vendor)}, ${j.temuan ?? 0} temuan, ${rincian}${gagal ? ', run gagal' : ''}`,
+            class: 'hrow', type: 'button', 'aria-current': aktif ? 'true' : 'false',
+            'aria-label': `Run ${e.nomor}, ${labelVendor(e.vendor)}, ${j.temuan ?? 0} temuan, ${j.alert ?? 0} alert, ${rincian}${gagal ? ', run gagal' : ''}`,
             onclick: () => muatRun(e),
           },
-          el('span', { class: 'hnum' }, `#${e.nomor}`, gagal ? el('span', { class: 'hgagal', title: 'Run gagal', text: '!' }) : null),
-          el('span', { class: 'hmeta', text: `${labelVendor(e.vendor)} · ${waktu(e.selesai)}` }),
+          el('span', { class: 'hkepala' },
+            el('b', { class: 'hnum data', text: `#${e.nomor}` }),
+            el('span', { class: 'hmodel', text: labelVendor(e.vendor) }),
+            gagal ? el('span', { class: 'hgagal', title: 'Run gagal', text: '!' }) : null,
+            aktif ? el('span', { class: 'lencana l-accent', text: 'Aktif' }) : null,
+            el('span', { class: 'hbiaya data', text: typeof e.biaya_usd === 'number' ? `US$${e.biaya_usd.toFixed(4).replace('.', ',')}` : '' })),
           bar,
-          el('span', { class: 'htotal', text: String(j.temuan ?? 0) }));
+          el('span', { class: 'hmeta', text: `${waktu(e.selesai)} · ${j.temuan ?? 0} temuan, ${j.alert ?? 0} alert` }));
         }),
         el('div', { class: 'hist-legenda' }, [
           ...SEG_RIWAYAT.map(([, label, warna]) => {
