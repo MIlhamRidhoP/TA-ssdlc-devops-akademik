@@ -271,12 +271,11 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
   .rail-bawah { flex: none; }
 }
 
-/* Di bawah 64rem rail menjadi panel yang digeser masuk dari kiri, di bawah bilah atas dan di atas
-   isi halaman. Bilahnya sengaja tetap terlihat: di situlah tombol Menu berada, dan panel yang
-   menutupi tombol pembukanya sendiri membuat pengguna kehilangan jejak posisinya. */
+/* Di bawah 64rem rail menjadi panel yang digeser masuk dari kiri, di atas isi halaman, dengan
+   tirai yang meredupkan sisanya. Bilah atas ikut bergulir bersama halaman: dibuat menempel, ia
+   menutupi judul run begitu halaman digulir, dan panel ini sudah membawa baris Menu dengan tombol
+   Tutup sendiri. */
 @media (max-width: 63.99rem) {
-  /* Bilah atas ikut bergulir bersama halaman. Dibuat menempel, ia menutupi judul run begitu
-     halaman digulir, dan panelnya sendiri sudah membawa baris Menu dengan tombol Tutup. */
   :root[data-rail="tutup"] .rail-isi { display: none; }
   .rail-isi { position: fixed; inset: 0; z-index: 8; }
   .rail-tirai { display: block; position: absolute; inset: 0; background: oklch(0% 0 0 / 0.5); }
