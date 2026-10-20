@@ -1,6 +1,6 @@
 {
-  "catatan": "Satu sumber daftar model untuk dashboard dan untuk validasi input workflow. Perkiraan biaya adalah rata-rata biaya satu run kondisi utama (1 panggilan deteksi + 5 panggilan verifikasi) dari eksperimen 19 Oktober 2026, hasil-eksperimen/20261019 di branch eksperimen/seeded. Angka ini perkiraan, bukan tarif: biaya nyata bergantung panjang kode, jumlah alert, dan tarif vendor saat run.",
-  "sumber_biaya": "hasil-eksperimen/20261019 (3 run per vendor, kondisi utama)",
+  "catatan": "Satu sumber daftar model untuk dashboard dan untuk validasi input workflow. biaya_terukur berisi titik ukur nyata: berapa biaya satu run pada sekian alert Sonar. Dashboard memperkirakan biaya run berikutnya dengan garis lurus lewat titik-titik itu (satu panggilan deteksi, ditambah satu panggilan verifikasi per alert), dan menyebut sumbernya. Perkiraan tetap perkiraan: biaya nyata bergantung panjang kode, jumlah alert, panjang jawaban model, dan tarif vendor saat run.",
+  "sumber_biaya": "hasil-eksperimen/20261019 (3 run per vendor, 5 alert) dan run #46 di branch security-results (1 alert)",
   "models": [
     {
       "vendor": "google",
@@ -30,7 +30,19 @@
       "bawaan": true,
       "secret": "GEMINI_API_KEY",
       "biaya_perkiraan_usd": 0.7631,
-      "catatan": "Model bawaan jalur v2."
+      "catatan": "Model bawaan jalur v2. Punya dua titik ukur, jadi perkiraannya ikut jumlah alert.",
+      "biaya_terukur": [
+        {
+          "alert": 1,
+          "usd": 0.508244,
+          "sumber": "run #46, feat/prompt-v2, 19 Okt 2026"
+        },
+        {
+          "alert": 5,
+          "usd": 0.7631,
+          "sumber": "rata-rata 3 run eksperimen 19 Okt 2026"
+        }
+      ]
     },
     {
       "vendor": "anthropic",
@@ -40,7 +52,14 @@
       "bawaan": false,
       "secret": "ANTHROPIC_API_KEY",
       "biaya_perkiraan_usd": 0.3702,
-      "catatan": "Secret ANTHROPIC_API_KEY sudah ada di GitHub Secrets. Pembanding jalur v2 pada eksperimen 19 Okt 2026."
+      "catatan": "Secret ANTHROPIC_API_KEY sudah ada di GitHub Secrets. Baru satu titik ukur (5 alert), jadi perkiraannya belum ikut jumlah alert.",
+      "biaya_terukur": [
+        {
+          "alert": 5,
+          "usd": 0.3702,
+          "sumber": "rata-rata 3 run eksperimen 19 Okt 2026"
+        }
+      ]
     },
     {
       "vendor": "openai",
@@ -50,7 +69,14 @@
       "bawaan": false,
       "secret": "OPENAI_API_KEY",
       "biaya_perkiraan_usd": 0.2031,
-      "catatan": "Secret OPENAI_API_KEY sudah ada di GitHub Secrets. Pembanding jalur v2 pada eksperimen 19 Okt 2026."
+      "catatan": "Secret OPENAI_API_KEY sudah ada di GitHub Secrets. Baru satu titik ukur (5 alert), jadi perkiraannya belum ikut jumlah alert.",
+      "biaya_terukur": [
+        {
+          "alert": 5,
+          "usd": 0.2031,
+          "sumber": "rata-rata 3 run eksperimen 19 Okt 2026"
+        }
+      ]
     }
   ]
 }

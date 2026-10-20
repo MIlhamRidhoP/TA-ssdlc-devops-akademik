@@ -30,6 +30,10 @@
       <nav aria-labelledby="proj-h">
         <h2 class="rail-h" id="proj-h">Project</h2>
         <ul class="projects" id="project-list"></ul>
+        <div class="field rail-branch">
+          <label for="f-branch-lihat">Branch yang dilihat</label>
+          <select class="select" id="f-branch-lihat"></select>
+        </div>
       </nav>
 
       <details class="access" id="access">
@@ -110,37 +114,34 @@
               <button class="btn btn-sm" type="button" id="drawer-tutup">Tutup</button>
             </div>
             <form class="run-form" id="run-form" novalidate>
-              <div class="field">
-                <label for="f-branch">Branch</label>
-                <select class="select" id="f-branch"></select>
-              </div>
-              <div class="field">
-                <label for="f-jalur">Jalur analisis</label>
-                <select class="select" id="f-jalur">
-                  <option value="v2" selected>v2 — deteksi + verifikasi per alert</option>
-                  <option value="v1">v1 — satu panggilan deteksi</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="f-model">Model</label>
-                <select class="select" id="f-model"></select>
-              </div>
-              <p class="go-hint" id="biaya-perkiraan"></p>
-              <div class="field wide" id="konfirmasi-v2-field" hidden>
-                <label class="check" for="f-konfirmasi-v2">
-                  <input type="checkbox" id="f-konfirmasi-v2">
-                  <span>Saya setuju menjalankan panggilan berbayar untuk run ini.</span>
-                </label>
-                <p class="go-hint">Jalur v2 mengirim satu panggilan deteksi ditambah satu panggilan verifikasi per alert SonarCloud. Di branch selain main, analisis Sonar yang dipakai berasal dari main; kecocokannya diperiksa lewat hash tree <code>src/</code> sebelum ada panggilan berbayar.</p>
-              </div>
-              <fieldset class="field wide">
+              <fieldset class="field">
                 <legend>Mode</legend>
                 <div class="seg">
                   <label><input type="radio" name="mode" value="sast"><span>SAST saja</span></label>
                   <label><input type="radio" name="mode" value="sast-llm" checked><span>SAST + LLM</span></label>
                   <label><input type="radio" name="mode" value="dast" disabled><span>DAST</span><small>di luar batasan TA</small></label>
                 </div>
+                <p class="go-hint" id="mode-hint"></p>
               </fieldset>
+              <div class="field">
+                <label for="f-branch">Branch</label>
+                <select class="select" id="f-branch"></select>
+                <p class="go-hint" id="branch-hint"></p>
+              </div>
+              <div class="field" id="model-field">
+                <label for="f-model">Model (vendor)</label>
+                <select class="select" id="f-model"></select>
+              </div>
+              <div class="field" id="biaya-field">
+                <p class="go-hint" id="biaya-perkiraan"></p>
+                <p class="go-hint go-hint-kecil" id="biaya-sumber"></p>
+              </div>
+              <div class="field" id="konfirmasi-v2-field" hidden>
+                <label class="check" for="f-konfirmasi-v2">
+                  <input type="checkbox" id="f-konfirmasi-v2">
+                  <span>Saya setuju menjalankan panggilan berbayar untuk run ini.</span>
+                </label>
+              </div>
               <div class="go">
                 <button class="btn btn-run" type="submit" id="run-btn"><span class="spin" aria-hidden="true"></span><span id="run-btn-label">Jalankan analisis</span></button>
                 <p class="go-hint" id="run-hint" role="status" aria-live="polite"></p>

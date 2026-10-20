@@ -5,8 +5,25 @@
       "repo": "TA-ssdlc-devops-akademik",
       "workflow": "devsecops.yml",
       "branches": [
-        { "name": "main", "dispatch": true },
-        { "name": "eksperimen/seeded", "dispatch": false, "catatan": "Arsip eksperimen. Workflow branch ini dikunci untuk menjaga data eksperimen." }
+        {
+          "name": "main",
+          "dispatch": true,
+          "v2": false,
+          "catatan_v2": "belum memuat jalur v2"
+        },
+        {
+          "name": "feat/prompt-v2",
+          "dispatch": true,
+          "v2": true,
+          "bawaan": true,
+          "catatan": "Branch jalur v2. Di mode demo, run tidak benar-benar dipicu."
+        },
+        {
+          "name": "eksperimen/seeded",
+          "dispatch": false,
+          "catatan": "Arsip eksperimen. Workflow branch ini dikunci untuk menjaga data eksperimen.",
+          "v2": false
+        }
       ]
     },
     {
@@ -14,7 +31,14 @@
       "repo": "aplikasi-lain",
       "workflow": "devsecops.yml",
       "demo_tanpa_workflow": true,
-      "branches": [{ "name": "main", "dispatch": true }]
+      "branches": [
+        {
+          "name": "main",
+          "dispatch": true,
+          "v2": true,
+          "catatan_v2": "belum memuat jalur v2"
+        }
+      ]
     }
   ]
 }

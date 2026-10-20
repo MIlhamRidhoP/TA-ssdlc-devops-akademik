@@ -193,6 +193,9 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .brand span { font-size: 0.8125rem; color: var(--muted); }
 
 .rail-h { font: 600 0.8125rem/1.3 var(--font-body); color: var(--muted); margin-bottom: var(--s-2); }
+/* Memilih branch yang dibaca adalah navigasi, bukan aksi: tempatnya di rail bersama Project,
+   terpisah dari select branch di drawer yang menentukan tujuan run. */
+.rail-branch { margin-top: var(--s-3); }
 
 .projects { display: grid; gap: var(--s-1); }
 @media (min-width: 40rem) and (max-width: 63.99rem) { .projects { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); } }
@@ -286,17 +289,22 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .run-form { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 30rem) { .run-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .run-form .wide { grid-column: 1 / -1; }
+/* Select selalu berada di permukaan terang (rail dan drawer), jadi tokennya ikut permukaan itu,
+   bukan token graphite. Sebelumnya latarnya --graphite-2 sementara teksnya --ink: di tema terang
+   keduanya gelap dan rasionya 1,2:1. */
 .select {
   appearance: none; width: 100%; min-width: 0; min-height: 2.5rem; padding: 0 2.25rem 0 var(--s-3);
-  border: 1px solid var(--graphite-rule); border-radius: var(--radius-ctl); background-color: var(--graphite-2); color: var(--on-graphite);
+  border: 1px solid var(--rule-2); border-radius: var(--radius-ctl); background-color: var(--paper); color: var(--ink);
   text-overflow: ellipsis;
-  background-image: linear-gradient(45deg, transparent 50%, var(--on-graphite-muted) 50%), linear-gradient(135deg, var(--on-graphite-muted) 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position: calc(100% - 1.05rem) 55%, calc(100% - 0.7rem) 55%;
   background-size: 0.35rem 0.35rem; background-repeat: no-repeat;
 }
-@media (hover: hover) { .select:hover:not(:disabled) { border-color: var(--on-graphite-muted); } }
-.select:disabled { opacity: 0.55; cursor: not-allowed; }
-.select:focus-visible { outline-color: var(--on-graphite-accent); }
+@media (hover: hover) { .select:hover:not(:disabled) { border-color: var(--accent); } }
+/* Bukan opacity: itu menurunkan kontras di bawah ambang tanpa terlihat di computed style. */
+.select:disabled { cursor: not-allowed; color: var(--muted); background-color: var(--paper-2); border-style: dashed; }
+.select:focus-visible { outline-color: var(--focus); }
+.select option:disabled { color: var(--muted); }
 fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .seg { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .seg label {
@@ -307,9 +315,13 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .seg label:has(input:checked) { border-color: var(--on-graphite-accent); box-shadow: inset 0 0 0 1px var(--on-graphite-accent); }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--on-graphite-accent); outline-offset: 2px; }
-.seg label:has(input:disabled) { cursor: not-allowed; opacity: 0.6; }
+/* Opsi mati tetap harus terbaca: opacity menurunkan kontras sampai di bawah 4,5:1 tanpa terlihat
+   di computed style. Yang dipakai warna redup eksplisit, dan keadaannya ditandai garis putus-putus
+   supaya tidak hanya bergantung warna. */
+.seg label:has(input:disabled) { cursor: not-allowed; border-style: dashed; color: var(--muted); }
 .seg label:has(input:disabled) input { cursor: not-allowed; }
 .seg small { font-size: 0.8125rem; color: var(--on-graphite-muted); }
+.seg label:has(input:disabled) small { color: var(--muted); }
 /* Persetujuan biaya jalur v2 memakai .check yang sama dengan panel token, disesuaikan ke panel
    graphite dan diberi bingkai karena konsekuensinya berbayar. */
 .run-form .check {
@@ -643,3 +655,6 @@ table.eks tr:last-child td { border-bottom: 0; }
   --graphite: var(--accent-ink);
 }
 .drawer-panel .btn-run:disabled { color: var(--ink-2); background: var(--paper-2); }
+/* Drawer hanya selebar 28rem; dua kolom membuat nama branch dan model terpotong elipsis. */
+.drawer-panel .run-form { grid-template-columns: minmax(0, 1fr); }
+.go-hint-kecil { font-size: 0.8125rem; }

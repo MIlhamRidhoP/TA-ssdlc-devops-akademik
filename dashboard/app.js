@@ -37,7 +37,11 @@
     { key: 'sonar', nama: 'SonarCloud', job: 'Analisis SonarCloud', hasil: 'sonarcloud' },
     { key: 'analisis', nama: 'Deteksi dan verifikasi', job: 'Analisis LLM v2 (deteksi dan verifikasi)', hasil: 'analisis' },
   ];
-  const jalurTerpilih = () => $('f-jalur')?.value ?? 'v2';
+  // Mode menentukan jalur, jadi drawer tidak punya pilihan jalur sendiri: satu keputusan, satu
+  // kontrol. SAST + LLM selalu jalur v2 (deteksi + verifikasi per alert, hasilnya skema 2 yang
+  // dibaca dashboard ini). SAST saja memakai jalur v1 yang tidak memanggil LLM sama sekali.
+  const jalurUntukMode = (mode) => (mode === 'sast-llm' ? 'v2' : 'v1');
+  const jalurTerpilih = () => jalurUntukMode(modeTerpilih());
   // Saat run sudah dimuat, jalurnya ditentukan isi hasil; saat menyiapkan run baru, oleh form.
   const jalurAktif = (live) => live?.jalur
     ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
@@ -136,7 +140,11 @@
     projects: [],
     statusProject: new Map(),
     proyek: null,
+    // Dua peran yang dulu dipegang satu nilai: `branch` adalah branch yang hasilnya sedang dibaca
+    // (termasuk arsip), `branchJalan` adalah branch tujuan run berikutnya (hanya yang bisa dipicu).
+    // Digabung, memilih mode SAST + LLM akan mengunci arsip dan menyeret pembaca keluar darinya.
     branch: null,
+    branchJalan: null,
     index: null,
     entri: null,
     hasil: null,
@@ -489,11 +497,16 @@
   const pilihProyek = (p, branchDisukai) => {
     hentikanPantau();
     state.proyek = p;
+    // Urutan pilihan: branch yang diminta, lalu branch bawaan project, lalu branch pertama yang
+    // sesuai mode sekarang, baru yang pertama apa adanya.
     state.branch = p.branches.find((b) => b.name === branchDisukai) ?? p.branches[0];
+    state.branchJalan = p.branches.find((b) => b.bawaan && branchSesuai(b))
+      ?? p.branches.find(branchSesuai) ?? null;
     state.filter = 'semua';
     state.terbuka = null;
     renderProjects();
-    renderFormBranch();
+    renderRailBranch();
+    renderDrawer();
     muatIndex();
   };
 
@@ -501,7 +514,8 @@
 
   // ---------- Daftar model ----------
   // dashboard/models.json adalah satu-satunya sumber daftar model, dipakai bersama workflow.
-  // Jalur v2 terbuka sejak uji coba run #46 berhasil; v1 tetap bisa dipilih untuk pembanding.
+  // Drawer hanya menawarkan model jalur v2, karena hanya skema 2 yang ditampilkan dashboard ini.
+  // Jalur v1 tetap ada di workflow untuk dispatch manual dan untuk mode SAST saja.
   const muatModels = async () => {
     try {
       const d = await jsonLokal('models.json');
@@ -510,36 +524,129 @@
       state.models = [];
     }
   };
-  const modelJalur = () => state.models.filter((m) => m.jalur === jalurTerpilih());
+  const modelJalur = () => state.models.filter((m) => m.jalur === 'v2');
+  const modelTerpilih = () => modelJalur().find((x) => x.id === $('f-model').value) ?? null;
+  // Mode SAST saja tetap melewati job jalur v1, yang memvalidasi input model terhadap daftar v1.
+  const modelV1Bawaan = () => (state.models.find((m) => m.jalur === 'v1' && m.bawaan)
+    ?? state.models.find((m) => m.jalur === 'v1'))?.id ?? '';
+
   const renderModels = () => {
     const daftar = modelJalur();
-    $('konfirmasi-v2-field').hidden = jalurTerpilih() !== 'v2';
     const sel = $('f-model');
     const sebelum = sel.value;
-    isi(sel, daftar.map((m) => el('option', { value: m.id, selected: m.bawaan ? true : null }, m.label)));
+    isi(sel, daftar.map((m) => el('option', { value: m.id, selected: m.bawaan ? true : null }, `${m.label} (${m.vendor})`)));
     if (daftar.some((m) => m.id === sebelum)) sel.value = sebelum;
     renderBiaya();
   };
+
+  // Jumlah alert Sonar yang terakhir diketahui untuk branch ini, dari entri index run terbaru.
+  const alertTerakhir = () => {
+    const b = branchJalan();
+    const n = (state.index?.runs ?? [])
+      .filter((e) => e.branch === b?.name)
+      .sort((a, c) => String(c.selesai ?? '').localeCompare(String(a.selesai ?? '')))[0]?.jumlah?.alert;
+    return Number.isFinite(n) ? n : null;
+  };
+  // Biaya satu run = satu panggilan deteksi + satu panggilan verifikasi per alert, jadi naik
+  // seiring jumlah alert. Angkanya ditarik lurus lewat titik ukur nyata di models.json, bukan
+  // ditebak: dengan dua titik ukur biayanya bisa dihitung untuk jumlah alert mana pun; dengan satu
+  // titik, yang jujur hanyalah menyebut titik itu apa adanya.
+  const perkiraanBiaya = (m, jumlahAlert) => {
+    const titik = (m?.biaya_terukur ?? [])
+      .filter((x) => Number.isFinite(x.alert) && Number.isFinite(x.usd))
+      .sort((a, b) => a.alert - b.alert);
+    if (!titik.length) return null;
+    const a = titik[0];
+    const b = titik[titik.length - 1];
+    if (titik.length < 2 || b.alert === a.alert) return { jenis: 'satu-titik', titik };
+    if (jumlahAlert === null) return { jenis: 'rentang', titik };
+    const usdHitung = a.usd + ((b.usd - a.usd) / (b.alert - a.alert)) * (jumlahAlert - a.alert);
+    return { jenis: 'hitung', usd: Math.max(usdHitung, 0), alert: jumlahAlert, titik };
+  };
+
   const renderBiaya = () => {
-    const m = modelJalur().find((x) => x.id === $('f-model').value);
-    const n = $('biaya-perkiraan');
-    if (!m) { n.textContent = ''; return; }
-    n.textContent = typeof m.biaya_perkiraan_usd === 'number'
-      ? `Perkiraan biaya satu run: US$${m.biaya_perkiraan_usd.toFixed(4).replace('.', ',')}. Rata-rata dari eksperimen 19 Okt 2026, bukan tarif pasti.`
-      : 'Perkiraan biaya belum diukur untuk model ini.';
+    const teks = $('biaya-perkiraan');
+    const sumber = $('biaya-sumber');
+    const m = modelTerpilih();
+    if (!m) { teks.textContent = ''; sumber.textContent = ''; return; }
+    const p = perkiraanBiaya(m, alertTerakhir());
+    if (!p) {
+      teks.textContent = 'Biaya model ini belum pernah diukur.';
+      sumber.textContent = 'Angka akan muncul setelah ada run yang biayanya tercatat.';
+      return;
+    }
+    const a = p.titik[0];
+    const b = p.titik[p.titik.length - 1];
+    if (p.jenis === 'hitung') teks.textContent = `Perkiraan biaya satu run: ${usd(p.usd)} untuk ${p.alert} alert Sonar di branch ini.`;
+    else if (p.jenis === 'satu-titik') teks.textContent = `Perkiraan biaya satu run: ${usd(a.usd)}, diukur pada ${a.alert} alert Sonar.`;
+    else teks.textContent = `Perkiraan biaya satu run: sekitar ${usd(a.usd)} (${a.alert} alert) sampai ${usd(b.usd)} (${b.alert} alert).`;
+    sumber.textContent = `Titik ukur: ${p.titik.map((x) => `${usd(x.usd)} pada ${x.alert} alert, ${x.sumber}`).join('; ')}. Perkiraan, bukan tarif.`;
   };
 
   // ---------- Form jalankan ----------
+  const modeTerpilih = () => document.querySelector('input[name="mode"]:checked')?.value ?? 'sast-llm';
+
+  // Branch hanya bisa dipicu kalau workflow di branch itu memuat jalur yang dipilih. Kemampuan v2
+  // tidak bisa ditanyakan ke API tanpa izin membaca isi berkas workflow, jadi dicatat per branch
+  // di projects.json dan dirawat bersama workflow-nya.
+  const branchSesuai = (b) => Boolean(b.dispatch) && (jalurTerpilih() !== 'v2' || b.v2 === true);
+  const sebabBranch = (b) => {
+    if (!b.dispatch) return 'arsip';
+    if (jalurTerpilih() === 'v2' && b.v2 !== true) return b.catatan_v2 ?? 'belum memuat jalur v2';
+    return null;
+  };
+  const branchJalan = () => state.branchJalan ?? state.branch;
+
+  // Select di rail: seluruh branch, termasuk arsip, karena ini soal apa yang dibaca.
+  const renderRailBranch = () => {
+    isi($('f-branch-lihat'), state.proyek.branches.map((b) => el('option', {
+      value: b.name, text: b.dispatch ? b.name : `${b.name} · arsip`, selected: b === state.branch,
+    })));
+  };
+
+  // Select di drawer: hanya branch yang bisa dipicu, dan yang tidak mendukung mode terpilih
+  // ditampilkan tetapi dimatikan beserta sebabnya.
   const renderFormBranch = () => {
-    const sel = $('f-branch');
-    isi(sel, state.proyek.branches.map((b) => el('option', { value: b.name, text: b.dispatch ? b.name : `${b.name} · arsip`, selected: b === state.branch })));
+    if (!branchSesuai(state.branchJalan)) {
+      state.branchJalan = state.proyek.branches.find((b) => b.bawaan && branchSesuai(b))
+        ?? state.proyek.branches.find(branchSesuai)
+        ?? state.branchJalan;
+    }
+    isi($('f-branch'), state.proyek.branches.filter((b) => b.dispatch).map((b) => {
+      const sebab = sebabBranch(b);
+      return el('option', {
+        value: b.name, text: sebab ? `${b.name} · ${sebab}` : b.name,
+        disabled: branchSesuai(b) ? null : true, selected: b === state.branchJalan,
+      });
+    }));
     perbaruiTombolJalankan();
   };
 
-  const modeTerpilih = () => document.querySelector('input[name="mode"]:checked')?.value ?? 'sast-llm';
+  // Satu tempat yang menyusun seluruh isi drawer sesuai mode: apa yang ditampilkan, apa yang
+  // dijelaskan, dan apakah tombol boleh ditekan. Branch yang tidak mendukung mode terpilih
+  // sengaja TIDAK diganti otomatis: pilihan branch juga menentukan hasil run mana yang sedang
+  // dibaca, jadi memindahkannya diam-diam akan menarik pengguna keluar dari halaman yang dilihat.
+  // Yang dilakukan: opsinya dimatikan, dan tombol Jalankan menjelaskan sebabnya.
+  const renderDrawer = () => {
+    const llm = modeTerpilih() === 'sast-llm';
+    $('mode-hint').textContent = llm
+      ? 'Satu panggilan deteksi untuk seluruh kode, lalu satu panggilan verifikasi per alert SonarCloud.'
+      : 'Tanpa panggilan LLM, tanpa biaya. Hasilnya terbit dalam format lama (skema 1) yang tidak ditampilkan dashboard ini.';
+    $('model-field').hidden = !llm;
+    $('biaya-field').hidden = !llm;
+    $('konfirmasi-v2-field').hidden = !llm;
+    if (!llm && $('f-konfirmasi-v2').checked) $('f-konfirmasi-v2').checked = false;
+    renderFormBranch();
+    renderModels();
+    // Keterangan sumber analisis Sonar hanya relevan untuk branch yang memang bisa dijalankan.
+    $('branch-hint').textContent = llm && branchSesuai(branchJalan()) && branchJalan().name !== 'main'
+      ? 'Analisis Sonar diambil dari main; kecocokan kode diperiksa lewat hash tree src/ sebelum ada panggilan berbayar.'
+      : '';
+    perbaruiTombolJalankan();
+  };
 
   // Jalur v2 memanggil API berbayar per alert. Workflow menolak run tanpa input konfirmasi_v2,
-  // dan dashboard tidak boleh mengisinya diam-diam: centang di bawah inilah persetujuan itu.
+  // dan dashboard tidak boleh mengisinya diam-diam: centang di drawer inilah persetujuan itu.
   const konfirmasiV2 = () => jalurTerpilih() !== 'v2' || Boolean($('f-konfirmasi-v2')?.checked);
 
   const alasanTidakBisa = () => {
@@ -547,7 +654,9 @@
     if (!state.demo && !state.token) return 'Masukkan token GitHub dulu.';
     if (st.akses === false) return 'Token tidak punya akses ke repo ini.';
     if (st.workflow === false) return `Repo ini belum punya ${state.proyek.workflow}. Pasang workflow framework dulu.`;
-    if (!state.branch.dispatch) return state.branch.catatan || 'Branch ini tidak bisa dipicu dari dashboard.';
+    const b = branchJalan();
+    if (!b || !b.dispatch) return b?.catatan || 'Branch ini tidak bisa dipicu dari dashboard.';
+    if (!branchSesuai(b)) return `Workflow di branch ${b.name} ${b.catatan_v2 ?? 'belum memuat jalur v2'}. Pilih branch lain atau jalankan mode SAST saja.`;
     return null;
   };
 
@@ -570,7 +679,7 @@
   };
 
   // ---------- Index dan run ----------
-  const entriBranch = () => (state.index?.runs ?? [])
+  const entriBranch = () => (state.branch ? (state.index?.runs ?? []) : [])
     .filter((e) => e.branch === state.branch.name)
     .sort((a, b) => String(b.selesai ?? '').localeCompare(String(a.selesai ?? '')));
 
@@ -585,9 +694,12 @@
       state.index = await sumber().index(state.proyek);
     } catch (err) {
       state.index = { runs: [] };
+      renderBiaya();
       renderKosong(pesanGalat(err), true);
       return;
     }
+    // Perkiraan biaya ikut jumlah alert run terakhir branch ini, jadi dihitung ulang tiap index baru.
+    renderBiaya();
     const daftar = entriBranch();
     if (!daftar.length) { renderKosong(); return; }
     await muatRun(daftar.find((e) => e.id === pilihId) ?? daftar[0]);
@@ -890,7 +1002,7 @@
   const detailTemuanV2 = (t) => {
     const pk = t.potongan_kode;
     const kode = pk && pk.baris?.length
-      ? el('pre', { class: 'code' }, pk.baris.map((b, i) => el('span', {
+      ? el('pre', { class: 'code', tabindex: '0', role: 'region', 'aria-label': `Kode di sekitar baris ${t.baris ?? '?'} pada ${t.file ?? 'berkas'}` }, pk.baris.map((b, i) => el('span', {
         class: pk.mulai + i === t.baris ? 'hit' : null, 'data-ln': String(pk.mulai + i), text: `${b}\n`,
       })))
       : el('p', { class: 'note', text: 'Potongan kode tidak tersedia untuk temuan ini. Hasil ini dibuat tanpa akses ke worktree objek uji.' });
@@ -1018,7 +1130,8 @@
   };
   function bukaDrawer() {
     // Persetujuan biaya berlaku untuk satu run, jadi tidak boleh terbawa ke pembukaan berikutnya.
-    if ($('f-konfirmasi-v2').checked) { $('f-konfirmasi-v2').checked = false; perbaruiTombolJalankan(); }
+    $('f-konfirmasi-v2').checked = false;
+    renderDrawer();
     fokusSebelumDrawer = document.activeElement;
     $('drawer').hidden = false;
     $('buka-drawer').setAttribute('aria-expanded', 'true');
@@ -1040,7 +1153,9 @@
   const n3 = (v) => (typeof v === 'number' ? v.toFixed(3).replace('.', ',') : '—');
   const usd = (v) => (typeof v === 'number' ? `US$${v.toFixed(4).replace('.', ',')}` : '—');
 
-  const tabel = (kepala, baris) => el('div', { class: 'tabel-bungkus' },
+  const tabel = (kepala, baris, label) => el('div', {
+    class: 'tabel-bungkus', tabindex: '0', role: 'region', 'aria-label': label ?? 'Tabel eksperimen',
+  },
     el('table', { class: 'eks' },
       el('thead', {}, el('tr', {}, kepala.map((h) => el('th', { scope: 'col', text: h })))),
       el('tbody', {}, baris.map((r) => el('tr', {}, r.map((c, i) => el('td', {
@@ -1069,7 +1184,7 @@
     return blokEks('1. Skenario A, B, dan C per model',
       'Rata-rata lintas run. Ketat: temuan di luar ground truth dihitung FP. Triase konservatif: kategori teoretis ikut dihitung FP. '
       + 'Triase utama: teoretis tidak dihitung FP. Tidak ada varian yang menambah TP, jadi recall sama di ketiganya.',
-      tabel(kepala, baris),
+      tabel(kepala, baris, 'Tabel Skenario A, B, dan C per model'),
       `Sumber: ${eks.sumber.skor_utama}, ${eks.sumber.skor_triase_konservatif ?? '—'}, ${eks.sumber.skor_triase_utama ?? '—'} · kode scoring ${pendek(eks.sumber.commit_kode_scoring ?? '')}`);
   };
 
@@ -1099,7 +1214,7 @@
     return blokEks('2. Verifikasi empat kategori',
       'FP diperlakukan sebagai kelas positif. Putusan uncertain dihitung sebagai alert yang dipertahankan, bukan kegagalan. '
       + 'Label alert menentukan benar atau salahnya putusan, dan hanya memengaruhi tabel ini, bukan Skenario A, B, atau C.',
-      el('div', {}, pilih, tabel(kepala, baris)),
+      el('div', {}, pilih, tabel(kepala, baris, 'Tabel verifikasi empat kategori')),
       `Sumber: ${pakaiSens ? (eks.sumber.skor_sensitivitas ?? '—') : eks.sumber.skor_utama}`);
   };
 
@@ -1113,7 +1228,7 @@
     ]);
     return blokEks('3. Tabel per item seeded',
       'Satu baris per item ground truth di SEEDED.md. Angka model berbentuk "run cocok ketat / jumlah run".',
-      tabel(kepala, baris),
+      tabel(kepala, baris, 'Tabel per item seeded'),
       `Sumber: ${eks.sumber.skor_utama} · objek uji ${pendek(eks.sumber.objek_uji_commit ?? '')}`);
   };
 
@@ -1128,7 +1243,7 @@
     const adaBiaya = baris.some((r) => r[2] !== '—');
     return blokEks('4. Biaya per run dan per vendor',
       'Dari metadata usage tiap panggilan. Percobaan yang ditolak sebelum diproses tidak mengembalikan usage, jadi biayanya tidak tercatat.',
-      adaBiaya ? tabel(kepala, baris)
+      adaBiaya ? tabel(kepala, baris, 'Tabel biaya per run dan per vendor')
         : el('p', { class: 'note', text: 'Biaya per run tidak tersedia di berkas skor; lihat kartu Biaya pada tiap run di tab Operasional.' }),
       `Sumber: ${eks.sumber.skor_utama}`);
   };
@@ -1262,9 +1377,11 @@
     if (state.sibuk || alasanTidakBisa() || alasanFormBelumSiap()) return;
     const mode = modeTerpilih();
     const jalur = jalurTerpilih();
-    const model = $('f-model').value;
+    // Mode SAST saja melewati job jalur v1, yang memvalidasi input model terhadap daftar v1.
+    // Mengirim id model v2 di sana membuat job gagal pada langkah validasi.
+    const model = jalur === 'v2' ? $('f-model').value : modelV1Bawaan();
     const p = state.proyek;
-    const branch = state.branch.name;
+    const branch = branchJalan().name;
     const pantau = { batal: false };
     state.pantau = pantau;
     state.sibuk = true;
@@ -1303,7 +1420,7 @@
     state.pantau = null;
     const arsip = state.proyek.branches.find((b) => !b.dispatch);
     perbaruiTombolJalankan(el('span', {}, 'Simulasi selesai. Mode demo tidak membuat hasil baru. ',
-      arsip ? el('button', { class: 'btn-text', type: 'button', text: `Lihat contoh hasil di ${arsip.name}`, onclick: () => { state.branch = arsip; renderFormBranch(); muatIndex(); } }) : null));
+      arsip ? el('button', { class: 'btn-text', type: 'button', text: `Lihat contoh hasil di ${arsip.name}`, onclick: () => { state.branch = arsip; renderRailBranch(); muatIndex(); } }) : null));
   };
 
   // Paket Free SonarCloud hanya menganalisis main, jadi run di branch lain memakai analisis main.
@@ -1326,6 +1443,7 @@
       if (!m) throw new GhError('invalid', 'Model jalur v2 tidak dikenali. Muat ulang dashboard lalu coba lagi.');
       Object.assign(inputs, { vendor_v2: m.vendor, konfirmasi_v2: 'JALANKAN', sonar_branch_v2: sonarBranchV2(branch) });
     }
+    if (!model) throw new GhError('invalid', 'Daftar model tidak terbaca dari models.json. Muat ulang dashboard lalu coba lagi.');
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
     perbaruiTombolJalankan('Permintaan diterima. Menunggu GitHub membuat run…');
 
@@ -1379,7 +1497,6 @@
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
-    $('f-jalur').addEventListener('change', () => { renderModels(); perbaruiTombolJalankan(); });
     // Tanpa pembungkus, objek Event ikut terkirim sebagai argumen `pesan` dan tercetak di hint.
     $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
@@ -1397,15 +1514,23 @@
     });
     $('start-demo').addEventListener('click', () => masukDemo());
     $('start-token').addEventListener('click', () => { $('access').open = true; $('token-input').focus(); });
-    $('f-branch').addEventListener('change', (e) => {
+    $('f-branch-lihat').addEventListener('change', (e) => {
       const b = state.proyek.branches.find((x) => x.name === e.target.value);
       if (!b) return;
       state.branch = b;
       state.filter = 'semua';
-      perbaruiTombolJalankan();
       muatIndex();
     });
-    document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => { if (!state.sibuk && !state.hasil) renderPipeline(); }));
+    $('f-branch').addEventListener('change', (e) => {
+      const b = state.proyek.branches.find((x) => x.name === e.target.value);
+      if (!b) return;
+      state.branchJalan = b;
+      renderDrawer();
+    });
+    document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => {
+      renderDrawer();
+      if (!state.sibuk && !state.hasil) renderPipeline();
+    }));
     $('run-form').addEventListener('submit', jalankan);
     window.addEventListener('offline', () => tampilBanner('error', 'Koneksi internet terputus. Pemantauan run berhenti sampai koneksi kembali.'));
     window.addEventListener('online', () => tutupBanner('error'));
