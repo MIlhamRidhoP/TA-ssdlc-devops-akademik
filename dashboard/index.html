@@ -14,61 +14,92 @@
 <body>
   <a class="skip" href="#temuan">Lewati ke daftar temuan</a>
   <div class="shell">
-    <aside class="rail" aria-label="Project dan akses">
-      <div class="brand">
-        <div>
-          <strong>Security Dashboard</strong>
-          <span>SSDLC DevOps dengan LLM</span>
+    <aside class="rail" aria-label="Navigasi, repositori, dan akses">
+      <div class="rail-kepala">
+        <div class="brand">
+          <span class="brand-lambang" id="brand-lambang" aria-hidden="true"></span>
+          <div>
+            <strong>Security Dashboard</strong>
+            <span class="brand-sub data">SSDLC DevOps dengan LLM</span>
+          </div>
         </div>
         <button class="btn btn-sm" type="button" id="rail-toggle" aria-expanded="false" aria-controls="rail-isi">Menu</button>
       </div>
 
       <div class="rail-isi" id="rail-isi">
-      <nav aria-labelledby="nav-h" id="railnav-box" hidden>
-        <h2 class="rail-h" id="nav-h">Navigasi</h2>
-        <ul class="railnav" id="railnav"></ul>
-      </nav>
+        <div class="rail-tirai" id="rail-tirai"></div>
+        <div class="rail-panel">
+          <div class="rail-panel-kepala">
+            <span>Menu</span>
+            <button class="btn btn-sm" type="button" id="rail-tutup">Tutup</button>
+          </div>
+          <div class="rail-gulir" id="rail-gulir">
+            <div class="rail-grup">
+              <p class="rail-label" id="repo-label">Repositori aktif</p>
+              <button class="kotak" type="button" id="repo-pilih" aria-expanded="false" aria-controls="project-list"></button>
+              <ul class="projects" id="project-list" aria-labelledby="repo-label" hidden></ul>
+            </div>
 
-      <nav aria-labelledby="proj-h">
-        <h2 class="rail-h" id="proj-h">Project</h2>
-        <ul class="projects" id="project-list"></ul>
-        <div class="field rail-branch">
-          <label for="f-branch-lihat">Branch yang dilihat</label>
-          <select class="select" id="f-branch-lihat"></select>
-        </div>
-      </nav>
+            <div class="rail-grup">
+              <label class="rail-label" for="f-branch-lihat">Branch yang dilihat</label>
+              <div class="kotak kotak-select">
+                <span class="kotak-ikon" id="branch-ikon" aria-hidden="true"></span>
+                <select class="select select-dalam-kotak" id="f-branch-lihat"></select>
+              </div>
+            </div>
 
-      <details class="access" id="access">
-        <summary><span>Akses GitHub</span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></summary>
-        <div class="access-body">
-          <p class="access-state" id="access-state" data-s="none" role="status"><i aria-hidden="true"></i><span>Belum ada token</span></p>
-          <form class="field" id="token-form" autocomplete="off" novalidate>
-            <label for="token-input">Fine-grained personal access token</label>
-            <input class="input data" id="token-input" type="password" spellcheck="false" autocapitalize="off" aria-describedby="token-help token-error">
-            <p class="form-error" id="token-error" hidden></p>
-            <label class="check"><input type="checkbox" id="token-remember"><span>Ingat di browser ini. Tanpa centang, token hilang saat tab ditutup.</span></label>
-            <button class="btn btn-sm btn-line" type="submit" id="token-save">Simpan dan periksa</button>
-          </form>
-          <button class="btn btn-sm" type="button" id="token-clear" hidden>Hapus token</button>
-          <dl class="perm" id="token-help" aria-label="Izin minimum token">
-            <dt>Actions</dt><dd>Read and write, untuk memicu dan memantau run</dd>
-            <dt>Contents</dt><dd>Read-only, untuk membaca hasil di branch security-results</dd>
-            <dt>Metadata</dt><dd>Read-only, wajib dari GitHub</dd>
-          </dl>
-          <p class="note">Token hanya dikirim ke api.github.com dan tidak pernah ditulis ke log.</p>
-        </div>
-      </details>
+            <nav class="rail-grup" aria-labelledby="nav-h" id="railnav-box" hidden>
+              <h2 class="rail-label" id="nav-h">Navigasi</h2>
+              <ul class="railnav" id="railnav"></ul>
+            </nav>
 
-      <div class="prefs">
-        <div class="row2">
-          <button class="btn btn-sm btn-icon" type="button" id="theme-toggle"></button>
-          <button class="btn btn-sm btn-icon" type="button" id="density-toggle"></button>
+            <details class="access" id="access">
+              <summary><span>Token dan izin</span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></summary>
+              <div class="access-body">
+                <form class="field" id="token-form" autocomplete="off" novalidate>
+                  <label for="token-input">Fine-grained personal access token</label>
+                  <input class="input data" id="token-input" type="password" spellcheck="false" autocapitalize="off" aria-describedby="token-help token-error">
+                  <p class="form-error" id="token-error" hidden></p>
+                  <label class="check"><input type="checkbox" id="token-remember"><span>Ingat di browser ini. Tanpa centang, token hilang saat tab ditutup.</span></label>
+                  <button class="btn btn-sm btn-line" type="submit" id="token-save">Simpan dan periksa</button>
+                </form>
+                <button class="btn btn-sm" type="button" id="token-clear" hidden>Hapus token</button>
+                <dl class="perm" id="token-help" aria-label="Izin minimum token">
+                  <dt>Actions</dt><dd>Read and write, untuk memicu dan memantau run</dd>
+                  <dt>Contents</dt><dd>Read-only, untuk membaca hasil di branch security-results</dd>
+                  <dt>Metadata</dt><dd>Read-only, wajib dari GitHub</dd>
+                </dl>
+                <p class="note">Token hanya dikirim ke api.github.com dan tidak pernah ditulis ke log.</p>
+              </div>
+            </details>
+          </div>
+
+          <div class="rail-bawah">
+            <p class="koneksi" id="koneksi" data-s="demo" role="status"></p>
+
+            <div class="pref-baris">
+              <span class="rail-label" id="tema-label">Tema tampilan</span>
+              <div class="seg-ikon" role="group" aria-labelledby="tema-label" id="tema-grup"></div>
+            </div>
+            <div class="pref-baris">
+              <span class="rail-label" id="padat-label">Kepadatan</span>
+              <button class="btn btn-sm btn-icon" type="button" id="density-toggle" aria-describedby="padat-label"></button>
+            </div>
+
+            <div class="akses-kartu">
+              <span class="akses-ikon" id="akses-ikon" aria-hidden="true"></span>
+              <div class="akses-isi">
+                <b>Akses GitHub</b>
+                <p class="access-state" id="access-state" data-s="none" role="status"><i aria-hidden="true"></i><span>Belum ada token</span></p>
+              </div>
+              <div class="akses-aksi">
+                <button class="btn btn-sm btn-line" type="button" id="token-aksi">Sambungkan</button>
+                <button class="btn btn-sm" type="button" id="demo-toggle">Buka mode demo</button>
+              </div>
+            </div>
+
+          </div>
         </div>
-        <div class="demo-switch">
-          <span id="demo-text">Mode demo memakai data eksperimen 19 Okt 2026, tanpa token.</span>
-          <button class="btn btn-sm btn-line" type="button" id="demo-toggle">Buka mode demo</button>
-        </div>
-      </div>
       </div>
     </aside>
 
@@ -106,7 +137,7 @@
 
         <section class="pipeline-box" id="pipeline-box" aria-labelledby="pipeline-h2">
           <div class="pipeline">
-            <p class="pipeline-h"><span id="pipeline-title">Alur eksekusi pipeline</span><b id="pipeline-total" class="data"></b></p>
+            <p class="pipeline-h"><span id="pipeline-title">Alur eksekusi pipeline</span><span class="lencana l-netral" id="pipeline-rekaman" hidden></span><b id="pipeline-total" class="data"></b></p>
             <h2 id="pipeline-h2" class="sr-only">Alur eksekusi pipeline</h2>
             <div class="alur" id="alur" data-arah="datar" tabindex="0" aria-label="Graf alur eksekusi pipeline" aria-describedby="alur-teks"></div>
             <div class="sr-only" id="alur-teks"></div>

@@ -26,7 +26,7 @@ panggilan ke GitHub. Data di `fixtures/v2/`:
 
 | Berkas | Isi | Asal |
 |---|---|---|
-| `fixtures/v2/index.json` | Daftar tiga run demo | diturunkan dari ketiga berkas di bawah |
+| `fixtures/v2/index.json` | Daftar run demo | diturunkan dari berkas-berkas di bawah |
 | `fixtures/v2/eksperimen/seeded/1.json` | Run Gemini, 7 temuan, 5 alert | hasil nyata `hasil-eksperimen/20261019/utama/google/run-1.json` di branch `eksperimen/seeded` |
 | `fixtures/v2/eksperimen/seeded/2.json` | Run Claude, 14 temuan, 5 alert | hasil nyata `utama/anthropic/run-1.json` |
 | `fixtures/v2/eksperimen/seeded/3.json` | Run GPT, 14 temuan, 5 alert | hasil nyata `utama/openai/run-1.json` |
@@ -41,8 +41,31 @@ Berkas dibuat ulang dengan:
 node scripts/merge-results.js merge --v2   --folder=<objek>/hasil-eksperimen/20261019/utama/<vendor> --run=1 --nomor=<n>   --objek=<objek> --biaya=<objek>/hasil-eksperimen/20261019/utama   --skor=... --skor-triase=... --skor-triase-konservatif=... --skor-sensitivitas=...   --out=dashboard/fixtures/v2/eksperimen/seeded/<n>.json
 ```
 
-Run v2 dijalankan dari CLI, bukan lewat GitHub Actions, sehingga tidak punya status job pipeline.
-Tombol **Jalankan analisis** di mode demo hanya menyimulasikan job.
+Ketiga run eksperimen itu dijalankan dari CLI, bukan lewat GitHub Actions, sehingga tidak punya
+status job pipeline. Tombol **Jalankan analisis** di mode demo hanya menyimulasikan job.
+
+### Rekaman run CI #54
+
+Supaya graf pipeline di mode demo menggambarkan pipeline yang benar-benar berjalan, mode demo juga
+memuat satu run dari GitHub Actions:
+
+| Berkas | Isi |
+|---|---|
+| `fixtures/v2/feat/prompt-v2/54.json` | Hasil run #54 apa adanya, disalin dari branch `security-results` |
+| `fixtures/v2/rekaman/run-54.json` | Status, durasi, dan langkah tiap job run #54, diambil sekali lewat GitHub REST API |
+
+Run #54 adalah run Gemini jalur v2 di branch `feat/prompt-v2` yang selesai dengan status success
+pada 20 Oktober 2026. Pilih branch itu di rail untuk melihatnya. Graf pipelinenya diberi lencana
+**"Rekaman run CI #54, bukan run langsung"**: statusnya diambil satu kali lalu dibekukan, bukan
+dipantau seperti di mode live.
+
+Rekaman hanya memuat field yang dipakai dashboard: id, nama, status, kesimpulan, waktu mulai dan
+selesai tiap job beserta langkahnya. Token, URL bertanda tangan, dan identitas runner tidak ikut;
+`tests/pipeline.test.js` menolak nilai apa pun yang berbentuk kredensial atau URL, dan memastikan
+daftar job di rekaman sama persis dengan node di graf.
+
+**Data eksperimen tidak tersentuh.** Angka di tab Eksperimen tetap berasal dari run 19 Oktober di
+`eksperimen/seeded`; run #54 tidak punya blok `eksperimen` dan tidak masuk hitungan mana pun.
 
 Arsip demo lama (skema 1, pilot 10 Oktober) ada di
 [`docs/arsip/pilot-20261010/`](../docs/arsip/pilot-20261010/README.md) dan tidak lagi ditampilkan.
@@ -99,6 +122,9 @@ panel detail temuan dan alert terbuka, branch tanpa run, dan rail terbuka di lay
 | Teks terpotong | `scrollWidth > clientWidth` pada elemen yang `overflow` tersembunyi dan tidak bisa digulir |
 | Font | tidak boleh ada permintaan ke host selain `127.0.0.1` saat halaman dimuat |
 | Isi dispatch | cegat `**api.github.com/**` dengan `page.route`, jawab tiruan, lalu periksa body `POST .../dispatches` untuk tiap kombinasi mode x branch x vendor |
+| Sidebar tidak terpotong | untuk tiap elemen sidebar: `scrollIntoView({ block: 'nearest' })` lebih dulu, lalu `getBoundingClientRect` harus berada di dalam viewport **dan** di dalam kotak penggulung terdekatnya, pada lebar 375/768/1280 x tinggi 700/900/1100 x kedua tema, dengan daftar repo dan formulir token dalam keadaan terbuka |
+| Lencana dan status koneksi | bandingkan isi lencana navigasi dengan berkas fixture yang sedang dibaca, dan baris status dengan keadaan demo / live bertoken / live tanpa token |
+| Drawer detail | screenshot **viewport**, bukan `fullPage`; ukur bahwa panel menempel di kanan setinggi layar dan tautan lewati-ke-konten tersembunyi selama drawer terbuka |
 
 Enam jebakan yang pernah menipu pemeriksaan di sini. Semuanya pernah meloloskan cacat nyata atau
 melaporkan cacat yang tidak ada:
@@ -117,11 +143,71 @@ melaporkan cacat yang tidak ada:
   menyimpulkan dari gambar.
 - **`goto` ke URL yang sama hanya berpindah hash.** Halaman tidak dimuat ulang, dan fokus serta
   state dari pemeriksaan sebelumnya terbawa. Pakai `reload()`.
+- **Bergulir bukan terpotong.** Bagian tengah sidebar memang bergulir, jadi memeriksa posisi apa
+  adanya akan melaporkan cacat yang tidak ada. Gulir elemennya ke dalam pandangan lebih dulu; yang
+  dilarang adalah elemen yang tetap keluar viewport atau keluar kotak penggulungnya setelah itu.
+  Pemeriksaan inilah yang menemukan formulir token terdorong seluruhnya ke luar layar.
+- **Chrome merender anak `<details>` yang punya `display` eksplisit walaupun panelnya tertutup.**
+  Isi yang disangka tersembunyi tetap menempati ruang. Panel yang tertutup perlu
+  `display: none` yang ditulis sendiri.
+- **Panel modal menutupi halaman dengan sengaja.** Pemeriksaan tumpang tindih harus dipersempit ke
+  panel yang terbuka, baik drawer maupun sidebar di layar sempit, kalau tidak seluruh halaman di
+  belakangnya terlaporkan tertutup.
 
 Pemeriksaan ini tidak ikut di repo, jadi menyalinnya ke mesin lain berarti menulisnya ulang dari
 tabel di atas. Yang **ada** di repo adalah tes `node --test` di bagian sebelumnya, termasuk dua
 pemeriksaan teks `.github/workflows/devsecops.yml` yang mengunci `--nomor`, `--id`, dan gerbang
 jalur v2 supaya tidak hilang diam-diam saat workflow disunting.
+
+## Sidebar
+
+Tata letaknya tetap di tempat: kepala dan bagian bawah selalu terlihat, hanya bagian tengah yang
+bergulir kalau isinya lebih panjang dari layar. Bagian bawah memuat yang paling perlu terbaca saat
+daftar branch memanjang: status koneksi dan akses GitHub.
+
+Status koneksi menyebut keadaan yang sebenarnya, tanpa nomor versi:
+
+| Tampil | Artinya |
+|---|---|
+| **Mode demo** (abu-abu) | data dari fixture di berkas, tidak ada panggilan ke GitHub |
+| **Live · token tersambung** (hijau) | hasil dan status run dibaca lewat `api.github.com` |
+| **Live · tanpa token** (amber) | mode live, tetapi belum ada token, jadi belum ada yang bisa dibaca |
+
+Lencana di navigasi hanya memuat angka dari run yang sedang dibaca dan dari index branch itu:
+jumlah temuan LLM (merah bila ada yang bersifat `vulnerability`), jumlah alert Sonar, dan jumlah run
+di branch itu. Yang datanya belum ada **tidak diberi lencana sama sekali**, bukan diisi 0: lencana
+berisi 0 terbaca sebagai "sudah diperiksa, tidak ada apa-apa", padahal yang benar adalah "belum
+diketahui".
+
+Penanda `(default)` di pemilih branch hanya muncul untuk branch bawaan repositori yang dilaporkan
+GitHub (`default_branch`), bukan untuk branch bawaan tujuan run, yang artinya berbeda dan punya
+penandanya sendiri di drawer. Di mode demo nilainya dibaca dari `default_branch` di
+`fixtures/projects.json`. Tanpa nilai itu, tidak ada penanda sama sekali.
+
+Di bawah 64rem sidebar menjadi panel yang dibuka lewat tombol **Menu** di bilah atas, dengan fokus
+terkurung dan Escape untuk menutup, mekanik yang sama persis dengan kedua drawer.
+
+## Tautan ke GitHub
+
+Setiap run yang berasal dari workflow bisa ditelusuri langsung ke GitHub: chip **Asal** di kepala
+run, chip **Commit**, tautan **Lihat log** di tiap node graf, tautan kecil di tiap baris riwayat,
+pemberitahuan setelah dispatch, dan tautan berkas di drawer detail temuan.
+
+Aturannya, semuanya dikunci `tests/tautan-github.test.js`:
+
+- URL dibangun hanya dari nilai yang sudah divalidasi. Owner dan repo dari konfigurasi project,
+  `run.id` dan `job.id` harus bilangan bulat positif, SHA harus 40 heksadesimal. Nilai yang tidak
+  lolos **tidak menghasilkan tautan sama sekali**, bukan tautan ke halaman Actions umum: tautan yang
+  mendarat di halaman yang salah lebih berbahaya daripada teks biasa, karena pembacanya mengira
+  sudah melihat buktinya.
+- Run dari CLI (`asal: "cli"`) dan run tanpa `run.id` tidak diberi tautan. Yang tampil teks biasa
+  "dijalankan dari CLI".
+- Project demo yang sengaja dibuat-buat (`demo_tanpa_workflow`) tidak pernah ditautkan. Rekaman run
+  #54 boleh ditautkan karena run itu benar-benar ada.
+- Semua tautan memakai `target="_blank"` dan `rel="noopener noreferrer"`, dengan teks atau
+  `aria-label` yang menyebut tujuannya.
+- Tautan tetap hanya `href`. `github.com` tidak pernah menjadi sasaran `fetch`, dan `connect-src`
+  tetap hanya `'self'` dan `api.github.com`.
 
 ## Token GitHub
 

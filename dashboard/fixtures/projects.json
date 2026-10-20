@@ -24,7 +24,8 @@
           "catatan": "Arsip eksperimen. Workflow branch ini dikunci untuk menjaga data eksperimen.",
           "v2": false
         }
-      ]
+      ],
+      "default_branch": "main"
     },
     {
       "owner": "contoh",

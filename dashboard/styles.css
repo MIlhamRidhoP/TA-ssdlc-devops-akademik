@@ -222,71 +222,191 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 /* ---------- Kerangka ---------- */
 
 .shell { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100vh; }
-@media (min-width: 64rem) { .shell { grid-template-columns: 15rem minmax(0, 1fr); } }
+@media (min-width: 64rem) { .shell { grid-template-columns: 16rem minmax(0, 1fr); } }
 
-/* ---------- Rail project ---------- */
+/* ---------- Rail: kepala, bagian tengah yang bergulir, dan dasar yang menempel ----------
+   Rail setinggi viewport. Kalau isinya lebih panjang dari layar, hanya bagian tengah yang bergulir,
+   sedangkan kepala dan dasar tetap terlihat: dasarnya memuat status koneksi dan akses GitHub, yang
+   justru paling perlu terbaca saat daftar branch panjang. */
 
 .rail {
-  display: flex; flex-direction: column; gap: var(--s-5);
-  padding: var(--s-5) var(--s-4);
+  display: flex; flex-direction: column; min-width: 0;
   background: var(--paper-2);
   border-bottom: 1px solid var(--rule);
 }
-@media (min-width: 64rem) {
-  .rail { border-bottom: 0; border-right: 1px solid var(--rule); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.rail-kepala {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+  padding: var(--s-4); background: var(--paper-3); border-bottom: 1px solid var(--rule);
 }
-
-.brand { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.brand { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
 .brand > div { display: grid; gap: 0.125rem; min-width: 0; }
-.brand strong { font: 600 1.0625rem/1.25 var(--font-head); color: var(--ink); }
-.brand span { font-size: 0.8125rem; color: var(--muted); }
+.brand strong { font: 600 1rem/1.25 var(--font-head); color: var(--ink); }
+.brand-sub { font-size: 0.6875rem; color: var(--muted); letter-spacing: 0.01em; }
+.brand-lambang {
+  width: 2rem; height: 2rem; border-radius: var(--radius-ctl); flex: none;
+  display: grid; place-items: center;
+  background: var(--accent-kuat); color: var(--accent-ink);
+}
+.brand-lambang .icon { width: 1.125rem; height: 1.125rem; }
 
-.rail-isi { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+.rail-isi { display: flex; min-width: 0; flex: 1; }
+.rail-panel { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.rail-gulir { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-4); min-width: 0; min-height: 0; }
+.rail-grup { display: grid; gap: var(--s-2); min-width: 0; }
+.rail-bawah {
+  display: grid; gap: var(--s-3); padding: var(--s-4); min-width: 0;
+  border-top: 1px solid var(--rule); background: var(--paper-2);
+}
+.rail-tirai { display: none; }
+.rail-panel-kepala { display: none; }
+
 @media (min-width: 64rem) {
-  /* Di layar lebar rail selalu terbuka: tombolnya tidak ada, dan isinya mengisi tinggi rail. */
+  .rail { border-bottom: 0; border-right: 1px solid var(--rule); position: sticky; top: 0; height: 100vh; }
   #rail-toggle { display: none; }
-  .rail-isi { flex: 1; }
+  .rail-kepala { padding: var(--s-4) var(--s-4) var(--s-3); }
+  /* min-height: 0 wajib: tanpanya anak yang bergulir memaksa flex item melebihi tinggi rail dan
+     dasar rail terdorong keluar layar, yang dulu memotong tombol terakhir di 1280 px. */
+  .rail-isi { min-height: 0; }
+  .rail-gulir { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .rail-bawah { flex: none; }
 }
+
+/* Di bawah 64rem rail menjadi panel yang digeser masuk dari kiri, di bawah bilah atas dan di atas
+   isi halaman. Bilahnya sengaja tetap terlihat: di situlah tombol Menu berada, dan panel yang
+   menutupi tombol pembukanya sendiri membuat pengguna kehilangan jejak posisinya. */
 @media (max-width: 63.99rem) {
+  /* Bilah atas ikut bergulir bersama halaman. Dibuat menempel, ia menutupi judul run begitu
+     halaman digulir, dan panelnya sendiri sudah membawa baris Menu dengan tombol Tutup. */
   :root[data-rail="tutup"] .rail-isi { display: none; }
-  .rail { gap: var(--s-3); }
+  .rail-isi { position: fixed; inset: 0; z-index: 8; }
+  .rail-tirai { display: block; position: absolute; inset: 0; background: oklch(0% 0 0 / 0.5); }
+  .rail-panel-kepala {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+    padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule); background: var(--paper-3);
+    font-weight: 600; color: var(--ink); flex: none;
+  }
+  .rail-panel {
+    position: relative; flex: none; width: min(20rem, 88vw); max-width: 100%; height: 100%;
+    background: var(--paper-2); border-right: 1px solid var(--rule);
+    box-shadow: 0 0 0 1px var(--bayang-tepi); animation: rail-masuk var(--dur-short) var(--ease-out);
+  }
+  .rail-gulir { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 }
-.rail-h { font: 600 0.8125rem/1.3 var(--font-body); color: var(--muted); margin-bottom: var(--s-2); }
-/* Memilih branch yang dibaca adalah navigasi, bukan aksi: tempatnya di rail bersama Project,
-   terpisah dari select branch di drawer yang menentukan tujuan run. */
-.rail-branch { margin-top: var(--s-3); }
+@keyframes rail-masuk { from { transform: translateX(-100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rail-panel { animation: none; } }
 
-.projects { display: grid; gap: var(--s-1); }
-@media (min-width: 40rem) and (max-width: 63.99rem) { .projects { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); } }
+.rail-label {
+  font: 600 0.6875rem/1.3 var(--font-body); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); margin: 0;
+}
 
+/* Pemilih bergaya kotak, dipakai pemilih repo dan pemilih branch. */
+.kotak {
+  display: flex; align-items: center; gap: var(--s-2); width: 100%; min-width: 0; min-height: 2.5rem;
+  padding: 0 var(--s-3); text-align: left;
+  border: 1px solid var(--rule-2); border-radius: var(--radius-ctl); background: var(--paper-3); color: var(--ink);
+}
+@media (hover: hover) { .kotak:not(:disabled):hover { border-color: var(--accent); } }
+.kotak:disabled { cursor: default; }
+.kotak-ikon { display: grid; place-items: center; color: var(--muted); flex: none; }
+.kotak-ikon .icon { width: 1.0625rem; height: 1.0625rem; }
+.kotak-nama { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.kotak-lipat { display: grid; place-items: center; color: var(--muted); flex: none; }
+.kotak-select { padding-right: 0; }
+/* Select di dalam kotak: kotaknya yang membawa garis dan latar, jadi selectnya telanjang. */
+.select-dalam-kotak {
+  border: 0; background-color: transparent; min-height: 2.375rem; padding-left: 0;
+  background-position: calc(100% - 1.05rem) 55%, calc(100% - 0.7rem) 55%;
+}
+.select-dalam-kotak:focus-visible { outline-offset: -2px; }
+
+.titik { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex: none; background: var(--rule-2); }
+.titik.t-on { background: var(--ok); }
+.titik.t-off { background: var(--muted); }
+.titik.t-tanya { background: var(--high); }
+
+.projects { display: grid; gap: var(--s-1); list-style: none; margin: 0; padding: 0; }
 .project {
-  display: grid; gap: 0.125rem; width: 100%; padding: var(--s-2) var(--s-3); min-height: 2.75rem;
+  display: grid; gap: 0.125rem; width: 100%; padding: var(--s-2) var(--s-3); min-height: 2.5rem;
   border: 1px solid transparent; border-radius: var(--radius-ctl); background: transparent; text-align: left; color: var(--ink-2);
 }
-@media (hover: hover) { .project:hover { border-color: var(--rule-2); } }
+@media (hover: hover) { .project:hover { border-color: var(--rule-2); background: var(--paper-3); } }
 .project[aria-current="true"] { background: var(--paper-3); border-color: var(--rule-2); }
-.project b { font-weight: 500; color: var(--ink); overflow-wrap: anywhere; display: flex; align-items: center; gap: var(--s-2); }
-.project[aria-current="true"] b::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
-.project span { font-size: 0.8125rem; color: var(--muted); }
+.project-nama { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.project b { font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+.project span { font-size: 0.75rem; color: var(--muted); }
 .project.is-off b { color: var(--muted); }
 
-.access { border-top: 1px solid var(--rule); padding-top: var(--s-3); }
+/* Navigasi: ikon, label, lalu lencana angka di kanan. */
+.railnav { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.railnav button {
+  display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 2.5rem;
+  padding: 0 var(--s-3); border: 0; border-radius: var(--radius-ctl); background: transparent;
+  color: var(--ink-2); font-size: 0.9375rem; text-align: left;
+}
+.railnav .icon { width: 1.125rem; height: 1.125rem; color: var(--muted); }
+.railnav-label { flex: 1; min-width: 0; }
+.railnav .lencana { flex: none; }
+@media (hover: hover) { .railnav button:hover { background: var(--paper-3); color: var(--ink); } }
+.railnav button:hover .icon { color: var(--ink-2); }
+.railnav button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.railnav button[aria-current="true"] .icon { color: var(--accent); }
+.railnav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Status koneksi: keadaan sebenarnya, tanpa nomor versi. */
+.koneksi {
+  display: flex; align-items: center; gap: var(--s-2); margin: 0;
+  min-height: 2rem; padding: 0 var(--s-3); border-radius: var(--radius-ctl);
+  background: var(--paper-3); color: var(--ink-2); font-size: 0.8125rem; font-weight: 500;
+}
+.koneksi i { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); flex: none; }
+.koneksi[data-s="ok"] { background: var(--ok-soft); color: var(--ok); }
+.koneksi[data-s="ok"] i { background: var(--ok); }
+.koneksi[data-s="warn"] { background: var(--high-soft); color: var(--high); }
+.koneksi[data-s="warn"] i { background: var(--high); }
+
+.pref-baris { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.pref-baris .rail-label { min-width: 0; }
+.seg-ikon { display: flex; gap: 2px; padding: 2px; background: var(--paper-3); border-radius: var(--radius-ctl); }
+.seg-ikon .btn { min-height: 1.875rem; width: 1.875rem; border-color: transparent; background: transparent; }
+.seg-ikon .btn[aria-pressed="true"] { background: var(--paper-2); border-color: var(--rule-2); color: var(--accent); }
+
+/* Kartu akses GitHub, menggantikan kartu profil di desain: tanpa nama orang dan tanpa login. */
+.akses-kartu {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-2) var(--s-3);
+  padding: var(--s-3); border: 1px solid var(--rule); border-radius: var(--radius-ctl); background: var(--paper-3);
+}
+.akses-ikon {
+  width: 2rem; height: 2rem; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent); grid-row: 1;
+}
+.akses-ikon .icon { width: 1rem; height: 1rem; }
+.akses-isi { display: grid; gap: 0.125rem; min-width: 0; align-content: center; }
+.akses-isi b { font-size: 0.875rem; color: var(--ink); }
+/* Dua tindakan bertumpuk, bukan berdampingan: "Keluar dari mode demo" tidak muat di satu baris
+   selebar rail, dan tombol yang labelnya terpotong berhenti memberi tahu apa yang akan terjadi. */
+.akses-aksi { grid-column: 1 / -1; display: grid; gap: var(--s-2); }
+
+/* Chrome merender anak <details> yang punya display eksplisit walaupun panelnya tertutup; tanpa
+   aturan ini seluruh formulir token ikut menempati ruang dan terdorong keluar layar. */
+.access:not([open]) .access-body { display: none; }
+.access { border-top: 1px solid var(--rule); padding-top: var(--s-2); }
 .access > summary {
   list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: var(--s-2);
-  min-height: 2.5rem; font-weight: 600; color: var(--ink); border-radius: var(--radius-ctl);
+  min-height: 2.25rem; font-size: 0.8125rem; font-weight: 600; color: var(--ink-2); border-radius: var(--radius-ctl);
 }
 .access > summary::-webkit-details-marker { display: none; }
 .access > summary .icon { transition: transform var(--dur-micro) var(--ease-out); color: var(--muted); }
 .access[open] > summary .icon { transform: rotate(90deg); }
 .access-body { display: grid; gap: var(--s-3); padding-top: var(--s-2); font-size: 0.875rem; }
 .access-state {
-  display: inline-flex; align-items: center; gap: var(--s-2); justify-self: start;
-  font-size: 0.8125rem; font-weight: 500; padding: 0.15rem var(--s-2); border-radius: 4px; background: var(--paper-3); color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: var(--s-2); justify-self: start; margin: 0;
+  font-size: 0.75rem; font-weight: 500; color: var(--muted);
 }
 .access-state i { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--rule-2); flex: none; }
-.access-state[data-s="ok"] { background: var(--ok-soft); color: var(--ok); }
+.access-state[data-s="ok"] { color: var(--ok); }
 .access-state[data-s="ok"] i { background: var(--ok); }
-.access-state[data-s="bad"] { background: var(--crit-soft); color: var(--crit); }
+.access-state[data-s="bad"] { color: var(--crit); }
 .access-state[data-s="bad"] i { background: var(--crit); }
 
 .field { display: grid; gap: var(--s-1); min-width: 0; }
@@ -301,10 +421,6 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .perm { display: grid; grid-template-columns: auto 1fr; gap: 0.125rem var(--s-3); font-size: 0.8125rem; color: var(--muted); }
 .perm dt { font-weight: 600; color: var(--ink-2); }
 .form-error { color: var(--crit); font-size: 0.8125rem; font-weight: 500; }
-
-.prefs { margin-top: auto; display: grid; gap: var(--s-3); border-top: 1px solid var(--rule); padding-top: var(--s-4); }
-.prefs .row2 { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.demo-switch { display: grid; gap: var(--s-2); font-size: 0.8125rem; color: var(--muted); }
 
 /* ---------- Konten utama: di tengah ---------- */
 
@@ -500,10 +616,22 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .simpul.mati { border-style: dashed; background: transparent; }
 .simpul.mati .simpul-nama { color: var(--muted); text-decoration: line-through; }
 .simpul.mati .simpul-mark { background: transparent; border: 1px dashed var(--rule-2); color: var(--muted); }
-.simpul.bisa-dibuka { cursor: pointer; }
 @media (hover: hover) { .simpul.bisa-dibuka:hover { border-color: var(--accent); } }
-.simpul.bisa-dibuka:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.simpul .buka { grid-column: 2 / span 2; }
+/* Dua tindakan di kaki kartu: membuka langkah di halaman ini, dan membuka log job di GitHub. */
+.simpul-aksi { grid-column: 2 / span 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); }
+.simpul-tombol, .simpul-tautan {
+  display: inline-flex; align-items: center; gap: 0.2rem; min-height: 1.5rem;
+  border: 0; padding: 0; background: none; color: var(--muted); font: inherit; font-size: 0.8125rem;
+  white-space: nowrap; text-decoration: none;
+}
+.simpul-tombol { cursor: pointer; }
+.simpul-tautan { color: var(--accent); }
+.simpul-tombol .icon, .simpul-tautan .icon { width: 0.875rem; height: 0.875rem; }
+.simpul-tombol[aria-expanded="true"] .icon { transform: rotate(90deg); }
+@media (hover: hover) {
+  .simpul-tombol:hover { color: var(--ink); }
+  .simpul-tautan:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .simpul-mark { transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
 }
@@ -686,6 +814,16 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .box h2 { font-size: 1rem; }
 .note { font-size: 0.8125rem; color: var(--muted); }
 .history { display: grid; gap: var(--s-1); }
+/* Baris riwayat memuat dua sasaran klik: tombol yang memilih run, dan tautan kecil yang membuka
+   run itu di GitHub. Keduanya dipisah supaya memilih dan membuka tab baru tidak pernah tertukar. */
+.hbaris { position: relative; display: grid; }
+.hlink {
+  position: absolute; top: var(--s-2); right: var(--s-2); width: 1.75rem; height: 1.75rem;
+  display: grid; place-items: center; border-radius: var(--radius-chip); color: var(--muted);
+}
+.hlink .icon { width: 0.875rem; height: 0.875rem; }
+@media (hover: hover) { .hlink:hover { background: var(--paper-2); color: var(--accent); } }
+.hbaris .hrow { padding-right: 2.5rem; }
 .hrow {
   display: grid; gap: var(--s-2); width: 100%; text-align: left;
   padding: var(--s-3); border: 1px solid transparent; border-radius: var(--radius-ctl);
@@ -966,16 +1104,6 @@ table.eks tr:last-child td { border-bottom: 0; }
 @media (max-width: 30rem) { .drawer-panel { width: 100%; border-left: 0; } }
 /* Panel detail temuan memuat potongan kode, jadi butuh lebih lebar daripada panel jalankan. */
 #drawer-temuan .drawer-panel { width: min(40rem, 100%); }
-
-/* Navigasi rail */
-.railnav { list-style: none; margin: 0 0 var(--s-5); padding: 0; display: grid; gap: 1px; }
-.railnav button {
-  width: 100%; text-align: left; border: 0; background: none; cursor: pointer; color: var(--ink-2);
-  font: inherit; font-size: 0.875rem; padding: var(--s-2) var(--s-3); border-radius: var(--radius-ctl);
-}
-.railnav button:hover { background: var(--paper-3); color: var(--ink); }
-.railnav button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.railnav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Legenda riwayat dan penanda run gagal */
 .hist-legenda { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); padding-top: var(--s-3); font-size: 0.75rem; color: var(--muted); }

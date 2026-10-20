@@ -104,7 +104,22 @@
     // Kepadatan dibedakan lewat bentuk, bukan jumlah garis: pada 18 px selisih jumlah garis tidak terbaca.
     padat: ['M3 4h10', 'M3 6.7h10', 'M3 9.4h10', 'M3 12.1h10'],
     nyaman: ['M3.5 3.5h9v4h-9z', 'M3.5 8.5h9v4h-9z'],
+    // Navigasi rail. Bentuknya dibedakan sejelas mungkin pada 20 px, karena ikon di sini hanya
+    // penanda posisi: label teksnya selalu ada di sebelahnya.
+    kisi: ['M2.5 2.5h5v5h-5z', 'M8.5 2.5h5v5h-5z', 'M2.5 8.5h5v5h-5z', 'M8.5 8.5h5v5h-5z'],
+    terverifikasi: ['M8 1.8l5 1.9v4.1c0 3-2.1 5.3-5 6.4c-2.9-1.1-5-3.4-5-6.4V3.7z', 'M5.6 7.9l1.7 1.7 3.1-3.4'],
+    riwayat: ['M8 2.5a5.5 5.5 0 1 1-5.4 6.6', 'M2.2 5.2l.4 3.9 3.6-1.6', 'M8 5.3v3l2.1 1.3'],
+    repo: ['M3.5 2h7.2l2 2v10H3.5z', 'M3.5 11.2h9.2', 'M6 4.6h3'],
+    lipat: ['M8 2.4l2.6 2.8H5.4z', 'M8 13.6l2.6-2.8H5.4z'],
+    kunci: ['M4.2 7.3h7.6v6.2H4.2z', 'M6 7.3V5.4a2 2 0 0 1 4 0v1.9'],
   };
+  // Tautan keluar selalu membawa rel yang sama dan ikon yang sama, dan selalu menjelaskan
+  // tujuannya. Tanpa url, isinya dikembalikan apa adanya sebagai teks biasa.
+  const tautanGh = (url, isi, label, kelas = null) => (url
+    ? el('a', { class: kelas, href: url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': label ?? null },
+      isi, ikon(IKON.luar))
+    : isi);
+
   // Tombol ikon: label dibacakan pembaca layar dan muncul sebagai tooltip
   const pasangIkon = (tombol, jalur, label) => {
     tombol.replaceChildren(ikon(jalur));
@@ -128,6 +143,47 @@
   const teksPath = (file) => String(file).split('/').flatMap((bagian, i, semua) => (i < semua.length - 1 ? [`${bagian}/`, el('wbr')] : [bagian]));
   const teksLokasi = (file, baris) => (file ? [...teksPath(file), `:${baris ?? '?'}`] : ['—']);
   const urlGithub = (owner, repo, ...seg) => `https://github.com/${enc(owner)}/${enc(repo)}${seg.length ? `/${seg.map(enc).join('/')}` : ''}`;
+
+  // ---- awal blok tautan GitHub (diuji di tests/tautan-github.test.js) ----
+  // Tautan hanya dibangun dari nilai yang sudah divalidasi: owner dan repo dari konfigurasi
+  // project, id run dan id job harus bilangan bulat positif, SHA harus 40 heksadesimal. Nilai yang
+  // tidak lolos tidak menghasilkan tautan sama sekali. Tautan yang mendarat di halaman yang salah
+  // lebih berbahaya daripada teks biasa, karena pembacanya mengira sudah melihat buktinya.
+  // Seluruh URL di sini hanya dipakai sebagai href; tidak satu pun pernah diambil lewat jaringan,
+  // dan connect-src tetap hanya 'self' dan api.github.com.
+  const NAMA_GH = /^[A-Za-z0-9._-]+$/;
+  const idGh = (v) => {
+    const t = typeof v === 'number' ? (Number.isSafeInteger(v) ? String(v) : null) : v;
+    return typeof t === 'string' && /^[1-9][0-9]*$/.test(t) ? t : null;
+  };
+  const shaGh = (v) => (typeof v === 'string' && /^[0-9a-fA-F]{40}$/.test(v) ? v.toLowerCase() : null);
+  // Project demo yang sengaja dibuat-buat tidak boleh ditautkan ke repo mana pun.
+  const repoGh = (p) => (p && !p.demo_tanpa_workflow && NAMA_GH.test(String(p.owner ?? '')) && NAMA_GH.test(String(p.repo ?? ''))
+    ? p : null);
+  const urlRepoGh = (p) => (repoGh(p) ? urlGithub(p.owner, p.repo) : null);
+  const urlRunGh = (p, runId) => {
+    const r = repoGh(p);
+    const id = idGh(runId);
+    return r && id ? urlGithub(r.owner, r.repo, 'actions', 'runs', id) : null;
+  };
+  const urlJobGh = (p, runId, jobId) => {
+    const dasar = urlRunGh(p, runId);
+    const j = idGh(jobId);
+    return dasar && j ? `${dasar}/job/${j}` : null;
+  };
+  const urlCommitGh = (p, sha) => {
+    const r = repoGh(p);
+    const h = shaGh(sha);
+    return r && h ? urlGithub(r.owner, r.repo, 'commit', h) : null;
+  };
+  const urlBerkasGh = (p, sha, file, baris) => {
+    const r = repoGh(p);
+    const h = shaGh(sha);
+    if (!r || !h || typeof file !== 'string' || !file || file.startsWith('/') || file.split('/').includes('..')) return null;
+    const n = Number(baris);
+    return `${urlGithub(r.owner, r.repo, 'blob', h, ...file.split('/'))}${Number.isInteger(n) && n > 0 ? `#L${n}` : ''}`;
+  };
+  // ---- akhir blok tautan GitHub ----
 
   // ---------- State ----------
   const state = {
@@ -252,10 +308,12 @@
     return ((Number.isFinite(b) ? b : Date.now()) - a) / 1000;
   };
   const statusJobApi = (job) => {
-    if (!job) return { s: 'wait', durasi: null, langkah: null };
+    if (!job) return { s: 'wait', durasi: null, langkah: null, id: null };
     const s = bacaStatus(job.status, job.conclusion);
     return {
       s,
+      // Id job dipakai untuk menautkan node graf ke halaman lognya di GitHub.
+      id: job.id ?? null,
       durasi: s === 'skip' ? null : lamaDetik(job.started_at, job.completed_at),
       // Langkah job dipakai saat node graf diklik. Hanya ada lewat API, jadi null untuk run yang
       // dibaca dari berkas hasil.
@@ -272,17 +330,21 @@
   const sumberLive = {
     projects: () => jsonLokal('projects.json'),
     cekProject: async (p) => {
+      let repo;
       try {
-        await gh(repoPath(p));
+        repo = await gh(repoPath(p));
       } catch (err) {
         return { akses: false, err };
       }
+      // Branch bawaan repositori hanya diketahui dari GitHub. Tanpa nilai ini tidak ada penanda
+      // "(default)" sama sekali, karena menebaknya dari nama branch adalah mengarang.
+      const bawaan = typeof repo?.default_branch === 'string' ? repo.default_branch : null;
       try {
         await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}`);
-        return { akses: true, workflow: true };
+        return { akses: true, workflow: true, branch_bawaan: bawaan };
       } catch (err) {
-        if (err.jenis === 'notfound') return { akses: true, workflow: false };
-        return { akses: true, workflow: null, err };
+        if (err.jenis === 'notfound') return { akses: true, workflow: false, branch_bawaan: bawaan };
+        return { akses: true, workflow: null, branch_bawaan: bawaan, err };
       }
     },
     index: async (p) => {
@@ -300,7 +362,7 @@
     jobs: async (p, runId) => {
       try {
         const data = await gh(`${repoPath(p)}/actions/runs/${enc(runId)}/jobs?per_page=50`);
-        return jobsDariApi(data.jobs || []);
+        return { jobs: jobsDariApi(data.jobs || []), rekaman: null };
       } catch {
         return null;
       }
@@ -313,30 +375,77 @@
 
   const sumberDemo = {
     projects: () => jsonLokal('fixtures/projects.json'),
-    cekProject: async (p) => (p.demo_tanpa_workflow ? { akses: true, workflow: false } : { akses: true, workflow: true }),
+    cekProject: async (p) => ({
+      akses: true,
+      workflow: !p.demo_tanpa_workflow,
+      branch_bawaan: typeof p.default_branch === 'string' ? p.default_branch : null,
+    }),
     index: async (p) => (p.demo_tanpa_workflow ? { runs: [] } : jsonLokal(`${basisDemo()}/index.json`)),
     hasil: async (p, entri) => {
       if (!pathAman(entri.path)) throw new GhError('format', 'Path hasil di index.json tidak valid.');
       return validasiHasil(await jsonLokal(`${basisDemo()}/${entri.path}`));
     },
-    // Run v2 dijalankan dari CLI, tidak lewat GitHub Actions, jadi tidak ada status job di mode demo.
-    jobs: async () => null,
+    // Run eksperimen dijalankan dari CLI, jadi tidak punya status job. Satu run di fixture demo
+    // justru berasal dari GitHub Actions: status jobnya diambil sekali dari API dan disimpan apa
+    // adanya sebagai rekaman, supaya graf pipeline di mode demo menggambarkan run yang benar-benar
+    // terjadi, bukan keadaan karangan.
+    jobs: async (p, runId) => {
+      const r = await rekamanDemo();
+      if (!r || r.run.id !== runId) return null;
+      return { jobs: jobsDariApi(r.jobs), rekaman: r.run };
+    },
+  };
+
+  let rekamanDemoCache;
+  const rekamanDemo = async () => {
+    if (rekamanDemoCache === undefined) {
+      try { rekamanDemoCache = await jsonLokal(`${basisDemo()}/rekaman/run-54.json`); } catch { rekamanDemoCache = null; }
+    }
+    return rekamanDemoCache;
   };
 
   const sumber = () => (state.demo ? sumberDemo : sumberLive);
 
   // ---------- Tema dan kepadatan ----------
-  const TEMA = [null, 'terang', 'gelap'];
+  // Desain hanya menggambar dua tombol, matahari dan bulan. Segmen "ikuti sistem" ditambahkan
+  // karena itulah keadaan bawaan dashboard ini: tanpa segmennya, pengguna yang sudah pernah
+  // menekan salah satu tema tidak punya jalan kembali ke pilihan sistem operasinya.
+  const SEGMEN_TEMA = [
+    { nilai: null, id: 'tema-sistem', ikon: 'sistem', label: 'Ikuti tema sistem' },
+    { nilai: 'terang', id: 'tema-terang', ikon: 'terang', label: 'Tema terang' },
+    { nilai: 'gelap', id: 'tema-gelap', ikon: 'gelap', label: 'Tema gelap' },
+  ];
+  const pilihTema = (nilai) => {
+    if (nilai) store.set('localStorage', KUNCI.tema, nilai); else store.del('localStorage', KUNCI.tema);
+    terapkanTema();
+  };
   const terapkanTema = () => {
     const t = store.get('localStorage', KUNCI.tema);
     if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-    pasangIkon($('theme-toggle'), IKON[t ?? 'sistem'], `Tema: ${t ?? 'ikuti sistem'}`);
+    isi($('tema-grup'), SEGMEN_TEMA.map((x) => el('button', {
+      class: 'btn btn-sm btn-icon', type: 'button', id: x.id,
+      'aria-pressed': String((t ?? null) === x.nilai), 'aria-label': x.label, title: x.label,
+      onclick: () => pilihTema(x.nilai),
+    }, ikon(IKON[x.ikon]))));
   };
-  // Di layar sempit, rail setinggi satu layar penuh mendorong isi utama keluar pandangan.
-  // Isinya dilipat di balik tombol Menu; di layar lebar tombolnya tidak ada dan rail selalu terbuka.
+  // Di layar sempit, rail setinggi satu layar penuh mendorong isi utama keluar pandangan. Isinya
+  // menjadi panel yang dibuka lewat tombol Menu di bilah atas, dengan fokus terkurung dan Escape
+  // untuk menutup, mekanik yang sama dengan kedua drawer. Di layar lebar tombolnya tidak ada dan
+  // rail selalu terbuka, jadi tidak ada yang dikurung.
+  const railSempit = () => !window.matchMedia('(min-width: 64rem)').matches;
   const terapkanRail = (buka) => {
     document.documentElement.dataset.rail = buka ? 'buka' : 'tutup';
     $('rail-toggle').setAttribute('aria-expanded', String(buka));
+    if (buka && railSempit()) {
+      bukaPanel($('rail-isi'), {
+        pemicu: $('rail-toggle'),
+        tutupId: 'rail-toggle',
+        kelola: false,
+        saatTutup: () => { document.documentElement.dataset.rail = 'tutup'; },
+      });
+    } else if (!buka) {
+      lepasPanel($('rail-isi'));
+    }
   };
 
   const terapkanKepadatan = () => {
@@ -361,7 +470,8 @@
     if (state.demo) bannerDemo();
   };
   const bannerDemo = () => tampilBanner('demo',
-    'Mode demo. Data nyata dari eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing. Alert Sonar diverifikasi model satu per satu. Run dijalankan dari CLI, bukan lewat pipeline.',
+    'Mode demo. Data eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing, dijalankan dari CLI. '
+    + 'Branch feat/prompt-v2 memuat rekaman run CI #54 yang benar-benar berjalan di GitHub Actions, lengkap dengan status tiap job.',
     { label: 'Keluar dari mode demo', fn: () => keluarDemo() });
 
   // ---------- Token ----------
@@ -378,6 +488,30 @@
     isi(s, el('i', { 'aria-hidden': 'true' }), el('span', { text: teks }));
     $('token-clear').hidden = !state.token;
     $('token-save').textContent = state.token ? 'Ganti token' : 'Simpan dan periksa';
+    renderRailBawah();
+  };
+
+  // Dasar rail selalu menyebut tiga hal yang bergantung pada keadaan yang sama: koneksi, tindakan
+  // token, dan tombol demo. Disusun di satu tempat supaya ketiganya tidak pernah saling berbeda.
+  const renderRailBawah = () => {
+    $('token-aksi').textContent = state.token ? 'Ganti token' : 'Sambungkan';
+    $('demo-toggle').textContent = state.demo ? 'Keluar dari mode demo' : 'Buka mode demo';
+    renderKoneksi();
+  };
+
+  // Baris status koneksi di dasar rail, menggantikan "Pipeline Online v2.4.1" di desain. Menyebut
+  // keadaan yang sebenarnya dan tanpa nomor versi: dashboard ini tidak punya versi yang dirilis,
+  // sedangkan dari mana datanya datang justru yang perlu diketahui.
+  const renderKoneksi = () => {
+    const n = $('koneksi');
+    const keadaan = state.demo
+      ? { s: 'demo', teks: 'Mode demo', ket: 'Data fixture di berkas, tanpa panggilan ke GitHub.' }
+      : (state.token
+        ? { s: 'ok', teks: 'Live \u00b7 token tersambung', ket: 'Hasil dan status run dibaca lewat api.github.com.' }
+        : { s: 'warn', teks: 'Live \u00b7 tanpa token', ket: 'Tanpa token, hasil dan status run tidak bisa dibaca.' });
+    n.dataset.s = keadaan.s;
+    n.title = keadaan.ket;
+    isi(n, el('i', { 'aria-hidden': 'true' }), el('span', { text: keadaan.teks }));
   };
 
   const teksTokenAktif = () => {
@@ -440,14 +574,16 @@
     $('start').hidden = false;
     $('workspace').hidden = true;
     isi($('project-list'));
+    bukaDaftarRepo(false);
+    $('repo-pilih').hidden = true;
     $('access').open = true;
-    $('demo-toggle').textContent = 'Buka mode demo';
+    renderRailBawah();
   };
 
   // ---------- Masuk mode ----------
   const masukLive = async () => {
     state.demo = false;
-    $('demo-toggle').textContent = 'Buka mode demo';
+    renderRailBawah();
     tutupBanner('demo');
     if (!state.token) return tampilStart();
     try {
@@ -465,7 +601,7 @@
     hentikanPantau();
     state.demo = true;
     if (location.hash !== '#demo') history.replaceState(null, '', '#demo');
-    $('demo-toggle').textContent = 'Keluar dari mode demo';
+    renderRailBawah();
     bannerDemo();
     await muatProjects();
   };
@@ -474,6 +610,7 @@
     hentikanPantau();
     state.demo = false;
     history.replaceState(null, '', location.pathname + location.search);
+    renderRailBawah();
     $('banner').hidden = true;
     state.banner = null;
     if (state.token) masukLive(); else tampilStart();
@@ -523,15 +660,48 @@
     return { teks: `${p.branches.length} branch · workflow aktif`, off: false };
   };
 
+  // Titik status: hijau kalau workflow benar-benar terpasang di repo itu, abu-abu kalau belum
+  // terpasang atau belum diketahui. Warna bukan satu-satunya penanda; keterangannya ikut tertulis.
+  const titikProject = (p) => {
+    const st = state.statusProject.get(p) ?? {};
+    const s = st.akses === false || st.workflow === false ? 'off' : (st.workflow === true ? 'on' : 'tanya');
+    return el('span', { class: `titik t-${s}`, 'aria-hidden': 'true' });
+  };
+
   const renderProjects = () => {
+    const aktif = state.proyek;
+    // Satu project tidak perlu pemilih: kotaknya tetap ada sebagai identitas, tanpa chevron dan
+    // tanpa daftar yang bisa dibuka, karena tidak ada yang bisa dipilih.
+    const banyak = state.projects.length > 1;
+    const tombol = $('repo-pilih');
+    tombol.disabled = !banyak;
+    tombol.hidden = !aktif;
+    if (aktif) {
+      const k = keteranganProject(aktif);
+      isi(tombol,
+        el('span', { class: 'kotak-ikon' }, ikon(IKON.repo)),
+        el('span', { class: 'kotak-nama data', text: aktif.repo }),
+        titikProject(aktif),
+        banyak ? el('span', { class: 'kotak-lipat' }, ikon(IKON.lipat)) : null);
+      tombol.title = `${aktif.owner}/${aktif.repo} \u00b7 ${k.teks}`;
+      tombol.setAttribute('aria-label', `Repositori aktif ${aktif.owner}/${aktif.repo}, ${k.teks}${banyak ? '. Buka daftar repositori' : ''}`);
+    }
     isi($('project-list'), state.projects.map((p) => {
       const k = keteranganProject(p);
       return el('li', {},
         el('button', {
           class: `project${k.off ? ' is-off' : ''}`, type: 'button', 'aria-current': p === state.proyek ? 'true' : 'false',
-          onclick: () => pilihProyek(p),
-        }, el('b', { text: p.repo }), el('span', { text: `${p.owner} · ${k.teks}` })));
+          onclick: () => { bukaDaftarRepo(false); pilihProyek(p); },
+        }, el('span', { class: 'project-nama' }, titikProject(p), el('b', { class: 'data', text: p.repo })),
+        el('span', { text: `${p.owner} \u00b7 ${k.teks}` })));
     }));
+    if (!banyak) bukaDaftarRepo(false);
+  };
+
+  const bukaDaftarRepo = (buka) => {
+    const bisa = state.projects.length > 1;
+    $('repo-pilih').setAttribute('aria-expanded', String(buka && bisa));
+    $('project-list').hidden = !(buka && bisa);
   };
 
   const pilihProyek = (p, branchDisukai) => {
@@ -647,13 +817,20 @@
   };
   const branchJalan = () => state.branchJalan ?? state.branch;
 
-  // Select di rail: seluruh branch, termasuk arsip, karena ini soal apa yang dibaca.
+  // Select di rail: seluruh branch, termasuk arsip, karena ini soal apa yang dibaca. Penanda
+  // "(default)" hanya untuk branch bawaan repositori yang dilaporkan GitHub, bukan untuk branch
+  // bawaan tujuan run, yang artinya berbeda dan punya penandanya sendiri di drawer.
+  const branchBawaanRepo = () => state.statusProject.get(state.proyek)?.branch_bawaan ?? null;
   const renderRailBranch = () => {
     const sel = $('f-branch-lihat');
-    isi(sel, state.proyek.branches.map((b) => el('option', {
-      value: b.name, text: b.dispatch ? b.name : `${b.name} · arsip`, selected: b === state.branch,
-    })));
-    // Rail hanya selebar 15rem: nama branch panjang terpotong, jadi judul penuhnya disediakan.
+    const bawaan = branchBawaanRepo();
+    isi(sel, state.proyek.branches.map((b) => {
+      const tanda = [b.name === bawaan ? '(default)' : null, b.dispatch ? null : 'arsip'].filter(Boolean);
+      return el('option', {
+        value: b.name, text: tanda.length ? `${b.name} \u00b7 ${tanda.join(' \u00b7 ')}` : b.name, selected: b === state.branch,
+      });
+    }));
+    // Rail hanya selebar 16rem: nama branch panjang terpotong, jadi judul penuhnya disediakan.
     sel.title = state.branch?.name ?? '';
   };
 
@@ -744,6 +921,7 @@
     state.sebelumnya = null;
     state.entri = null;
     state.jobs = null;
+    state.rekaman = null;
     renderMemuat();
     try {
       state.index = await sumber().index(state.proyek);
@@ -779,7 +957,9 @@
     if (lebihLama) {
       try { state.sebelumnya = await sumber().hasil(state.proyek, lebihLama); } catch { state.sebelumnya = null; }
     }
-    state.jobs = await sumber().jobs(state.proyek, entri.id);
+    const hasilJob = await sumber().jobs(state.proyek, entri.id);
+    state.jobs = hasilJob?.jobs ?? null;
+    state.rekaman = hasilJob?.rekaman ?? null;
     state.keputusan = bacaJsonLokal(kunciKeputusanV2(), {});
     renderSemua();
   };
@@ -991,6 +1171,11 @@
     const jalur = jalurAktif(live);
     const mode = live?.mode ?? state.hasil?.run?.mode ?? modeTerpilih();
     const status = live?.jobs ?? state.jobs ?? statusNodeDariHasil() ?? {};
+    // Rekaman bukan pemantauan: statusnya diambil sekali lalu dibekukan, dan itu harus terbaca.
+    const rekaman = !live && state.rekaman ? state.rekaman : null;
+    const lencanaRekaman = $('pipeline-rekaman');
+    lencanaRekaman.hidden = !rekaman;
+    if (rekaman) lencanaRekaman.textContent = `Rekaman run CI #${rekaman.nomor}, bukan run langsung`;
     // Skema 2 tidak punya run.gemini; kegagalan LLM terbaca dari status panggilan.
     const llmGagal = !live && (state.hasil?.run?.status_panggilan?.error ?? 0) > 0;
     $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Alur eksekusi run #${state.hasil.run.nomor}` : 'Alur eksekusi pipeline');
@@ -1027,16 +1212,27 @@
         el('span', { class: 'simpul-durasi data', text: durasi(st.durasi) }),
         el('span', { class: 'simpul-status', text: aktif ? teks : 'digantikan jalur v2' }),
       ];
-      const sifat = { class: `simpul${aktif ? '' : ' mati'}`, dataset: { s: st.s, key: n.key } };
-      if (!bisaDibuka) return el('div', sifat, isiSimpul);
-      return el('button', {
-        ...sifat,
-        class: `${sifat.class} bisa-dibuka`,
-        type: 'button',
-        'aria-expanded': state.simpulTerbuka === n.key ? 'true' : 'false',
-        'aria-controls': 'alur-langkah',
-        onclick: () => { state.simpulTerbuka = state.simpulTerbuka === n.key ? null : n.key; renderPipeline(live); },
-      }, isiSimpul, el('span', { class: 'buka' }, el('small', { text: state.simpulTerbuka === n.key ? 'Tutup langkah' : 'Lihat langkah' }), ikon(IKON.panah)));
+      // Dua tindakan berbeda di satu kartu: membuka daftar langkah di halaman ini, dan membuka log
+      // job itu di GitHub. Keduanya berdampingan di dalam kartu, bukan kartu yang seluruhnya bisa
+      // diklik, karena tautan di dalam tombol bukan markah yang sah dan dua sasaran klik yang
+      // bertumpuk membuat orang membuka tab baru padahal hanya ingin melihat langkahnya.
+      const nomorRun = live?.nomor ?? state.hasil?.run?.nomor ?? null;
+      const idRun = live?.id ?? state.rekaman?.id ?? state.hasil?.run?.id ?? null;
+      const urlLog = aktif ? urlJobGh(state.proyek, idRun, status[n.key]?.id) : null;
+      const aksi = [
+        bisaDibuka ? el('button', {
+          class: 'simpul-tombol', type: 'button',
+          'aria-expanded': state.simpulTerbuka === n.key ? 'true' : 'false',
+          'aria-controls': 'alur-langkah',
+          onclick: () => { state.simpulTerbuka = state.simpulTerbuka === n.key ? null : n.key; renderPipeline(live); },
+        }, el('small', { text: state.simpulTerbuka === n.key ? 'Tutup langkah' : 'Lihat langkah' }), ikon(IKON.panah)) : null,
+        urlLog ? el('a', {
+          class: 'simpul-tautan', href: urlLog, target: '_blank', rel: 'noopener noreferrer',
+          'aria-label': `Lihat log job ${nama}${nomorRun ? ` run #${nomorRun}` : ''} di GitHub, tab baru`,
+        }, el('small', { text: 'Lihat log' }), ikon(IKON.luar)) : null,
+      ].filter(Boolean);
+      const sifat = { class: `simpul${aktif ? '' : ' mati'}${bisaDibuka ? ' bisa-dibuka' : ''}`, dataset: { s: st.s, key: n.key } };
+      return el('div', sifat, isiSimpul, aksi.length ? el('span', { class: 'simpul-aksi' }, aksi) : null);
     };
 
     isi(kotak, svg, ...kolomPipeline().map((kol) => el('div', { class: 'alur-kolom' }, kol.map(kartu))));
@@ -1105,9 +1301,7 @@
     }
     if (r.asal !== 'workflow') return null;
     const p = state.proyek;
-    const tautan = r.repo && !p.demo_tanpa_workflow
-      ? el('a', { href: urlGithub(p.owner, p.repo, 'actions', 'runs', String(r.id)), target: '_blank', rel: 'noopener noreferrer' }, `run #${r.nomor}`, ' ', ikon(IKON.luar))
-      : `run #${r.nomor}`;
+    const tautan = tautanGh(urlRunGh(p, r.id), `run #${r.nomor}`, `Buka run #${r.nomor} di GitHub Actions, tab baru`);
     return el('div', { class: 'meta-chip', title: 'Status tiap job hanya bisa dibaca lewat GitHub API, jadi butuh token.' },
       ikon(IKON.asal), el('dt', { text: 'Asal' }), el('dd', {}, 'GitHub Actions ', tautan));
   };
@@ -1129,12 +1323,13 @@
       gagal ? 'Selesai dengan panggilan gagal' : 'Selesai'));
   };
 
-  const renderKepalaV2 = (adaPipeline = true) => {
+  const renderKepalaV2 = () => {
     const p = state.proyek;
     const r = state.hasil.run;
-    const repoLink = p.demo_tanpa_workflow || !r.repo
-      ? el('span', { text: `${p.owner} / ${p.repo}` })
-      : el('a', { href: urlGithub(p.owner, p.repo), target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` });
+    const urlRepo = urlRepoGh(p);
+    const repoLink = urlRepo
+      ? el('a', { href: urlRepo, target: '_blank', rel: 'noopener noreferrer', text: `${p.owner} / ${p.repo}` })
+      : el('span', { text: `${p.owner} / ${p.repo}` });
     isi($('crumb'), repoLink, pemisahCrumb(), r.objek_uji.branch ?? state.branch.name, pemisahCrumb(), `Run #${r.nomor}`);
     $('run-title').textContent = `Run #${r.nomor} · ${labelVendor(r.vendor)} · ${state.hasil.alerts.length} alert · ${state.hasil.findings.length} temuan`;
     renderStatusRun(r);
@@ -1146,7 +1341,9 @@
     const bedaModel = r.model_menjawab && r.model_menjawab !== r.model_diminta;
     // status_panggilan dan biaya_usd opsional di skema; berkas sah tanpa keduanya tidak boleh merusak render.
     const sp = r.status_panggilan ?? null;
-    const commit = el('span', { text: pendek(r.objek_uji.commit) });
+    // SHA pendek yang terbaca, SHA penuh di title chipnya, dan tautan ke halaman commit itu.
+    const commit = tautanGh(urlCommitGh(p, r.objek_uji.commit), pendek(r.objek_uji.commit),
+      `Buka commit ${pendek(r.objek_uji.commit)} di GitHub, tab baru`);
     isi($('title-block'),
       sel('Model', r.model_menjawab ? labelModelId(r.model_menjawab) : '—', {
         ikon: IKON.bolt,
@@ -1157,7 +1354,9 @@
       sel('Durasi', durasi(r.durasi_detik), { data: true, ikon: IKON.jam }),
       sel('Biaya', typeof r.biaya_usd === 'number' ? `US$${r.biaya_usd.toFixed(4).replace('.', ',')}` : '—', { data: true, ikon: IKON.biaya }),
       sel('Panggilan', sp ? `${sp.ok}/${sp.total} ok` : '—', { data: true, ikon: IKON.panggilan, warn: Boolean(sp) && sp.ok !== sp.total }),
-      adaPipeline ? null : asalRun(r));
+      // Chip asal selalu ada: untuk run workflow ia membawa tautan ke run itu di GitHub Actions,
+      // untuk run CLI ia menerangkan kenapa tidak ada status job sama sekali.
+      asalRun(r));
   };
 
   // Kartu dikelompokkan tiga baris berlabel supaya keparahan, proses, dan sumber tidak tercampur.
@@ -1201,27 +1400,54 @@
 
   // ---------- Navigasi rail ----------
   const NAV = [
-    { key: 'ringkasan', label: 'Ringkasan', tab: 'operasional', sel: '#summary' },
-    { key: 'temuan', label: 'Temuan', tab: 'operasional', sel: '#temuan' },
-    { key: 'verifikasi', label: 'Verifikasi', tab: 'operasional', sel: '#alerts-box' },
-    { key: 'riwayat', label: 'Riwayat', tab: 'operasional', sel: '#history' },
-    { key: 'eksperimen', label: 'Eksperimen', tab: 'eksperimen', sel: '#panel-eksperimen' },
+    { key: 'ringkasan', label: 'Ringkasan', tab: 'operasional', sel: '#summary', ikon: 'kisi' },
+    { key: 'temuan', label: 'Temuan', tab: 'operasional', sel: '#temuan', ikon: 'perisai' },
+    { key: 'verifikasi', label: 'Verifikasi', tab: 'operasional', sel: '#alerts-box', ikon: 'terverifikasi' },
+    { key: 'riwayat', label: 'Riwayat', tab: 'operasional', sel: '#history', ikon: 'riwayat' },
+    { key: 'eksperimen', label: 'Eksperimen', tab: 'eksperimen', sel: '#panel-eksperimen', ikon: 'labu' },
   ];
+
+  // Lencana navigasi hanya memuat angka dari run yang sedang dibaca dan dari index branch itu.
+  // Yang datanya belum ada tidak dapat lencana sama sekali: lencana berisi 0 terbaca sebagai
+  // "sudah diperiksa, tidak ada apa-apa", padahal yang benar adalah "belum diketahui".
+  const lencanaNav = (key) => {
+    const h = state.hasil;
+    if (key === 'ringkasan') return Number.isFinite(h?.run?.nomor) ? { teks: `#${h.run.nomor}`, kelas: 'l-netral' } : null;
+    if (key === 'temuan') {
+      if (!h) return null;
+      const rentan = h.findings.some((t) => t.sifat === 'vulnerability');
+      return { teks: String(h.findings.length), kelas: rentan ? 'l-crit' : 'l-netral',
+        label: `${h.findings.length} temuan LLM${rentan ? ', ada yang bersifat vulnerability' : ''}` };
+    }
+    if (key === 'verifikasi') return h ? { teks: String(h.alerts.length), kelas: 'l-netral', label: `${h.alerts.length} alert Sonar` } : null;
+    if (key === 'riwayat') {
+      if (!state.index) return null;
+      const n = entriBranch().length;
+      return { teks: String(n), kelas: 'l-netral', label: `${n} run di branch ini` };
+    }
+    return null;
+  };
+
   const renderNav = () => {
     const v2 = state.hasil?.schema_version === 2;
     $('railnav-box').hidden = !v2;
     if (!v2) return;
     const adaEks = Boolean(state.hasil.eksperimen);
-    isi($('railnav'), NAV.filter((x) => x.key !== 'eksperimen' || adaEks).map((x) => el('li', {}, el('button', {
-      type: 'button', 'aria-current': state.nav === x.key ? 'true' : 'false',
-      onclick: () => {
-        state.nav = x.key;
-        if (state.tab !== x.tab) pilihTab(x.tab);
-        renderNav();
-        const n = document.querySelector(x.sel);
-        if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      },
-    }, x.label))));
+    isi($('railnav'), NAV.filter((x) => x.key !== 'eksperimen' || adaEks).map((x) => {
+      const l = lencanaNav(x.key);
+      return el('li', {}, el('button', {
+        type: 'button', 'aria-current': state.nav === x.key ? 'true' : 'false',
+        onclick: () => {
+          state.nav = x.key;
+          if (state.tab !== x.tab) pilihTab(x.tab);
+          renderNav();
+          if (railSempit()) terapkanRail(false);
+          const n = document.querySelector(x.sel);
+          if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+      }, ikon(IKON[x.ikon]), el('span', { class: 'railnav-label', text: x.label }),
+      l ? el('span', { class: `lencana ${l.kelas}`, 'aria-label': l.label ?? null, text: l.teks }) : null));
+    }));
   };
 
   // Satu baris per alert: severity Sonar (dengan sumbernya), putusan model, keyakinan, dan alasan
@@ -1331,8 +1557,8 @@
   const tautanGithub = (t) => {
     const p = state.proyek;
     const r = state.hasil.run;
-    if (!t.file || p.demo_tanpa_workflow || !r.repo) return null;
-    const url = `${urlGithub(p.owner, p.repo, 'blob', r.objek_uji.commit, ...t.file.split('/'))}${t.baris ? `#L${t.baris}` : ''}`;
+    const url = urlBerkasGh(p, r.objek_uji.commit, t.file, t.baris);
+    if (!url) return null;
     return el('a', { class: 'btn-text', href: url, target: '_blank', rel: 'noopener noreferrer' },
       'Buka ', ...teksLokasi(t.file, t.baris), ' di GitHub');
   };
@@ -1467,7 +1693,8 @@
             }));
           const gagal = e.status === 'gagal';
           const aktif = state.entri?.id === e.id;
-          return el('button', {
+          const urlRun = urlRunGh(state.proyek, e.id);
+          const tombol = el('button', {
             class: 'hrow', type: 'button', 'aria-current': aktif ? 'true' : 'false',
             'aria-label': `Run ${e.nomor}, ${labelVendor(e.vendor)}, ${j.temuan ?? 0} temuan, ${j.alert ?? 0} alert, ${rincian}${gagal ? ', run gagal' : ''}`,
             onclick: () => muatRun(e),
@@ -1479,7 +1706,15 @@
             aktif ? el('span', { class: 'lencana l-accent', text: 'Aktif' }) : null,
             el('span', { class: 'hbiaya data', text: typeof e.biaya_usd === 'number' ? `US$${e.biaya_usd.toFixed(4).replace('.', ',')}` : '' })),
           bar,
-          el('span', { class: 'hmeta', text: `${waktu(e.selesai)} · ${j.temuan ?? 0} temuan, ${j.alert ?? 0} alert` }));
+          el('span', { class: 'hmeta', text: `${waktu(e.selesai)} \u00b7 ${j.temuan ?? 0} temuan, ${j.alert ?? 0} alert` }));
+          // Memilih run dan membuka GitHub adalah dua maksud berbeda, jadi dua sasaran klik
+          // berbeda: tautannya di luar tombol, bukan di dalamnya.
+          return el('div', { class: 'hbaris' }, tombol, urlRun
+            ? el('a', {
+              class: 'hlink', href: urlRun, target: '_blank', rel: 'noopener noreferrer',
+              'aria-label': `Buka run #${e.nomor} di GitHub Actions, tab baru`, title: `Buka run #${e.nomor} di GitHub Actions`,
+            }, ikon(IKON.luar))
+            : null);
         }),
         el('div', { class: 'hist-legenda' }, [
           ...SEG_RIWAYAT.map(([, label, warna]) => {
@@ -1513,10 +1748,12 @@
     if (e.shiftKey && document.activeElement === awal) { e.preventDefault(); akhir.focus(); }
     else if (!e.shiftKey && document.activeElement === akhir) { e.preventDefault(); awal.focus(); }
   };
-  function bukaPanel(panel, { pemicu = null, tutupId }) {
+  // `kelola: false` untuk panel yang kemunculannya diatur CSS, bukan atribut hidden: rail di layar
+  // sempit tampil lewat data-rail, jadi yang dipinjam di sini hanya kurungan fokus dan Escape.
+  function bukaPanel(panel, { pemicu = null, tutupId, kelola = true, saatTutup = null }) {
     if (drawerAktif) tutupDrawerAktif();
-    drawerAktif = { panel, fokusSebelum: document.activeElement, pemicu, tutupId };
-    panel.hidden = false;
+    drawerAktif = { panel, fokusSebelum: document.activeElement, pemicu, tutupId, kelola, saatTutup };
+    if (kelola) panel.hidden = false;
     if (pemicu) pemicu.setAttribute('aria-expanded', 'true');
     document.addEventListener('keydown', kurungFokus, true);
     const f = elemenFokus(panel);
@@ -1524,13 +1761,23 @@
   }
   function tutupDrawerAktif() {
     if (!drawerAktif) return;
-    const { panel, fokusSebelum, pemicu, tutupId } = drawerAktif;
+    const { panel, fokusSebelum, pemicu, tutupId, kelola, saatTutup } = drawerAktif;
     drawerAktif = null;
-    panel.hidden = true;
+    if (kelola) panel.hidden = true;
+    if (saatTutup) saatTutup();
     if (pemicu) pemicu.setAttribute('aria-expanded', 'false');
     document.removeEventListener('keydown', kurungFokus, true);
     if (fokusSebelum && document.contains(fokusSebelum) && fokusSebelum.offsetParent !== null) fokusSebelum.focus();
     else $(tutupId).focus();
+  }
+  // Melepas kurungan tanpa menutup apa pun dan tanpa memindahkan fokus. Dipakai saat rail berhenti
+  // menjadi panel, misalnya karena jendela dilebarkan.
+  function lepasPanel(panel) {
+    if (!drawerAktif || drawerAktif.panel !== panel) return;
+    const { pemicu } = drawerAktif;
+    drawerAktif = null;
+    if (pemicu) pemicu.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('keydown', kurungFokus, true);
   }
   function bukaDrawer() {
     // Persetujuan biaya berlaku untuk satu run, jadi tidak boleh terbawa ke pembukaan berikutnya.
@@ -1743,7 +1990,7 @@
     // Tanpa data pipeline, panel gelapnya hanya ruang kosong berisi satu kalimat; keterangannya
     // pindah ke metadata kepala run, tempat fakta run lain berada.
     const adaPipeline = Boolean(state.jobs || state.hasil.run.pipeline);
-    renderKepalaV2(adaPipeline);
+    renderKepalaV2();
     $('pipeline-box').hidden = !adaPipeline;
     if (adaPipeline) renderPipeline();
     renderRingkasanV2();
@@ -1929,18 +2176,21 @@
   const ikat = () => {
     $('token-form').addEventListener('submit', simpanToken);
     $('token-clear').addEventListener('click', hapusToken);
-    $('theme-toggle').addEventListener('click', () => {
-      const kini = store.get('localStorage', KUNCI.tema);
-      const berikut = TEMA[(TEMA.indexOf(kini) + 1) % TEMA.length];
-      if (berikut) store.set('localStorage', KUNCI.tema, berikut); else store.del('localStorage', KUNCI.tema);
-      terapkanTema();
-    });
     $('density-toggle').addEventListener('click', () => {
       store.set('localStorage', KUNCI.padat, document.documentElement.dataset.density === 'padat' ? 'nyaman' : 'padat');
       terapkanKepadatan();
     });
     $('demo-toggle').addEventListener('click', () => (state.demo ? keluarDemo() : masukDemo()));
     $('rail-toggle').addEventListener('click', () => terapkanRail(document.documentElement.dataset.rail !== 'buka'));
+    $('rail-tirai').addEventListener('click', () => terapkanRail(false));
+    $('rail-tutup').addEventListener('click', () => terapkanRail(false));
+    $('repo-pilih').addEventListener('click', () => bukaDaftarRepo($('repo-pilih').getAttribute('aria-expanded') !== 'true'));
+    $('token-aksi').addEventListener('click', () => { $('access').open = true; $('token-input').focus(); });
+    // Rail berhenti menjadi panel begitu jendela melebihi ambang kolom tetap; kurungan fokus yang
+    // ikut tertinggal akan memerangkap Tab di dalam rail yang justru sudah tidak modal lagi.
+    window.matchMedia('(min-width: 64rem)').addEventListener('change', (e) => {
+      if (e.matches) lepasPanel($('rail-isi'));
+    });
     // Tanpa pembungkus, objek Event ikut terkirim sebagai argumen `pesan` dan tercetak di hint.
     $('f-konfirmasi-v2').addEventListener('change', () => perbaruiTombolJalankan());
     $('f-model').addEventListener('change', renderBiaya);
@@ -1983,7 +2233,16 @@
     window.addEventListener('online', () => tutupBanner('error'));
   };
 
+  // Perisai digambar sendiri sebagai SVG inline: bukan logo merek mana pun, dan tidak menambah
+  // satu pun permintaan jaringan.
+  const pasangIkonTetap = () => {
+    $('brand-lambang').replaceChildren(ikon(IKON.perisai));
+    $('branch-ikon').replaceChildren(ikon(IKON.cabang));
+    $('akses-ikon').replaceChildren(ikon(IKON.kunci));
+  };
+
   const mulai = async () => {
+    pasangIkonTetap();
     terapkanTema();
     terapkanKepadatan();
     terapkanRail(false);
