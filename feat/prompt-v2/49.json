@@ -1,0 +1,181 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 39350138907,
+    "nomor": 49,
+    "repo": "MIlhamRidhoP/TA-ssdlc-devops-akademik",
+    "vendor": "google",
+    "model_diminta": "gemini-3.1-pro-preview",
+    "model_menjawab": "gemini-3.1-pro-preview",
+    "kondisi": "utama",
+    "mulai": "2026-10-20T00:52:14.869Z",
+    "selesai": "2026-10-20T00:55:58.949Z",
+    "durasi_detik": 224,
+    "objek_uji": {
+      "commit": "b169a4ee10cf8b79c195fe5e3628463ac1c777de",
+      "branch": "feat/prompt-v2",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "commit_kode": {
+      "head": "b169a4ee10cf8b79c195fe5e3628463ac1c777de",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "4391e630a966de687eafd051072f41f6f0674cec9170386c825c53680ddaf050"
+    },
+    "sumber_sonar": "api",
+    "analisis_sonar": {
+      "tanggal": "2026-10-10T08:00:24+0000",
+      "revisi": "fe97d23b7c4b20c575d746d9e4df9a8bd2443b32",
+      "tree_src": "65e540f008411ac9606719c4fd7a98259c6390a0"
+    },
+    "sonar_beku": null,
+    "biaya_usd": 0.531008,
+    "status_panggilan": {
+      "total": 2,
+      "ok": 2,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0
+    },
+    "pipeline": null
+  },
+  "alerts": [
+    {
+      "id": "SONAR-01",
+      "rule": "javascript:S5122",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "pesan": "Make sure that enabling CORS is safe here.",
+      "severity_sonar": "MAJOR",
+      "severity_asal": "sonar",
+      "putusan": "true_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Pada file src/app.js baris 10, middleware cors() dipanggil tanpa argumen, yang secara bawaan mengatur header Access-Control-Allow-Origin menjadi '*'. Konfigurasi ini mengizinkan semua domain (termasuk yang tidak terpercaya) untuk berinteraksi dengan API, yang sesuai dengan deskripsi kelemahan CWE-942. Meskipun penggunaan token Bearer mengurangi risiko eksploitasi langsung, kebijakan CORS yang sangat longgar ini tetap valid sebagai temuan.",
+      "tanda": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/controllers/krsController.js",
+      "baris": 65,
+      "fungsi": "exports.addItem",
+      "jenis": "Race Condition",
+      "cwe": [
+        "CWE-362"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Status dari dokumen KRS (draft) dibaca terlebih dahulu, lalu di baris berikutnya data mata kuliah langsung ditambahkan tanpa adanya mekanisme penguncian (locking) atau eksekusi dalam satu transaksi atomik (TOCTOU). Seorang penyerang dapat mengeksploitasi celah waktu (race condition) ini dengan membanjiri server menggunakan permintaan penambahan mata kuliah dan pengajuan KRS secara bersamaan, sehingga melewati validasi kuota maksimal SKS.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "e6170ea58a0bfec1",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 62,
+        "baris": [
+          "    throw new AppError(404, 'NOT_FOUND', 'Mata kuliah tidak ditemukan');",
+          "  }",
+          "",
+          "  const header = await model.getOrCreateHeader(mahasiswaId, SEMESTER_AKTIF);",
+          "  if (header.status !== 'draft') {",
+          "    throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');",
+          "  }"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "file": "src/controllers/dokumenController.js",
+      "baris": 48,
+      "fungsi": "exports.upload",
+      "jenis": "Uncontrolled Resource Consumption",
+      "cwe": [
+        "CWE-400"
+      ],
+      "kategori_owasp": "A06",
+      "penjelasan": "Validasi aplikasi membatasi dokumen umum agar tidak duplikat, tetapi aturan tersebut sengaja dilewati bila jenis dokumen adalah 'lampiran_cuti'. Karena tidak ada kuota maksimal untuk jumlah unggahan file tersebut per mahasiswa, pihak tidak bertanggung jawab dapat mengunggah file lampiran berukuran hingga 2MB secara berulang tanpa batas yang dapat mengakibatkan kehabisan ruang penyimpanan server (Denial of Service).",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "98b2d9aa3e78a4db",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 45,
+        "baris": [
+          "    }",
+          "",
+          "    const mahasiswaId = await getMahasiswaId(req);",
+          "    if (jenis !== 'lampiran_cuti' && (await model.existsJenis(mahasiswaId, jenis))) {",
+          "      throw new AppError(409, 'CONFLICT', `Dokumen ${jenis} sudah diunggah`);",
+          "    }",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "METHOD POST /login",
+      "jenis": "Missing Rate Limiting",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint autentikasi untuk login dan registrasi tidak mengimplementasikan pembatasan laju permintaan (rate limiting) atau mekanisme account lockout otomatis. Hal ini memudahkan penyerang untuk melakukan percobaan penebakan kata sandi secara berulang (brute-force) atau menggunakan daftar kredensial bocor (credential stuffing) hingga mendapatkan akses.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "7aeb70d86d293354",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "file": "src/app.js",
+      "baris": 10,
+      "fungsi": "",
+      "jenis": "Permissive CORS",
+      "cwe": [
+        "CWE-942"
+      ],
+      "kategori_owasp": "A02",
+      "penjelasan": "Middleware CORS diaktifkan secara global tanpa opsi pembatasan origin apa pun, yang artinya backend menerima permintaan dari seluruh domain asal ('*'). Kendati aplikasi menggunakan arsitektur autentikasi berbasis Bearer Token yang kebal dari CSRF, pembatasan origin tetap krusial sebagai lapisan mitigasi mendalam untuk mencegah eksfiltrasi tak disengaja dari situs-situs berbahaya.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "feb3b73c732e62d9",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 7,
+        "baris": [
+          "const app = express();",
+          "",
+          "app.use(helmet());",
+          "app.use(cors());",
+          "app.use(express.json());",
+          "",
+          "app.get('/health', (req, res) => {"
+        ]
+      }
+    }
+  ]
+}
