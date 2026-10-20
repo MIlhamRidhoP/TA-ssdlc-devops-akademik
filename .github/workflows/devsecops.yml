@@ -499,6 +499,10 @@ jobs:
       # Tanpa langkah ini hasil v2 tidak pernah sampai ke dashboard: job `hasil` hanya menulis skema 1.
       - name: Terbitkan ke branch security-results
         run: |
+          # set -e wajib: tanpa itu kegagalan `publish` (mis. index.json berisi skema lain) tertelan,
+          # `git commit` lalu gagal karena tidak ada perubahan, `git push` sukses tanpa membawa apa
+          # pun, dan langkah ini berakhir hijau padahal hasil run tidak pernah terbit.
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for percobaan in 1 2 3; do
@@ -512,6 +516,10 @@ jobs:
             fi
             node scripts/merge-results.js publish --v2 --results=results.json --dir=../pub
             git -C ../pub add -A
+            if git -C ../pub diff --cached --quiet; then
+              echo "::notice::Isi branch security-results sudah sama; tidak ada yang perlu diterbitkan."
+              exit 0
+            fi
             git -C ../pub commit -q -m "hasil v2: run #$GITHUB_RUN_NUMBER ($GITHUB_REF_NAME)"
             if git -C ../pub push origin security-results; then exit 0; fi
             echo "Push gagal (percobaan $percobaan), coba lagi"
@@ -581,6 +589,10 @@ jobs:
 
       - name: Terbitkan ke branch security-results
         run: |
+          # set -e wajib: tanpa itu kegagalan `publish` (mis. index.json berisi skema lain) tertelan,
+          # `git commit` lalu gagal karena tidak ada perubahan, `git push` sukses tanpa membawa apa
+          # pun, dan langkah ini berakhir hijau padahal hasil run tidak pernah terbit.
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for percobaan in 1 2 3; do
@@ -594,6 +606,10 @@ jobs:
             fi
             node scripts/merge-results.js publish --results=results.json --dir=../pub
             git -C ../pub add -A
+            if git -C ../pub diff --cached --quiet; then
+              echo "::notice::Isi branch security-results sudah sama; tidak ada yang perlu diterbitkan."
+              exit 0
+            fi
             git -C ../pub commit -q -m "hasil: run #$GITHUB_RUN_NUMBER ($GITHUB_REF_NAME)"
             if git -C ../pub push origin security-results; then exit 0; fi
             echo "Push gagal (percobaan $percobaan), coba lagi"

@@ -140,3 +140,15 @@ test('job hasil mundur saat analisis-v2 yang menerbitkan, supaya tidak terbit du
   // Tanpa syarat mode ini, dispatch mode=sast dengan jalur bawaan v2 akan memanggil LLM.
   assert.match(kondisi('analisis-v2'), /needs\.rencana\.outputs\.mode == 'sast-llm'/);
 });
+
+test('kedua langkah penerbitan berhenti saat publish gagal, bukan berakhir hijau', () => {
+  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'devsecops.yml'), 'utf8');
+  const langkah = wf.split('- name: Terbitkan ke branch security-results').slice(1);
+  assert.equal(langkah.length, 2, 'harus ada dua langkah penerbitan: jalur v1 dan v2');
+  for (const l of langkah) {
+    const blok = l.slice(0, l.indexOf('exit 1'));
+    // Tanpa set -e, galat publish tertelan dan push "berhasil" tanpa membawa hasil apa pun.
+    assert.match(blok, /set -euo pipefail/);
+    assert.match(blok, /diff --cached --quiet/);
+  }
+});
