@@ -26,9 +26,12 @@ Langgar satu pun dan data eksperimen TA ini rusak atau uangnya terbakar.
 4. **Jangan menulis ulang riwayat git.** Tanpa `rebase`, `--force`, `reset --hard`, atau `--amend`,
    kecuali diminta eksplisit.
 5. **Jangan menyentuh berkas ini:**
-   - `prompts/v2/**` — hash-nya dikunci `prompts/v2/HASHES.txt` dan harus tetap 8/8 OK
+   - `prompts/v2/**` — hash-nya dikunci `prompts/v2/HASHES.txt` dan harus tetap OK
+   - `prompts/remediasi-v1/**` — hash-nya dikunci `prompts/remediasi-v1/HASHES.txt`
    - `src/**` dan `SEEDED.md` — objek uji beserta ground truth kerentanan tertanam
    - `hasil-eksperimen/**` — data eksperimen yang sudah diambil
+   - Skrip penilaian: `scripts/llm/score.js`, `scripts/llm-score.js`, dan
+     `scripts/buat-acuan-skor.js` — mengubahnya menggeser angka eksperimen
 6. **Jangan membaca, membuat, atau mengubah GitHub Secrets**, dan jangan menaikkan izin token
    dashboard.
 7. **Jangan mencetak isi token atau API key** ke log, terminal, maupun berkas. `.env` berisi
@@ -38,19 +41,22 @@ Langgar satu pun dan data eksperimen TA ini rusak atau uangnya terbakar.
 9. **Jangan menulis trailer atribusi** (`Co-Authored-By`, "Generated with …") di pesan commit.
 10. **Jangan menaruh path lokal atau info mesin** di berkas yang di-commit.
 
-## Keadaan sekarang (20 Oktober 2026)
+## Yang sudah ada
 
-Branch kerja **`feat/prompt-v2`**, **15 commit belum di-push**. Isinya dua hal:
+Branch kerja **`feat/prompt-v2`**.
 
-1. **Penerapan desain Stitch ke dashboard** (11 commit, `c99c520`..`08c833e`): token warna dan font
-   baru, kepala run, graf alur pipeline, drawer detail temuan, tab Eksperimen bernomor bagian.
-   Hanya bahasa visual yang berubah; logika, data, dan aturan keamanan tetap.
-2. **Sidebar, rekaman run CI, dan tautan GitHub** (4 commit, `213b675`..`60e670c`): sidebar
-   bergaya Stitch dengan lencana dari data asli, rekaman run CI #54 sebagai data demo supaya graf
-   pipeline bisa tergambar, dan tautan tervalidasi ke run, job, commit, dan berkas di GitHub.
+- **Jalur v2** di pipeline: satu panggilan deteksi atas seluruh `src/`, lalu satu panggilan
+  verifikasi per alert SonarCloud. Hasilnya `results.json` skema 2, terbit ke branch
+  `security-results`.
+- **Skenario analisis** di `scripts/llm-scan.js`: B (deteksi + verifikasi alert) dan C (deteksi
+  saja, tanpa SonarCloud). Skenario adalah sumbu terpisah dari `kondisi` eksperimen.
+- **Rekomendasi perbaikan dua lapis.** Lapis 1 panduan umum per CWE dari pemetaan statis
+  `dashboard/rekomendasi-cwe.json`, bersumber dari cwe.mitre.org dan OWASP Cheat Sheet Series.
+  Lapis 2 saran spesifik dari model, opt-in dan mati secara bawaan, berpijak pada panduan lapis 1.
+- **Dashboard per halaman**: lima tampilan beralamat hash (`#ringkasan`, `#temuan`, `#verifikasi`,
+  `#riwayat`, `#eksperimen`), mode demo lewat `?demo=1`.
 
-Yang belum dikerjakan dan sudah diputuskan ditunda: mode SAST saja menerbitkan skema 2, tercatat di
-`dashboard/README.md` bagian "Rencana lanjutan".
+Rencana lanjutan dan hal yang sengaja ditunda dicatat di `dashboard/README.md`.
 
 ## Aturan yang mengikat isi dashboard
 
@@ -83,15 +89,21 @@ cd prompts/v2 && sha256sum -c HASHES.txt   # harus 8/8 OK
 node scripts/validasi-skema.js             # fixture v2 terhadap skema
 ```
 
-Catatan jujur tentang `npm test`: berkas `tests/api.test.js`, `cuti.test.js`, `khs.test.js`,
-`profil.test.js`, dan `list-query.test.js` memanggil server API lewat HTTP dan **gagal dengan
-`ECONNREFUSED` kalau server tidak jalan**. Jalankan `npm start` dulu kalau ingin semuanya hijau.
-Tes yang berhubungan dengan dashboard tidak butuh server:
+Catatan jujur tentang `npm test`: sebagian berkas tes memanggil server API lewat HTTP dan **gagal
+dengan `ECONNREFUSED` kalau server tidak jalan**. Itu keadaan lingkungan, bukan cacat kode. Untuk
+menjalankan semuanya:
 
 ```bash
-node --test tests/pipeline.test.js tests/publikasi.test.js tests/results-v2.test.js \
-  tests/merge-results.test.js tests/llm-render.test.js tests/llm-score.test.js \
-  tests/llm-lanjut.test.js tests/llm-sonar-beku.test.js tests/tautan-github.test.js
+docker compose up -d db                    # Postgres untuk tes API
+npm run seed:admin && npm run seed:dummy
+npm start &                                # server API
+npm test
+```
+
+Tes yang tidak memanggil jaringan bisa dipilih tanpa menghafal daftarnya:
+
+```bash
+node --test $(git ls-files 'tests/*.test.js' | grep -vE 'api|cuti|khs|profil|list-query')
 ```
 
 Di luar repo: gerbang tampilan, kontras, aksesibilitas, sidebar, drawer, dan dispatch dijalankan
@@ -106,6 +118,14 @@ cd dashboard && python -m http.server 8765
 # lalu http://127.0.0.1:8765/?demo=1
 ```
 
+**Matikan lagi apa pun yang dinyalakan untuk pengujian.** Server dashboard, server API, dan
+container Postgres tidak boleh ditinggalkan hidup; `db` memakai `restart: unless-stopped`, jadi ia
+akan menyala lagi setelah reboot sampai dihentikan:
+
+```bash
+docker compose down
+```
+
 ## Cara bekerja di sini
 
 - **Bahasa Indonesia** untuk komentar kode, pesan commit, dan dokumentasi. Istilah teknis yang
@@ -117,6 +137,18 @@ cd dashboard && python -m http.server 8765
 - **Laporkan apa adanya.** Kalau tes gagal, katakan gagal beserta keluarannya. Kalau sebuah
   langkah dilewati, katakan dilewati. Jangan menyatakan sesuatu terverifikasi kalau belum
   dijalankan.
+- **Bug yang ditemukan di tengah tugas: cari akar masalahnya, jangan tambal gejalanya.** Perbaiki
+  tanpa melemahkan tes atau pemeriksaan, jadikan commit terpisah berawalan `perbaiki:`, lalu catat
+  di laporan. Kalau bugnya ada di area terkunci, atau perbaikannya akan menggeser angka
+  eksperimen, **jangan diperbaiki** — cukup dilaporkan beserta usulannya.
+- **Saat menyunting JSON atau berkas data, ubah hanya baris yang perlu.** Jangan memformat ulang
+  seluruh berkas: diff yang membengkak menyembunyikan perubahan yang sebenarnya.
+- **Nama rute hash dashboard tidak boleh dipakai sebagai id elemen.** Kalau ada elemen ber-id sama,
+  peramban memperlakukan hash sebagai fragmen: ia menggulir ke elemen itu dan memindahkan titik
+  awal navigasi fokus ke sana, sehingga Tab pertama melewati tautan lewati-navigasi dan sidebar.
+- **Skenario (A, B, C) adalah sumbu terpisah dari kondisi eksperimen.** Jangan mencampurnya:
+  `kondisi` menentukan apa yang diberikan ke model dan angkanya sudah dipakai di eksperimen,
+  sedangkan skenario menentukan bentuk analisisnya.
 - Perkakas sementara, skrip tambalan, dan screenshot **tidak masuk repo**. Taruh di folder
   sementara di luar repo.
 
@@ -125,10 +157,11 @@ cd dashboard && python -m http.server 8765
 | Jalur | Isi |
 |---|---|
 | `dashboard/` | Security Dashboard: HTML, CSS, JS vanilla tanpa build step. `README.md` di dalamnya paling rinci |
-| `dashboard/fixtures/` | Data mode demo, seluruhnya nyata: run eksperimen 19 Okt dan rekaman run CI #54 |
+| `dashboard/fixtures/` | Data mode demo: data nyata dari run eksperimen 19 Okt dan rekaman run CI #54, kecuali fixture yang ditandai contoh mock (misalnya rekomendasi AI), yang di dashboard selalu tampil dengan label contoh |
 | `.github/workflows/devsecops.yml` | Pipeline: rencana, build-test, sonarcloud, analisis (v1), analisis-v2, hasil |
 | `scripts/llm/` | Mesin analisis v2: deteksi, verifikasi, penyusun `results.json` skema 2, penilaian |
-| `prompts/v2/` | Prompt jalur v2. **Terkunci hash** |
+| `prompts/v2/` | Prompt jalur v2: deteksi dan verifikasi. **Terkunci hash** |
+| `prompts/remediasi-v1/` | Prompt rekomendasi lapis 2. **Terkunci hash** |
 | `src/` | Aplikasi SIA, objek uji. **Jangan diubah** |
 | `tests/` | `node --test`. Yang berhubungan dengan dashboard tidak butuh server |
 | `docs/design/` | Skema `results.json`, mockup, catatan rancangan |
