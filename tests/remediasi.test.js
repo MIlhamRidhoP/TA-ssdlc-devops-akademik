@@ -289,3 +289,29 @@ test('workflow: remediasi tidak menambah permission maupun secret baru', () => {
   // Izin global dan izin job tidak berubah.
   assert.match(wf, /^permissions:\n  contents: read$/m, 'permissions global berubah');
 });
+
+test('penerbitan mempertahankan field remediasi apa adanya', async () => {
+  // Risiko nyata: kalau publish menyusun ulang berkas field demi field, saran lapis 2 akan hilang
+  // diam-diam saat terbit dan baru ketahuan setelah run berbayar selesai.
+  const os = require('node:os');
+  const { terbitkan } = require('../scripts/merge-results');
+  const h = salin();
+  const items = R.itemLayak(h);
+  await R.jalankanRemediasi(h, OPSI, { panggil: async () => respons({ teks: jawabanUntuk(items) }) });
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'terbit-'));
+  const berkas = path.join(tmp, 'results.json');
+  fs.writeFileSync(berkas, JSON.stringify(h, null, 2));
+  terbitkan(berkas, tmp);
+
+  const rel = `${h.run.objek_uji.branch.replace(/\//g, '-')}/${h.run.nomor}.json`;
+  const kandidat = [path.join(tmp, rel), path.join(tmp, h.run.objek_uji.branch, `${h.run.nomor}.json`)];
+  const terbit = kandidat.find((f) => fs.existsSync(f));
+  assert.ok(terbit, `berkas terbit tidak ditemukan di ${kandidat.join(' atau ')}`);
+  const isi = JSON.parse(fs.readFileSync(terbit, 'utf8'));
+  assert.equal(isi.run.remediasi.status, 'ok', 'run.remediasi hilang saat terbit');
+  const bersaran = [...isi.findings, ...isi.alerts].filter((o) => o.rekomendasi_ai);
+  assert.equal(bersaran.length, items.length, 'rekomendasi_ai hilang saat terbit');
+  assert.deepEqual(bersaran[0].rekomendasi_ai, [...h.findings, ...h.alerts].find((o) => o.rekomendasi_ai).rekomendasi_ai);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
