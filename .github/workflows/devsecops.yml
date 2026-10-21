@@ -550,17 +550,26 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           echo "Branch Sonar $SONAR_BRANCH, revisi $SONAR_REVISI, tree src $SONAR_TREE (commit $COMMIT_TREE)"
 
+      # matrix.vendor, BUKAN inputs.vendor_v2. Di mode gabungan input itu bernilai "gabungan", yang
+      # bukan nama vendor mana pun, sehingga pencarian di models.json menghasilkan undefined dan
+      # m.secret melempar TypeError. Ketiga sel matriks gagal di langkah ini, lalu job terbit ikut
+      # gagal karena tidak ada satu pun hasil vendor di artifact.
       - name: Pastikan secret vendor tersedia
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          VENDOR: ${{ inputs.vendor_v2 }}
+          VENDOR: ${{ matrix.vendor }}
         run: |
           node -e '
-            const m = require("./dashboard/models.json").models.find((x) => x.jalur === "v2" && x.vendor === process.env.VENDOR);
+            const v = process.env.VENDOR;
+            const m = require("./dashboard/models.json").models.find((x) => x.jalur === "v2" && x.vendor === v);
+            if (!m) {
+              console.error(`Vendor ${v} tidak terdaftar untuk jalur v2 di dashboard/models.json.`);
+              process.exit(1);
+            }
             if (!process.env[m.secret]) {
-              console.error(`Secret ${m.secret} belum ada di repo ini, jadi vendor ${process.env.VENDOR} tidak bisa dijalankan.`);
+              console.error(`Secret ${m.secret} belum ada di repo ini, jadi vendor ${v} tidak bisa dijalankan.`);
               process.exit(1);
             }
           '
