@@ -422,3 +422,84 @@ hasil-eksperimen/20261022-gabungan/
 bagian 1.
 
 Folder `20261019/` tidak disentuh sama sekali.
+
+---
+
+## 9. Catatan metode gabungan
+
+Suara terbanyak **hanya berlaku untuk putusan alert**, bukan untuk temuan deteksi. Dua bagian
+hasil gabungan disusun dengan aturan yang berbeda, dan membaca keduanya seolah satu aturan akan
+salah menafsirkan angkanya.
+
+**Alert.** Putusan tiap alert Sonar ditentukan suara terbanyak dari putusan yang sah, dengan ambang
+minimal dua suara sama. Bila ambang tidak tercapai atau terjadi seri, hasilnya `tidak_sepakat` dan
+alert itu **dipertahankan**, bukan dibuang: ketidaksepakatan model bukan bukti alertnya tidak nyata.
+
+**Temuan deteksi.** Temuan antar-vendor diklaster berdasarkan file, keluarga CWE, dan lokasi,
+lalu **seluruh klaster masuk ke hasil tanpa ambang kesepakatan apa pun**. Temuan yang hanya
+ditemukan satu vendor tetap masuk, sama seperti temuan yang ditemukan ketiganya; yang membedakan
+hanya field `kesepakatan` dan `vendor_penemu` di tiap temuan.
+
+Konsekuensinya untuk pembacaan hasil, dan ini perlu disebut di Bab 4: pada sisi temuan, mode
+gabungan berperilaku seperti **union** bertanda, bukan seperti penyaring. False positive dari satu
+vendor ikut terbawa ke hasil gabungan tanpa disaring suara, sehingga presisi gabungan dapat lebih
+rendah daripada presisi vendor terbaiknya. Angka batch ini menunjukkan persis itu.
+
+Satu hal lagi yang berpengaruh pada klasterisasi: aturan lokasi menuntut nama fungsi yang sama
+persis bila kedua temuan melaporkannya. Dua vendor yang menyebut fungsi yang sama dengan konvensi
+berbeda, misalnya `submit` dan `exports.submit`, karena itu **tidak** terklaster dan tercatat
+sebagai dua temuan. Kejadiannya ada di batch ini, lihat `triase-gabungan.json` bagian
+`catatan_klaster`.
+
+---
+
+## 10. Ralat
+
+Dicatat setelah run, tidak mengubah satu pun angka yang sudah dihitung.
+
+### R1. `thinking_token` Anthropic tercatat 0, bacalah sebagai "tidak tersedia"
+
+Adapter Anthropic tidak melaporkan token thinking terpisah; `output_tokens` sudah mencakupnya,
+sehingga adapter mencatat `thinking: null`. Penjumlahannya di `scripts/llm-scan.js` dan
+`scripts/llm/results-v2.js` memakai `?? 0`, sehingga `thinking_token` untuk anthropic tercatat
+**0**, bukan `null`. Nol di situ terbaca sebagai "model tidak berpikir", padahal artinya "vendor
+tidak melaporkan".
+
+Tidak ada angka skor yang terpengaruh: `thinking_token` hanya metadata dan tidak masuk perhitungan
+mana pun. Perbaikan kodenya dikerjakan **setelah** seluruh skor final batch ini selesai, supaya
+commit kode alat tetap sama di seluruh batch.
+
+### R2. Tahap 4 memerlukan `mkdir -p` lebih dulu
+
+`scripts/llm-gabung.js` menulis keluaran dengan `fs.writeFileSync` tanpa membuat direktorinya, jadi
+`--out=../arsip-gabungan/gabungan/run-$r.json` gagal bila foldernya belum ada. Jalankan sekali
+sebelum perulangan Tahap 4:
+
+```bash
+mkdir -p ../arsip-gabungan/gabungan
+```
+
+### R3. Urutan vendor di penggabung berasal dari konstanta, bukan dari isi direktori
+
+`scripts/llm-gabung.js` menelusuri direktori untuk menemukan `results.json`, dan urutan
+penelusuran itu memang alfabetis (anthropic, google, openai). Tetapi daftarnya disusun ulang dari
+konstanta `VENDOR = ['google', 'anthropic', 'openai']` sebelum digabungkan, sehingga:
+
+- **vendor wakil klaster adalah `google`** bila google ikut menemukan temuan itu, karena klaster
+  disemai dari vendor pertama;
+- **dasar daftar alert juga `google`**, dan vendor lain dicocokkan lewat `id`.
+
+Urutannya tidak bisa berubah karena penamaan folder, dan terbukti sama di ketiga run batch ini.
+Ini penting karena keputusan D1 mengambil penjelasan dari vendor wakil klaster.
+
+### R4. Kategori OWASP S5 di berkas 10 Oktober memakai penomoran lama
+
+`hasil-eksperimen/20261010/SKENARIO_SERANGAN.md:109` menulis S5 sebagai **"CWE-79 | A03"**, yaitu
+penomoran OWASP Top 10 **2021**. `SEEDED.md:22` menulis S5 sebagai **A05**, yaitu Injection pada
+OWASP Top 10 **2025**, dan itulah yang berlaku untuk seluruh eksperimen prompt v2.
+
+Berkas 10 Oktober **tidak diubah**: ia arsip sesi lama dan nilainya justru sebagai rekaman apa
+adanya. Ralat ini hanya menegaskan bahwa yang dipakai sebagai ground truth adalah `SEEDED.md`.
+
+Tidak ada angka yang terpengaruh: kategori OWASP tidak ikut dalam pencocokan temuan ke ground
+truth, yang hanya memakai file, lokasi, dan keluarga CWE.

@@ -1,0 +1,95 @@
+{
+  "catatan": "Triase manual temuan LLM berstatus \"di luar ground truth\" dan \"perlu cek manual\" untuk batch 20261022 mode tunggal. Format gabungan per vendor, dipakai llm-score.js --triase. Objek uji eksperimen/seeded 6f7e729 (tree src ef5ff340). Dasar kategori disalin dari hasil-eksperimen/20261019/triase-manual.json untuk temuan yang lokasi dan CWE-nya sama; PoC yang menjadi dasarnya menguji kode, bukan run, sehingga tetap berlaku di batch ini. Recall tetap terhadap 9 item seeded; tidak ada kategori yang menambah TP.",
+  "belum_ditriase": "src/models/profilModel.js:29 CWE-362 (openai run-1 indeks 12) sengaja TIDAK dimasukkan: temuan ini tidak ada di batch 19 Oktober dan belum ada PoC maupun keputusan untuk kategorinya. Sesuai keputusan D3 di README batch, selama belum ditriase ia tetap dihitung FP dan muncul di belum_ditriase.",
+  "entri": {
+    "google": {
+      "run-2.json": {
+        "4": {
+          "kategori": "tp_di_luar_seeded",
+          "lokasi": "src/controllers/krsController.js:110",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition (TOCTOU)",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+        }
+      }
+    },
+    "openai": {
+      "run-1.json": {
+        "9": {
+          "kategori": "teoretis",
+          "lokasi": "src/models/krsModel.js:46",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition pemeriksaan status KRS",
+          "dasar": "Akar masalah sama dengan TOCTOU submit (krsController.js:110), tetapi efek yang diklaim (item masuk ke KRS yang sudah submitted) tidak terjadi dalam 30 percobaan PoC toctou-krs.sh."
+        },
+        "10": {
+          "kategori": "teoretis",
+          "lokasi": "src/models/krsModel.js:65",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition penghapusan item KRS",
+          "dasar": "Jalur removeItem tidak diuji di PoC toctou-krs.sh."
+        },
+        "11": {
+          "kategori": "tp_di_luar_seeded",
+          "lokasi": "src/controllers/krsController.js:110",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition validasi kuota SKS",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+        },
+        "12": {
+          "kategori": "teoretis",
+          "lokasi": "src/models/profilModel.js:29",
+          "cwe": "CWE-362",
+          "jenis": "Race Condition batas jumlah email",
+          "dasar": "Batas jumlah email diperiksa lewat count(*) di dalam INSERT ... SELECT tanpa penguncian (src/models/profilModel.js:26-32), sehingga dua permintaan bersamaan pada isolasi READ COMMITTED dapat sama-sama lolos dan melampaui batas; migrations/004_profil_mahasiswa.sql:38 hanya memuat UNIQUE (mahasiswa_id, email) yang tidak membatasi jumlah. Efeknya belum dibuktikan dengan PoC dan dampaknya terbatas pada pelampauan batas email milik sendiri. Sejajar dengan krsModel.js:46 dan :65 di batch 19 Oktober."
+        }
+      },
+      "run-2.json": {
+        "8": {
+          "kategori": "teoretis",
+          "lokasi": "src/controllers/krsController.js:70",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition Status Penambahan KRS",
+          "dasar": "Akar masalah sama dengan TOCTOU submit (krsController.js:110), tetapi efek yang diklaim (item masuk ke KRS yang sudah submitted) tidak terjadi dalam 30 percobaan PoC toctou-krs.sh."
+        },
+        "9": {
+          "kategori": "teoretis",
+          "lokasi": "src/controllers/krsController.js:87",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition Status Penghapusan KRS",
+          "dasar": "Jalur removeItem tidak diuji di PoC toctou-krs.sh."
+        },
+        "10": {
+          "kategori": "tp_di_luar_seeded",
+          "lokasi": "src/controllers/krsController.js:110",
+          "cwe": "CWE-367",
+          "jenis": "Race Condition Pemeriksaan Kuota SKS",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+        }
+      },
+      "run-3.json": {
+        "9": {
+          "kategori": "teoretis",
+          "lokasi": "src/controllers/krsController.js:70",
+          "cwe": "CWE-367",
+          "jenis": "TOCTOU penambahan item KRS",
+          "dasar": "Akar masalah sama dengan TOCTOU submit (krsController.js:110), tetapi efek yang diklaim (item masuk ke KRS yang sudah submitted) tidak terjadi dalam 30 percobaan PoC toctou-krs.sh."
+        },
+        "10": {
+          "kategori": "teoretis",
+          "lokasi": "src/controllers/krsController.js:87",
+          "cwe": "CWE-367",
+          "jenis": "TOCTOU penghapusan item KRS",
+          "dasar": "Jalur removeItem tidak diuji di PoC toctou-krs.sh."
+        },
+        "11": {
+          "kategori": "tp_di_luar_seeded",
+          "lokasi": "src/controllers/krsController.js:110",
+          "cwe": "CWE-367",
+          "jenis": "TOCTOU validasi kuota SKS",
+          "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+        }
+      }
+    }
+  }
+}
