@@ -1,0 +1,330 @@
+{
+  "deteksi": [
+    {
+      "ke": 1,
+      "waktu_mulai": "2026-10-21T17:53:00.363Z",
+      "waktu_selesai": "2026-10-21T17:53:19.107Z",
+      "http_status": 200,
+      "status": "ok",
+      "detail_status": "stop_reason end_turn",
+      "usage": {
+        "input": 51994,
+        "input_dari_cache": 0,
+        "input_tulis_cache": 50956,
+        "output": 2861,
+        "thinking": null
+      },
+      "mentah": {
+        "model": "claude-sonnet-5-5",
+        "id": "msg_011CgFotCtJK7J4VPPNJSu2P",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"temuan\":[{\"file\":\"src/models/mahasiswaModel.js\",\"baris\":54,\"fungsi\":\"listFrom\",\"jenis\":\"SQL Injection\",\"cwe\":\"CWE-89\",\"kategori_owasp\":\"A05\",\"penjelasan\":\"Parameter q dari query string (lewat listQuery menjadi pola) disisipkan langsung ke string SQL dengan interpolasi '${pola}' dan tidak memakai parameter terikat. listQuery hanya meng-escape \\\\, % dan _, sedangkan tanda kutip tunggal tidak di-escape sehingga bisa menutup literal dan menyuntikkan SQL. Endpoint GET /api/mahasiswa hanya untuk admin, tetapi akun admin atau token admin yang dicuri dapat dipakai untuk membaca data sensitif.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/models/nilaiModel.js\",\"baris\":133,\"fungsi\":\"publishedBySemester\",\"jenis\":\"SQL Injection\",\"cwe\":\"CWE-89\",\"kategori_owasp\":\"A05\",\"penjelasan\":\"Parameter query semester dari GET /api/nilai/me/khs disisipkan langsung ke SQL lewat '${semester}'. Controller khs hanya mengecek string tidak kosong dan tidak memvalidasi dengan SEMESTER_RE. Mahasiswa terautentikasi bisa menyuntikkan SQL untuk membaca data lain, termasuk data mahasiswa lain.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/controllers/nilaiController.js\",\"baris\":160,\"fungsi\":\"khs\",\"jenis\":\"Reflected Cross-Site Scripting\",\"cwe\":\"CWE-79\",\"kategori_owasp\":\"A05\",\"penjelasan\":\"Nilai req.query.semester dimasukkan mentah ke respons HTML tanpa escapeHtml pada cabang error. Cabang ini hanya tercapai saat semester kosong, sehingga payload tidak bisa masuk lewat nilai ini. Pola tidak aman tetap ada dan berisiko bila kondisi berubah.\",\"sifat\":\"hardening\",\"keyakinan\":\"low\"},{\"file\":\"src/controllers/nilaiController.js\",\"baris\":120,\"fungsi\":\"halamanKhs\",\"jenis\":\"Stored Cross-Site Scripting\",\"cwe\":\"CWE-79\",\"kategori_owasp\":\"A05\",\"penjelasan\":\"Nama mata kuliah (i.nama) dimasukkan ke HTML KHS tanpa escapeHtml, padahal kolom lain di-escape. Admin dapat membuat mata kuliah dengan nama berisi HTML/skrip (validasi hanya panjang), dan skrip berjalan saat mahasiswa membuka halaman KHS.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/models/profilModel.js\",\"baris\":38,\"fungsi\":\"removeEmail\",\"jenis\":\"Broken Access Control (IDOR)\",\"cwe\":\"CWE-639\",\"kategori_owasp\":\"A01\",\"penjelasan\":\"Query DELETE hanya memakai id email dan mengabaikan parameter mahasiswaId. Mahasiswa mana pun yang tahu UUID email dapat menghapus email tambahan milik mahasiswa lain lewat DELETE /api/mahasiswa/me/email/:id.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/models/cutiModel.js\",\"baris\":53,\"fungsi\":\"findOwned\",\"jenis\":\"Broken Access Control (IDOR)\",\"cwe\":\"CWE-639\",\"kategori_owasp\":\"A01\",\"penjelasan\":\"findOwned tidak memfilter berdasarkan mahasiswaId; query hanya memakai c.id. Akibatnya GET /api/cuti/me/:id mengembalikan detail pengajuan cuti milik mahasiswa lain, termasuk alamat dan nomor telepon hasil dekripsi, dan batal() hanya dibatasi oleh mahasiswa_id di UPDATE.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/routes/cutiRoutes.js\",\"baris\":17,\"fungsi\":\"PUT /:id/status\",\"jenis\":\"Missing Authorization\",\"cwe\":\"CWE-862\",\"kategori_owasp\":\"A01\",\"penjelasan\":\"Route PUT /:id/status hanya memakai authenticate tanpa authorize('admin'). Setiap pengguna terautentikasi, termasuk mahasiswa, bisa menyetujui atau menolak pengajuan cuti siapa pun.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/controllers/cutiController.js\",\"baris\":50,\"fungsi\":\"create\",\"jenis\":\"Mass Assignment\",\"cwe\":\"CWE-915\",\"kategori_owasp\":\"A06\",\"penjelasan\":\"Field status dari body diteruskan ke model.create dan dimasukkan ke kolom status tanpa validasi, padahal komentar menyatakan status selalu dimulai dari diajukan. Mahasiswa dapat langsung membuat pengajuan berstatus disetujui dan melewati alur persetujuan admin.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/controllers/mahasiswaController.js\",\"baris\":96,\"fungsi\":\"updateMe\",\"jenis\":\"Mass Assignment / SQL Injection via nama kolom\",\"cwe\":\"CWE-89\",\"kategori_owasp\":\"A05\",\"penjelasan\":\"Seluruh req.body dipakai sebagai data update, dan updateByUserId menyusun nama kolom SET dari kunci objek tanpa whitelist atau validasi. Mahasiswa dapat menyuntikkan SQL lewat nama kunci dan mengubah kolom terlarang seperti nim, user_id, atau data terenkripsi, serta rekening tidak divalidasi dengan RULES.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/models/mahasiswaModel.js\",\"baris\":143,\"fungsi\":\"updateByUserId\",\"jenis\":\"SQL Injection via nama kolom\",\"cwe\":\"CWE-89\",\"kategori_owasp\":\"A05\",\"penjelasan\":\"Nama kolom pada klausa SET dibangun dari Object.keys(d) yang berasal dari body request, lalu diinterpolasi ke SQL. Hanya nilainya yang berparameter, sehingga kunci JSON berbahaya dieksekusi sebagai SQL.\",\"sifat\":\"vulnerability\",\"keyakinan\":\"high\"},{\"file\":\"src/routes/authRoutes.js\",\"baris\":5,\"fungsi\":\"POST /login\",\"jenis\":\"Missing Rate Limiting on Authentication\",\"cwe\":\"CWE-307\",\"kategori_owasp\":\"A07\",\"penjelasan\":\"Endpoint login dan register tidak memiliki pembatasan percobaan atau penguncian akun. Penyerang dapat melakukan brute force kata sandi tanpa hambatan.\",\"sifat\":\"hardening\",\"keyakinan\":\"medium\"},{\"file\":\"src/app.js\",\"baris\":10,\"fungsi\":\"\",\"jenis\":\"Permissive CORS Configuration\",\"cwe\":\"CWE-942\",\"kategori_owasp\":\"A02\",\"penjelasan\":\"cors() dipakai tanpa opsi sehingga semua origin diizinkan. Autentikasi memakai bearer token sehingga risikonya terbatas, tetapi API data pribadi mahasiswa sebaiknya membatasi origin yang diizinkan.\",\"sifat\":\"hardening\",\"keyakinan\":\"low\"},{\"file\":\"src/middleware/requireConsent.js\",\"baris\":6,\"fungsi\":\"module.exports\",\"jenis\":\"Unhandled Async Error in Middleware\",\"cwe\":\"CWE-755\",\"kategori_owasp\":\"A10\",\"penjelasan\":\"Middleware async melempar AppError atau error database tanpa try/catch, sedangkan Express 4 tidak menangkap penolakan promise. Permintaan menggantung dan dapat memicu unhandled rejection. Hal yang sama berlaku untuk semua controller async yang melempar error.\",\"sifat\":\"hardening\",\"keyakinan\":\"medium\"}]}"
+          }
+        ],
+        "container": null,
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "stop_details": null,
+        "usage": {
+          "input_tokens": 1038,
+          "cache_creation_input_tokens": 50956,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 50956,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 2861,
+          "service_tier": "standard",
+          "inference_geo": "global",
+          "speed": "standard",
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          }
+        },
+        "diagnostics": null,
+        "parsed_output": null
+      }
+    }
+  ],
+  "verifikasi": {
+    "SONAR-01": [
+      {
+        "ke": 1,
+        "waktu_mulai": "2026-10-21T17:53:19.109Z",
+        "waktu_selesai": "2026-10-21T17:53:28.002Z",
+        "http_status": 200,
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "usage": {
+          "input": 51266,
+          "input_dari_cache": 0,
+          "input_tulis_cache": 50584,
+          "output": 704,
+          "thinking": null
+        },
+        "mentah": {
+          "model": "claude-sonnet-5-5",
+          "id": "msg_011CgFouZovJFVsrY2sqUJHi",
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "",
+              "signature": "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"
+            },
+            {
+              "type": "text",
+              "text": "{\"id_alert\":\"SONAR-01\",\"alasan\":\"Di src/app.js:10, `cors()` dipakai dengan konfigurasi bawaan, yaitu `Access-Control-Allow-Origin: *` tanpa `credentials: true`. Autentikasi hanya lewat header `Authorization: Bearer` di `authenticate` (src/middleware/auth.js), dan tidak ada cookie atau sesi yang dikirim otomatis oleh browser. Situs asing karenanya tidak bisa membuat permintaan atas nama korban dan tidak bisa membaca data terproteksi tanpa token yang sah, jadi CWE-346/CWE-942 tidak bisa dieksploitasi di sini. Akses data tetap dijaga `authenticate` dan `authorize`.\",\"putusan\":\"false_positive\",\"keyakinan\":\"medium\"}"
+            }
+          ],
+          "container": null,
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
+          "stop_details": null,
+          "usage": {
+            "input_tokens": 682,
+            "cache_creation_input_tokens": 50584,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 50584,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 704,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard",
+            "output_tokens_details": {
+              "thinking_tokens": 408
+            }
+          },
+          "diagnostics": null,
+          "parsed_output": null
+        }
+      }
+    ],
+    "SONAR-02": [
+      {
+        "ke": 1,
+        "waktu_mulai": "2026-10-21T17:53:28.004Z",
+        "waktu_selesai": "2026-10-21T17:53:33.758Z",
+        "http_status": 200,
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "usage": {
+          "input": 51269,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 318,
+          "thinking": null
+        },
+        "mentah": {
+          "model": "claude-sonnet-5-5",
+          "id": "msg_011CgFovDhDatzrEcjtftMr4",
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"id_alert\":\"SONAR-02\",\"alasan\":\"Di src/controllers/nilaiController.js baris 158-161, `semester` diambil langsung dari `req.query.semester` (string apa pun, hanya dicek tidak kosong) lalu disisipkan mentah ke template `<p>Semester \\\"${semester}\\\" tidak dikenali</p>` tanpa `escapeHtml`, dan dikirim dengan `.type('html')`. Tidak ada validasi `SEMESTER_RE` atau escaping sebelum sink ini, jadi payload seperti `<script>` akan dirender oleh browser (CWE-79). Endpoint `/api/nilai/me/khs` memang butuh token Bearer, tetapi input tetap tidak disanitasi dan bisa dieksploitasi lewat tautan yang memicu permintaan terautentikasi.\",\"putusan\":\"true_positive\",\"keyakinan\":\"high\"}"
+            }
+          ],
+          "container": null,
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
+          "stop_details": null,
+          "usage": {
+            "input_tokens": 685,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 50584,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 318,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard",
+            "output_tokens_details": {
+              "thinking_tokens": 0
+            }
+          },
+          "diagnostics": null,
+          "parsed_output": null
+        }
+      }
+    ],
+    "SONAR-03": [
+      {
+        "ke": 1,
+        "waktu_mulai": "2026-10-21T17:53:33.760Z",
+        "waktu_selesai": "2026-10-21T17:53:44.327Z",
+        "http_status": 200,
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "usage": {
+          "input": 51269,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 1014,
+          "thinking": null
+        },
+        "mentah": {
+          "model": "claude-sonnet-5-5",
+          "id": "msg_011CgFoveJJsGW8VFtHYuyNw",
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "",
+              "signature": "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"
+            },
+            {
+              "type": "text",
+              "text": "{\"id_alert\":\"SONAR-03\",\"alasan\":\"Di halamanKhs (src/controllers/nilaiController.js), kolom mata kuliah ditulis sebagai `<td>${i.nama}</td>` tanpa escapeHtml, padahal kolom lain dibungkus escapeHtml. Hasilnya dikirim sebagai text/html di baris 170. Nilai `nama` dari mata_kuliah hanya divalidasi panjangnya di mataKuliahController, sehingga markup HTML dari admin bisa tersimpan dan dirender ke mahasiswa (CWE-79). Parameter `semester` juga disisipkan langsung ke SQL di publishedBySemester, sehingga penyerang bisa memakai UNION untuk mengisi `nama` dengan HTML. Jadi data tidak ter-escape bisa sampai ke sink di baris 170. Karena endpoint butuh header Bearer, eksploitasi ke korban lain terbatas, tetapi kelemahannya nyata dan terjangkau.\",\"putusan\":\"true_positive\",\"keyakinan\":\"high\"}"
+            }
+          ],
+          "container": null,
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
+          "stop_details": null,
+          "usage": {
+            "input_tokens": 685,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 50584,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 1014,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard",
+            "output_tokens_details": {
+              "thinking_tokens": 633
+            }
+          },
+          "diagnostics": null,
+          "parsed_output": null
+        }
+      }
+    ],
+    "SONAR-04": [
+      {
+        "ke": 1,
+        "waktu_mulai": "2026-10-21T17:53:44.328Z",
+        "waktu_selesai": "2026-10-21T17:53:55.612Z",
+        "http_status": 200,
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "usage": {
+          "input": 51272,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 1019,
+          "thinking": null
+        },
+        "mentah": {
+          "model": "claude-sonnet-5-5",
+          "id": "msg_011CgFowRWeSWr7SpkmBkLa5",
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "",
+              "signature": "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"
+            },
+            {
+              "type": "text",
+              "text": "{\"id_alert\":\"SONAR-04\",\"alasan\":\"Di cutiController.listAdmin, `sort` dan `order` memang diteruskan mentah dari req.query ke `model.listAdmin` dan disisipkan ke `ORDER BY ${sort} ${order}`. Namun `listQuery(req.query, ...)` dipanggil lebih dulu pada req.query yang sama dan melempar 400 jika `sort` bukan string atau bukan kunci di `model.SORT`, atau jika `order` bukan tepat 'asc' atau 'desc'. Karena itu nilai yang sampai ke query hanya salah satu dari kata kunci tetap (created_at, semester, status, kategori, nim, nama) dan asc/desc, sehingga tidak ada celah SQL injection. Sisanya (`pola`, `limit`, `offset`, `KEY`) memakai parameter terikat. Kemungkinan kolom ambigu hanya menyebabkan error runtime, bukan injeksi.\",\"putusan\":\"false_positive\",\"keyakinan\":\"high\"}"
+            }
+          ],
+          "container": null,
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
+          "stop_details": null,
+          "usage": {
+            "input_tokens": 688,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 50584,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 1019,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard",
+            "output_tokens_details": {
+              "thinking_tokens": 652
+            }
+          },
+          "diagnostics": null,
+          "parsed_output": null
+        }
+      }
+    ],
+    "SONAR-05": [
+      {
+        "ke": 1,
+        "waktu_mulai": "2026-10-21T17:53:55.613Z",
+        "waktu_selesai": "2026-10-21T17:54:01.127Z",
+        "http_status": 200,
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "usage": {
+          "input": 51273,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 539,
+          "thinking": null
+        },
+        "mentah": {
+          "model": "claude-sonnet-5-5",
+          "id": "msg_011CgFoxFiKE7hp8wdAhWKx6",
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "",
+              "signature": "CAQS3gkKEAgTGAI4AUIIdGhpbmtpbmcSDIpwhkA64bJNzm+wVhoMKaHMpSsocSfafCnxIjAHRzaz0YnxQzR++VTHj+fyZM6Cn7oWUZV+nVpZ899YKg8LhLLoFeiu3wnaXuD9vTEq+wg6FzqejbWU4Y4q2HMKiD1nuoVIHN1HO37/bgEgdL8+aXLDsnDedj3MLEh9T4/YwbaU0VCrfcuw+ZoXlqvEFHKBi//ceS9VOAvVY/wZCCyiNeKaJEgpkJRsoUbM0pBZ6sn/fSKoZ7Zg0gIayU/d4oK3BBe3as28I9a+r+JFXbB2byCSJWF871j4VvxeawEZ+tRRGEU3hRMndIJNu5aX0yUcMVkaoHhttfwRQF+DXM4FbYVfoqyq9kNDSUF1/GW9Ize35sEh7YaXCDwBVwKxrESwQrN9cqNNDLxjbR9jn9xiuiwe5vNj0XrlRSW61ZmKsv+jmENofIWE76XKAH6pT4c68hKy2dN/l6EALCLHbm80rBx3EWDnqIbT6ypCOJZsFZsSMQ+7+L68iNi/gXaMQyKPwN4t0nMlFqrYl/LXKFpZWyewXOqeNXwPq8uP67DmnSnYhjjCyqg07lQMeWqXLPoD3Squ2JQzfP65jaFKQhsiMJQApFXVWgHqkkj9himYlEqcEgPGi5F2XeyPTOGI1fPnUZ1TjsH75AsIiV8+0PxEQ/EUQYnVu3RYnbWq3d23YVChl1l7CienLw69roksDhR1M6G1arnfgOdGy0MD4cnEueIPBb9HtLElvGT5u6+0QVPt6TkdjXGGbNhhiks2jkBtPhGQgeGcSEKaE7VcLJMYUrLbjqLL2EZKrV173acGqBhzhY8Vt5//dHB8PRLFfAbFWDZzHPFZ04NvvA+MaPMBtQwdgj1EB7BTU29JYXXMW7tM6ywTSnESIfENJr3ZPLwZeoMWMUKymmAeh7WwLQtG74Aa7eQhTuJ+FuBvV3bYyXqu4bKEIMTxkqPCwPdhst99mtYVUPsPFA7IxVAgOWpLibc4eeoHqlMUwqDCWWaWolXlT5ssew/avMeILXH2ajBpXwkj3lnOodKtqyoTjHjCUviegumTB9C/VxEa6RLUULSnP2BNTQDPqPJnD1TrUWQPHSi1s8yOh7Xp4QzYiOq6/LZulb4TTnhb/9pE5akD3oZWcva4Pzk5REa5AmTCEcSCt4zzWBeCiSppe+Tsf5FoaZNS5Xk2pQMdOiLsrNGbypDnWyUJIhK2mFoGCU83bE+GrDpz75sOOHhS5XL6Q80mdR1GhDv5u7p4CE0LJU7mxZqYhA4wElwSHuQnc9H4GTr3qCFcj7Wn5sIHp3uOm7Do3tqhixiTvh+vffJGyFZv58Q/Dr6QU9rjj1plOL6FAS7xf95Vr7Z36SSvaMHFB2SDYYXmpUe8AGOVDFeBf39AroR1PyfQrUFGAw77kdf4J70HYB7YruqQ5fYOXG4IQf1Tu3llFAEXHLTsCv3gvQ1i8IZDB9wFUtRQiia6kxEOljpm+mXxVfaLsZbEkIXeT9YgcNEMGi8wFrV+rtb7IFFK+KmMqvSs/Kav1+mY5lCiVykT26lMcXiJio49JGy0efi0GaEhyVFRaDCVuIrd3+MmKO98HvjyTCJeQWFpdSigWa8ZwseVaQ7JyL4JutYvbSM2I5f6/8qmMxhmTU/BGAE="
+            },
+            {
+              "type": "text",
+              "text": "{\"id_alert\":\"SONAR-05\",\"alasan\":\"Di `publishedBySemester` (src/models/nilaiModel.js), parameter `semester` langsung disambung ke SQL lewat `ks.semester = '${semester}'`, bukan placeholder terparameter. Handler `khs` di nilaiController.js hanya memeriksa bahwa `req.query.semester` berupa string tidak kosong, tanpa `SEMESTER_RE`, jadi tanda kutip dan klausa UNION SELECT bisa lolos. Endpoint GET /api/nilai/me/khs terbuka bagi pengguna terautentikasi berperan mahasiswa yang lolos `requireConsent`, sehingga CWE-89 dapat dieksploitasi untuk membaca data tabel lain.\",\"putusan\":\"true_positive\",\"keyakinan\":\"high\"}"
+            }
+          ],
+          "container": null,
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
+          "stop_details": null,
+          "usage": {
+            "input_tokens": 689,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 50584,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 539,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard",
+            "output_tokens_details": {
+              "thinking_tokens": 243
+            }
+          },
+          "diagnostics": null,
+          "parsed_output": null
+        }
+      }
+    ]
+  }
+}

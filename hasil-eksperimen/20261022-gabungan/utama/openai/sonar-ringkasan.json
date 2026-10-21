@@ -1,0 +1,301 @@
+[
+  {
+    "sumber": "issue",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/models/cutiModel.js",
+    "baris": 93,
+    "pesan": "SQL Injection via unsanitized user input",
+    "cwe": [
+      "CWE-20",
+      "CWE-89"
+    ],
+    "keamanan": true
+  },
+  {
+    "sumber": "issue",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/models/nilaiModel.js",
+    "baris": 124,
+    "pesan": "SQL Injection via unsanitized user input",
+    "cwe": [
+      "CWE-20",
+      "CWE-89"
+    ],
+    "keamanan": true
+  },
+  {
+    "sumber": "issue",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/controllers/nilaiController.js",
+    "baris": 160,
+    "pesan": "Reflected XSS via unsanitized user input",
+    "cwe": [
+      "CWE-79"
+    ],
+    "keamanan": true
+  },
+  {
+    "sumber": "issue",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/controllers/nilaiController.js",
+    "baris": 170,
+    "pesan": "Reflected XSS via unsanitized user input",
+    "cwe": [
+      "CWE-79"
+    ],
+    "keamanan": true
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7776",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/cutiController.js",
+    "baris": 11,
+    "pesan": "`KEPUTUSAN` should be a `Set`, and use `KEPUTUSAN.has()` to check existence or non-existence.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S6582",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/cutiController.js",
+    "baris": 44,
+    "pesan": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7780",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/models/cutiModel.js",
+    "baris": 85,
+    "pesan": "`String.raw` should be used to avoid escaping `\\`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7780",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/models/krsModel.js",
+    "baris": 87,
+    "pesan": "`String.raw` should be used to avoid escaping `\\`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7780",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/models/nilaiModel.js",
+    "baris": 65,
+    "pesan": "`String.raw` should be used to avoid escaping `\\`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/utils/listQuery.js",
+    "baris": 16,
+    "pesan": "The arrow function should be named.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S4624",
+    "severity": "MAJOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/utils/listQuery.js",
+    "baris": 36,
+    "pesan": "Refactor this code to not use nested template literals.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/config/upload.js",
+    "baris": 1,
+    "pesan": "Prefer `node:fs` over `fs`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/config/upload.js",
+    "baris": 2,
+    "pesan": "Prefer `node:path` over `path`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/dokumenController.js",
+    "baris": 1,
+    "pesan": "Prefer `node:path` over `path`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/mahasiswaController.js",
+    "baris": 1,
+    "pesan": "Prefer `node:fs/promises` over `fs/promises`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/mahasiswaController.js",
+    "baris": 2,
+    "pesan": "Prefer `node:path` over `path`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/middleware/upload.js",
+    "baris": 1,
+    "pesan": "Prefer `node:crypto` over `crypto`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/middleware/upload.js",
+    "baris": 2,
+    "pesan": "Prefer `node:fs/promises` over `fs/promises`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7772",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/middleware/upload.js",
+    "baris": 3,
+    "pesan": "Prefer `node:path` over `path`.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S8786",
+    "severity": "MAJOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/utils/validators.js",
+    "baris": 4,
+    "pesan": "Simplify this regular expression to reduce its runtime, as it has super-linear performance due to backtracking.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7776",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/konsenController.js",
+    "baris": 6,
+    "pesan": "`STATUSES` should be a `Set`, and use `STATUSES.has()` to check existence or non-existence.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/middleware/requireConsent.js",
+    "baris": 6,
+    "pesan": "The async arrow function should be named.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/utils/audit.js",
+    "baris": 4,
+    "pesan": "The arrow function should be named.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S8786",
+    "severity": "MAJOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/controllers/authController.js",
+    "baris": 8,
+    "pesan": "Simplify this regular expression to reduce its runtime, as it has super-linear performance due to backtracking.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S7726",
+    "severity": "MINOR",
+    "tipe": "CODE_SMELL",
+    "file": "src/middleware/errorHandler.js",
+    "baris": 3,
+    "pesan": "The arrow function should be named.",
+    "cwe": [],
+    "keamanan": false
+  },
+  {
+    "sumber": "issue",
+    "rule": "javascript:S5122",
+    "severity": "MAJOR",
+    "tipe": "VULNERABILITY",
+    "file": "src/app.js",
+    "baris": 10,
+    "pesan": "Make sure that enabling CORS is safe here.",
+    "cwe": [
+      "CWE-346",
+      "CWE-942"
+    ],
+    "keamanan": true
+  }
+]

@@ -412,6 +412,8 @@ hasil-eksperimen/20261022-gabungan/
     run-3.json
     per-vendor/                        results.json skema 2 hasil konversi, per run per vendor
   skor-tunggal.json                    llm-score.js, replikasi mode tunggal
+  skor-tunggal-triase.json             llm-score.js, triase varian utama
+  skor-tunggal-triase-konservatif.json llm-score.js, triase varian konservatif
   skor-gabungan.json                   skor-gabungan.js, tanpa triase
   skor-gabungan-triase.json            varian utama
   skor-gabungan-triase-konservatif.json
