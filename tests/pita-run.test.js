@@ -145,6 +145,27 @@ test('sebelum nomor runnya diketahui, pita berbunyi "Run baru"', () => {
   assert.equal(teksPita(live, 4), 'Run baru · skenario C · GPT-5 · menunggu GitHub membuat run · 0:04');
 });
 
+test('skenario A berbunyi "tanpa LLM", berapa pun nilai model di objek live', () => {
+  // Jalur v1 tetap mengirim input model ke workflow untuk validasi di job rencana, jadi objek live
+  // memang membawa nilainya. Menyebut nama model di pita terbaca seolah model itu dipanggil,
+  // padahal skenario A tidak memanggil LLM sama sekali.
+  const live = buatLive({
+    mode: 'sast', jalur: 'v1', skenario: 'A', jobs: {},
+    nomor: 10, model: 'Gemini 3.8 Flash', status: 'berjalan',
+  });
+  assert.equal(teksPita(live, 0), 'Run #10 · skenario A · tanpa LLM · berjalan · 0:00');
+  assert.ok(!/Gemini/.test(teksPita(live, 0)), 'nama model tidak boleh muncul di skenario A');
+});
+
+test('skenario B dan C tetap menyebut modelnya, termasuk mode gabungan', () => {
+  const pita = (skenario, model) => teksPita(buatLive({
+    mode: 'sast-llm', jalur: 'v2', skenario, jobs: {}, nomor: 11, model, status: 'berjalan',
+  }), 0);
+  assert.equal(pita('B', 'gabungan'), 'Run #11 · skenario B · gabungan · berjalan · 0:00');
+  assert.equal(pita('B', 'GPT-5'), 'Run #11 · skenario B · GPT-5 · berjalan · 0:00');
+  assert.equal(pita('C', 'Gemini 3.8 Flash'), 'Run #11 · skenario C · Gemini 3.8 Flash · berjalan · 0:00');
+});
+
 test('tiap tahap pemantauan punya kata keadaannya sendiri, tanpa menebak sebab', () => {
   const pita = (status) => teksPita(buatLive({
     mode: 'sast-llm', jalur: 'v2', skenario: 'B', jobs: {}, id: 200, nomor: 6, status,

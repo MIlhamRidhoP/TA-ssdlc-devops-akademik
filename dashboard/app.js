@@ -1652,10 +1652,14 @@
       berjalan: 'berjalan',
       'menunggu-hasil': 'selesai, menunggu hasil terbit',
     }[live.status] ?? live.status;
+    // Skenario A tidak memanggil LLM sama sekali. Objek live tetap membawa model karena jalur v1
+    // mengirimkannya sebagai input workflow untuk validasi di job rencana, tetapi menyebut nama
+    // model di pita terbaca seolah model itu benar-benar dipanggil. Kosakatanya disamakan dengan
+    // kepala run hasil skenario A, yang sudah menulis "tanpa LLM".
     return [
       nama,
       live.skenario ? `skenario ${live.skenario}` : null,
-      live.model,
+      live.skenario === 'A' ? 'tanpa LLM' : live.model,
       keadaan,
       durasi(detikBerjalan),
     ].filter(Boolean).join(' · ');
