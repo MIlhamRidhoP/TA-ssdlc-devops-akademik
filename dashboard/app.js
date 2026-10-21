@@ -46,6 +46,12 @@
     // Run lama tanpa field skenario: versi skema masih penanda yang benar, karena waktu itu hanya
     // jalur v2 yang menghasilkan skema 2.
     ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
+  // Id run yang dipakai graf untuk membangun tautan log. Saat ada run yang dipantau, idnya HARUS
+  // datang dari run itu dan tidak boleh jatuh ke run lama: rantai cadangan `live?.id ??
+  // state.rekaman?.id ?? state.hasil?.run?.id` pernah menghasilkan runs/<id lama>/job/<id baru>,
+  // yaitu tautan 404 selama run baru dipantau. Kalau id run yang dipantau belum diketahui,
+  // hasilnya null dan pemanggilnya tidak membuat tautan sama sekali.
+  const idRunGraf = (live) => (live ? (live.id ?? null) : (state.rekaman?.id ?? state.hasil?.run?.id ?? null));
   const KUNCI = { token: 'sd.token', tema: 'sd.tema', padat: 'sd.kepadatan', terakhir: 'sd.terakhir', keputusan: 'sd.keputusan.', keputusanV2: 'sd.keputusan.v2.' };
 
   const $ = (id) => document.getElementById(id);
@@ -553,12 +559,14 @@
   };
 
   // ---------- Banner ----------
-  const tampilBanner = (jenis, teks, aksi) => {
+  // `tambahan` adalah node siap pakai, bukan teks: banner galat run yang gagal perlu membawa
+  // tautan ke log, dan github.com hanya boleh muncul sebagai href.
+  const tampilBanner = (jenis, teks, aksi, tambahan = null) => {
     const b = $('banner');
     state.banner = jenis;
     b.dataset.kind = jenis;
     b.setAttribute('role', jenis === 'error' ? 'alert' : 'status');
-    isi(b, el('p', { text: teks }), aksi ? el('button', { class: 'btn btn-sm', type: 'button', text: aksi.label, onclick: aksi.fn }) : null);
+    isi(b, el('p', { text: teks }), tambahan, aksi ? el('button', { class: 'btn btn-sm', type: 'button', text: aksi.label, onclick: aksi.fn }) : null);
     b.hidden = false;
   };
   const tutupBanner = (jenis) => {
@@ -1615,6 +1623,89 @@
     svg.replaceChildren(...anak);
   };
 
+  // ---------- Run yang sedang dipantau ----------
+  // Satu-satunya tempat yang membentuk objek `live`. Sebelumnya setiap pemanggil menyusunnya
+  // sendiri, dan field yang terlewat diam-diam jatuh ke data run LAMA lewat rantai cadangan di
+  // renderPipeline. Akibatnya dua hal yang sama-sama sulit dilihat: graf memakai skenario run lama,
+  // sehingga node berbunyi "tidak dipakai di skenario A" untuk run yang bukan A; dan tautan
+  // "Lihat log" memakai id run lama digabung id job run baru, menghasilkan 404.
+  //
+  // Dengan satu pembentuk, field tidak bisa terlewat lagi: yang tidak diisi pemanggil menjadi null
+  // secara eksplisit, bukan mewarisi nilai run lain.
+  const buatLive = ({
+    mode, jalur, skenario, jobs,
+    id = null, nomor = null, url = null, model = null,
+    status = 'menunggu', demo = false,
+  }) => ({ id, nomor, url, mode, jalur, skenario, model, jobs, status, demo });
+
+  // Teks pita status. Dipisahkan sebagai fungsi murni supaya bisa diuji tanpa browser.
+  const teksPita = (live, detikBerjalan) => {
+    if (!live) return '';
+    const nama = Number.isFinite(live.nomor) ? `Run #${live.nomor}` : 'Run baru';
+    if (live.status === 'selesai') {
+      return live.demo
+        ? `${nama} selesai. Mode demo tidak membuat hasil baru.`
+        : `${nama} selesai, hasil sudah dimuat`;
+    }
+    const keadaan = {
+      menunggu: 'menunggu GitHub membuat run',
+      berjalan: 'berjalan',
+      'menunggu-hasil': 'selesai, menunggu hasil terbit',
+    }[live.status] ?? live.status;
+    return [
+      nama,
+      live.skenario ? `skenario ${live.skenario}` : null,
+      live.model,
+      keadaan,
+      durasi(detikBerjalan),
+    ].filter(Boolean).join(' · ');
+  };
+
+  let pantauMulai = null;
+  let pantauTik = null;
+
+  // Pita status dan awalan "Hasil terakhir". Keduanya bergantung pada satu hal yang sama, yaitu ada
+  // atau tidaknya run yang sedang dipantau, jadi digambar satu fungsi.
+  const renderPantau = () => {
+    const pita = $('pita-run');
+    const live = state.live;
+    // Awalan "Hasil terakhir" hidup lebih lama daripada pitanya. Saat run gagal, pemantauan
+    // berhenti tetapi yang tampil di bawah tetap hasil run SEBELUMNYA, jadi awalannya harus tinggal.
+    $('hasil-terakhir').hidden = !(live || state.awalanHasilTerakhir);
+    if (!live) {
+      pita.hidden = true;
+      isi(pita);
+      if (pantauTik) { clearInterval(pantauTik); pantauTik = null; }
+      return;
+    }
+    const detik = pantauMulai ? (Date.now() - pantauMulai) / 1000 : 0;
+    pita.hidden = false;
+    isi(pita,
+      el('span', { text: teksPita(live, detik) }),
+      live.url ? el('span', { text: ' ' }) : null,
+      live.url ? linkRun(live.url, 'Buka di GitHub') : null);
+    // Durasi berjalan harus benar-benar berjalan. Tanpa denyut sendiri ia hanya berubah tiap kali
+    // graf digambar ulang, yaitu sekali per polling, dan angkanya tampak macet.
+    if (!pantauTik && live.status !== 'selesai') pantauTik = setInterval(renderPantau, 1000);
+    if (live.status === 'selesai' && pantauTik) { clearInterval(pantauTik); pantauTik = null; }
+  };
+
+  // Dipanggil di tiap tahap pemantauan: objek live disimpan, graf digambar, pita diperbarui.
+  const pantauLive = (live) => {
+    state.live = live;
+    renderPipeline(live);
+    renderPantau();
+  };
+
+  // awalan: true berarti yang tampil di bawah masih hasil run lama, jadi penandanya dipertahankan.
+  const selesaiPantau = ({ awalan = true } = {}) => {
+    state.live = null;
+    state.awalanHasilTerakhir = awalan;
+    if (pantauTik) { clearInterval(pantauTik); pantauTik = null; }
+    pantauMulai = null;
+    renderPantau();
+  };
+
   let pantauUkuranAlur = null;
 
   const renderPipeline = (live) => {
@@ -1629,7 +1720,10 @@
     if (rekaman) lencanaRekaman.textContent = `Rekaman run CI #${rekaman.nomor}, bukan run langsung`;
     // Skema 2 tidak punya run.gemini; kegagalan LLM terbaca dari status panggilan.
     const llmGagal = !live && (state.hasil?.run?.status_panggilan?.error ?? 0) > 0;
-    $('pipeline-title').textContent = live ? `Run ${live.nomor ? `#${live.nomor}` : 'baru'}` : (state.hasil ? `Alur eksekusi run #${state.hasil.run.nomor}` : 'Alur eksekusi pipeline');
+    // Selama dipantau, judulnya menyebut run yang BERJALAN, bukan run yang sedang dibaca di bawah.
+    $('pipeline-title').textContent = live
+      ? `${Number.isFinite(live.nomor) ? `Run #${live.nomor}` : 'Run baru'}${live.status === 'selesai' ? '' : ' · berjalan'}`
+      : (state.hasil ? `Alur eksekusi run #${state.hasil.run.nomor}` : 'Alur eksekusi pipeline');
     const total = Object.values(status).reduce((s, j) => s + (Number.isFinite(j?.durasi) ? j.durasi : 0), 0);
     $('pipeline-total').textContent = total ? `total ${durasi(total)}` : '';
 
@@ -1690,7 +1784,7 @@
       // diklik, karena tautan di dalam tombol bukan markah yang sah dan dua sasaran klik yang
       // bertumpuk membuat orang membuka tab baru padahal hanya ingin melihat langkahnya.
       const nomorRun = live?.nomor ?? state.hasil?.run?.nomor ?? null;
-      const idRun = live?.id ?? state.rekaman?.id ?? state.hasil?.run?.id ?? null;
+      const idRun = idRunGraf(live);
       const urlLog = dipakai ? urlJobGh(state.proyek, idRun, status[n.key]?.id) : null;
       const aksi = [
         bisaDibuka ? el('button', {
@@ -1726,7 +1820,7 @@
       // daftar langkah, karena yang pertama ingin diketahui saat satu node gagal adalah vendor
       // mana yang gagal — bukan langkah ke berapa.
       const per = status[state.simpulTerbuka]?.per ?? [];
-      const idRunPanel = live?.id ?? state.rekaman?.id ?? state.hasil?.run?.id ?? null;
+      const idRunPanel = idRunGraf(live);
       const ringkasPerVendor = per.length > 1
         ? el('ul', { class: 'per-vendor' }, per.map((v) => {
           const url = urlJobGh(state.proyek, idRunPanel, v.id);
@@ -2905,6 +2999,9 @@
   const hentikanPantau = () => {
     if (state.pantau) state.pantau.batal = true;
     state.pantau = null;
+    // Pita dan awalan ikut hilang: pindah proyek, pindah mode, atau token dihapus berarti yang
+    // tampil di bawah bukan lagi "hasil terakhir" dari run yang dipantau tadi.
+    selesaiPantau({ awalan: false });
     if (state.sibuk) { state.sibuk = false; if (state.proyek) perbaruiTombolJalankan(); }
   };
 
@@ -2928,16 +3025,26 @@
     state.sibuk = true;
     const node = nodeJalur(jalur);
     const awal = Object.fromEntries(node.map((n) => [n.key, { s: 'wait', durasi: null }]));
+    const skenario = skenarioTerpilih();
+    // Model yang ditampilkan di pita. Mode gabungan tidak punya satu model, jadi yang disebut
+    // modenya sendiri.
+    const modelPita = jalur === 'v2'
+      ? (modeModelTerpilih() === 'gabungan' ? 'gabungan' : labelModelId(model))
+      : labelModelId(model);
     // Begitu analisis berjalan, fokus pindah ke melihat: drawer ditutup supaya pipeline terlihat.
     if (!$('drawer').hidden) tutupDrawer();
-    renderPipeline({ mode, jalur, jobs: awal });
+    pantauMulai = Date.now();
+    pantauLive(buatLive({ mode, jalur, skenario, jobs: awal, model: modelPita, demo: state.demo }));
     perbaruiTombolJalankan(state.demo ? 'Simulasi dimulai.' : 'Mengirim permintaan ke GitHub…');
     try {
-      if (state.demo) await simulasi(mode, jalur, pantau);
-      else await dispatchLive(p, branch, mode, model, pantau, jalur);
+      if (state.demo) await simulasi({ mode, jalur, skenario, model: modelPita, pantau });
+      else await dispatchLive(p, branch, mode, model, pantau, jalur, { modelPita });
     } catch (err) {
       if (pantau.batal) return;
       state.sibuk = false;
+      // Pemantauan berhenti, tetapi awalan "Hasil terakhir" tetap ada: yang tampil di bawah memang
+      // hasil run sebelumnya, bukan hasil run yang barusan gagal.
+      selesaiPantau();
       const pesan = pesanGalat(err);
       perbaruiTombolJalankan(pesan, 'error');
       // #run-hint hidup DI DALAM drawer, dan drawer sudah ditutup beberapa baris di atas supaya
@@ -2949,31 +3056,42 @@
       // sebenarnya; run yang berhasil pernah dilaporkan 'tidak jadi dijalankan' karena judul ini
       // ditulis tetap.
       const judul = err?.judul ?? 'Run tidak jadi dijalankan.';
+      // Tautan log hanya ada kalau job yang gagal benar-benar diketahui dari data jobs yang sudah
+      // diambil. Tanpa itu tidak ada tautan sama sekali: menebak idnya menghasilkan 404.
+      const tautanLog = err?.logUrl
+        ? el('p', {}, linkRun(err.logUrl, err.logNama ? `Lihat log: ${err.logNama}` : 'Lihat log'))
+        : null;
       tampilBanner('error', `${judul} ${pesan}`, {
         label: 'Buka drawer lagi',
         fn: () => { tutupBanner('error'); bukaDrawer(); },
-      });
+      }, tautanLog);
       return;
     }
   };
 
-  const simulasi = async (mode, jalur, pantau) => {
+  const simulasi = async ({ mode, jalur, skenario, model, pantau }) => {
     const node = nodeJalur(jalur);
     const jobs = Object.fromEntries(node.map((n) => [n.key, { s: 'wait', durasi: null }]));
     const lama = { rencana: 3, build: 104, sonar: 51, analisis: 241, 'analisis-v2': 219, hasil: 22 };
     if (mode === 'sast') { lama.analisis = 9; lama['analisis-v2'] = 9; }
+    // Mode demo memakai pembentuk live yang sama dengan mode live, jadi perilaku pita, judul graf,
+    // dan label node identik. Bedanya hanya `demo: true` dan tidak adanya id serta nomor run.
+    const live = (status) => buatLive({ mode, jalur, skenario, jobs, model, status, demo: true });
     for (const n of node) {
       if (pantau.batal) return;
       jobs[n.key] = { s: 'run', durasi: null };
-      renderPipeline({ mode, jalur, jobs, nomor: null });
+      pantauLive(live('berjalan'));
       perbaruiTombolJalankan(`Simulasi: ${n.key === 'analisis' && mode === 'sast' ? 'Ambil temuan Sonar' : n.nama} berjalan.`);
       await tunggu(1100);
       jobs[n.key] = { s: 'done', durasi: lama[n.key] };
-      renderPipeline({ mode, jalur, jobs, nomor: null });
+      pantauLive(live('berjalan'));
     }
     if (pantau.batal) return;
     state.sibuk = false;
     state.pantau = null;
+    pantauLive(live('selesai'));
+    // Simulasi tidak menghasilkan run baru, jadi yang tampil di bawah memang tetap hasil lama.
+    setTimeout(() => { if (!state.live || state.live.status === 'selesai') selesaiPantau(); }, 6000);
     const arsip = state.proyek.branches.find((b) => !b.dispatch);
     perbaruiTombolJalankan(el('span', {}, 'Simulasi selesai. Mode demo tidak membuat hasil baru. ',
       arsip ? el('button', { class: 'btn-text', type: 'button', text: `Lihat contoh hasil di ${arsip.name}`, onclick: () => { state.branch = arsip; renderRailBranch(); muatIndex(); } }) : null));
@@ -3016,7 +3134,7 @@
   // Kecocokannya dijamin pemeriksaan hash tree src/ di workflow, bukan oleh nama branch.
   const sonarBranchV2 = (branch) => (branch === 'main' ? 'ikut-branch-run' : 'main');
 
-  const dispatchLive = async (p, branch, mode, model, pantau, jalur) => {
+  const dispatchLive = async (p, branch, mode, model, pantau, jalur, { modelPita } = {}) => {
     const label = `sd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const dikirim = Date.now();
     // Dispatch memakai workflow di branch tujuan; branch yang belum di-push menghasilkan 422 yang membingungkan.
@@ -3056,6 +3174,7 @@
     });
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
     perbaruiTombolJalankan('Permintaan diterima. Menunggu GitHub membuat run…');
+    pantauLive(buatLive({ mode, jalur, skenario, model: modelPita, jobs: state.live?.jobs ?? {}, status: 'menunggu' }));
 
     let run = null;
     for (let i = 0; i < BATAS_CARI_RUN && !run; i++) {
@@ -3071,16 +3190,28 @@
         { judul: 'Run belum terlihat di GitHub.' });
     }
 
+    let jobTerakhir = [];
     while (!pantau.batal) {
       const [dataJobs, info] = await Promise.all([gh(`${repoPath(p)}/actions/runs/${run.id}/jobs?per_page=50`), gh(`${repoPath(p)}/actions/runs/${run.id}`)]);
       if (pantau.batal) return;
-      renderPipeline({ mode, jalur, jobs: jobsDariApi(dataJobs.jobs || [], nodeJalur(jalur)), nomor: info.run_number });
+      jobTerakhir = dataJobs.jobs || [];
+      pantauLive(buatLive({
+        mode, jalur, skenario, model: modelPita,
+        id: run.id, nomor: info.run_number, url: info.html_url,
+        jobs: jobsDariApi(jobTerakhir, nodeJalur(jalur)),
+        status: info.status === 'completed' ? 'menunggu-hasil' : 'berjalan',
+      }));
       perbaruiTombolJalankan(el('span', {}, linkRun(info.html_url, `Run #${info.run_number}`), info.status === 'completed' ? ' selesai.' : ' berjalan.'));
       if (info.status === 'completed') { run = info; break; }
       await tunggu(JEDA_JOB);
     }
     if (pantau.batal) return;
 
+    pantauLive(buatLive({
+      mode, jalur, skenario, model: modelPita,
+      id: run.id, nomor: run.run_number, url: run.html_url,
+      jobs: state.live?.jobs ?? {}, status: 'menunggu-hasil',
+    }));
     perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ' selesai. Menunggu hasil diterbitkan…'));
     for (let i = 0; i < BATAS_TUNGGU_HASIL; i++) {
       if (pantau.batal) return;
@@ -3089,20 +3220,28 @@
         state.sibuk = false;
         state.pantau = null;
         await muatIndex(run.id);
+        // Hasil run ini sudah tampil di bawah, jadi awalan "Hasil terakhir" tidak berlaku lagi.
+        state.awalanHasilTerakhir = false;
+        pantauLive(buatLive({
+          mode, jalur, skenario, model: modelPita,
+          id: run.id, nomor: run.run_number, url: run.html_url,
+          jobs: state.live?.jobs ?? {}, status: 'selesai',
+        }));
+        setTimeout(() => { if (state.live?.status === 'selesai') selesaiPantau({ awalan: false }); }, 6000);
         const llmGagal = (state.hasil?.run?.status_panggilan?.error ?? 0) > 0 || state.hasil?.run?.gemini?.status === 'gagal';
         perbaruiTombolJalankan(el('span', {}, linkRun(run.html_url, `Run #${run.run_number}`), ` selesai (${run.conclusion === 'success' ? 'berhasil' : run.conclusion}). Hasil sudah dimuat.${llmGagal ? ' Panggilan LLM gagal, lihat catatan di daftar temuan.' : ''}`));
         return;
       }
       await tunggu(JEDA_HASIL);
     }
-    throw await galatHasilTakAda(p, run, jalur);
+    throw await galatHasilTakAda(p, run, jalur, jobTerakhir);
   };
 
   // Hasil tidak muncul di index.json bisa berarti tiga hal yang sangat berbeda, dan menyebut
   // semuanya dengan kalimat yang sama pernah membuat run yang BERHASIL dilaporkan sebagai "tidak
   // jadi dijalankan". Keadaannya ditanyakan ulang ke GitHub di sini, bukan ditebak dari apa yang
   // terakhir diketahui, karena run bisa berubah keadaan selama dashboard menunggu hasilnya terbit.
-  const galatHasilTakAda = async (p, run, jalur) => {
+  const galatHasilTakAda = async (p, run, jalur, jobs = []) => {
     let info = run;
     try { info = await gh(`${repoPath(p)}/actions/runs/${run.id}`); } catch { info = run; }
     const nomor = info.run_number ?? run.run_number;
@@ -3111,8 +3250,12 @@
     // 1. Run gagal atau dibatalkan: wajar hasilnya tidak ada, dan yang perlu dibuka adalah lognya.
     if (info.status === 'completed' && info.conclusion !== 'success') {
       const kata = { failure: 'gagal', cancelled: 'dibatalkan', timed_out: 'kehabisan waktu', action_required: 'menunggu persetujuan' }[info.conclusion] ?? info.conclusion;
+      // Job pertama yang benar-benar gagal, dari daftar job yang SUDAH diambil selama pemantauan.
+      // Idnya dipasangkan dengan run.id milik run itu juga; memakai id run lain menghasilkan 404.
+      // Penyebabnya tidak ditebak di sini, hanya ditunjukkan di mana lognya.
+      const gagal = (jobs ?? []).find((j) => j.conclusion && !['success', 'skipped'].includes(j.conclusion));
       return new GhError('hasil', `Run #${nomor} ${kata}, jadi tidak ada hasil yang diterbitkan. Buka lognya di GitHub untuk melihat job mana yang berhenti.`,
-        { judul: `Run #${nomor} ${kata}.` });
+        { judul: `Run #${nomor} ${kata}.`, logUrl: urlJobGh(p, run.id, gagal?.id), logNama: gagal?.name ?? null });
     }
 
     // 2. Run belum selesai: bukan kegagalan, hanya belum waktunya.

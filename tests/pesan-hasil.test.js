@@ -28,7 +28,16 @@ const potong = (awal, akhir) => {
 const buat = (jawabanRun) => {
   const sumber = [
     potong('  class GhError extends Error {', '\n  }'),
-    potong('  const galatHasilTakAda = async (p, run, jalur) => {', '\n  };'),
+    // Pembangun URL diambil apa adanya juga: tautan "Lihat log" harus memakai id run yang benar,
+    // dan itu justru yang pernah salah.
+    potong('  const enc = encodeURIComponent;', '\n'),
+    potong('  const urlGithub = (owner, repo, ...seg) =>', '\n'),
+    potong('  const NAMA_GH = ', '\n'),
+    potong('  const idGh = (v) => {', '\n  };'),
+    potong('  const repoGh = (p) =>', '? p : null);'),
+    potong('  const urlRunGh = (p, runId) => {', '\n  };'),
+    potong('  const urlJobGh = (p, runId, jobId) => {', '\n  };'),
+    potong('  const galatHasilTakAda = async (p, run, jalur, jobs = []) => {', '\n  };'),
   ].join('\n');
   // eslint-disable-next-line no-new-func
   return new Function('ghStub', `
@@ -42,9 +51,9 @@ const buat = (jawabanRun) => {
 };
 
 const RUN = { id: 99, run_number: 3, html_url: 'https://github.com/o/r/actions/runs/99' };
-const panggil = async (info, jalur = 'v1') => {
+const panggil = async (info, jalur = 'v1', jobs = []) => {
   const f = buat(async () => info);
-  return f({ owner: 'o', repo: 'r' }, RUN, jalur);
+  return f({ owner: 'o', repo: 'r' }, RUN, jalur, jobs);
 };
 
 test('run gagal: dikatakan gagal, bukan tidak jadi dijalankan', async () => {
@@ -53,6 +62,28 @@ test('run gagal: dikatakan gagal, bukan tidak jadi dijalankan', async () => {
   assert.equal(err.judul, 'Run #3 gagal.');
   assert.ok(!/tidak jadi dijalankan/i.test(`${err.judul} ${err.message}`), 'tidak boleh menyebut "tidak jadi dijalankan"');
   assert.match(err.message, /tidak ada hasil yang diterbitkan/);
+});
+
+test('run gagal membawa tautan log job pertama yang gagal, dengan id run run itu', async () => {
+  // Dari data jobs yang SUDAH diambil selama pemantauan, bukan dari panggilan baru dan bukan tebakan.
+  // Job yang skipped bukan job yang gagal, jadi dilewati.
+  const err = await panggil({ ...RUN, status: 'completed', conclusion: 'failure' }, 'v2', [
+    { id: 11, name: 'Tentukan mode analisis', conclusion: 'success' },
+    { id: 12, name: 'Analisis SonarCloud', conclusion: 'skipped' },
+    { id: 13, name: 'Analisis LLM v2 (deteksi dan verifikasi) (openai)', conclusion: 'failure' },
+    { id: 14, name: 'Gabung dan terbitkan hasil v2', conclusion: 'failure' },
+  ]);
+  assert.equal(err.logUrl, 'https://github.com/o/r/actions/runs/99/job/13');
+  assert.equal(err.logNama, 'Analisis LLM v2 (deteksi dan verifikasi) (openai)');
+});
+
+test('tanpa data job yang gagal, tidak ada tautan log sama sekali', async () => {
+  // Lebih baik tidak ada tautan daripada tautan yang mendarat di halaman 404.
+  for (const jobs of [[], undefined, [{ id: 11, name: 'a', conclusion: 'success' }]]) {
+    const err = await panggil({ ...RUN, status: 'completed', conclusion: 'failure' }, 'v2', jobs);
+    assert.equal(err.logUrl, null);
+    assert.equal(err.logNama, null);
+  }
 });
 
 test('run dibatalkan dan kehabisan waktu punya kata masing-masing', async () => {

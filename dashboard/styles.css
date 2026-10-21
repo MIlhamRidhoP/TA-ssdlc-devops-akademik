@@ -759,6 +759,26 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .konteks-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .run-lama { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0; }
 
+/* Pita run yang sedang dipantau. Warnanya informatif, bukan galat: run yang berjalan bukan
+   masalah, dan memakai warna --crit di sini membuat setiap dispatch tampak gagal. */
+.pita-run {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3);
+  margin: 0; padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-2); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-ctl); background: var(--paper-3);
+  font-size: 0.875rem; color: var(--ink-2);
+}
+.pita-run a { color: var(--accent); }
+/* Teks pita berisi nomor run, skenario, model, keadaan, dan durasi yang terus berubah. Di layar
+   375 px rangkaian itu harus boleh membungkus, bukan melebarkan halaman. */
+@media (max-width: 30rem) { .pita-run { font-size: 0.8125rem; overflow-wrap: anywhere; } }
+
+/* Awalan "Hasil terakhir" di atas judul run. Kecil dan netral: ia keterangan, bukan judul kedua. */
+.hasil-terakhir {
+  margin: 0; font-family: var(--font-data); font-size: 0.75rem;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+}
+
 /* Ringkasan singkat: dua kotak berdampingan di layar lebar, bertumpuk di layar sempit. */
 .ringkas-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
 @media (min-width: 60rem) { .ringkas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

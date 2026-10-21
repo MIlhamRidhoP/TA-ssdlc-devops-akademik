@@ -139,10 +139,18 @@
           </div>
         </div>
 
+        <!-- Pita status run yang sedang dipantau. Di luar tampilan mana pun supaya ikut terlihat
+             di kelima tampilan: pesan progres pernah hanya ditulis ke #run-hint di dalam drawer,
+             yang justru ditutup begitu analisis dimulai, sehingga run yang berjalan tampak diam. -->
+        <p class="pita-run" id="pita-run" role="status" aria-live="polite" hidden></p>
+
         <section class="tampilan" id="v-ringkasan" tabindex="-1" aria-labelledby="run-title" hidden>
         <header class="sheet-head">
           <div class="sheet-atas">
             <div class="sheet-judul">
+              <!-- Awalan saat ada run yang dipantau: isi kepala di bawah ini masih milik run
+                   sebelumnya, dan tanpa keterangan itu terbaca seolah hasil run yang baru. -->
+              <p class="hasil-terakhir" id="hasil-terakhir" hidden>Hasil terakhir</p>
               <h1 class="run-title judul-tampilan" id="run-title" tabindex="-1"></h1>
               <p class="run-status" id="run-status"></p>
             </div>
