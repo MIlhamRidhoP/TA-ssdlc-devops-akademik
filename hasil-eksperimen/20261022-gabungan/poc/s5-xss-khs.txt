@@ -1,0 +1,35 @@
+PoC S5 Reflected XSS pada parameter semester halaman KHS
+Basis   : http://127.0.0.1:3000
+Akun    : andi@mahasiswa.test (mahasiswa dummy hasil seed)
+Waktu   : 2026-10-21T18:48:38Z
+
+1. Login POST /api/auth/login -> HTTP 200
+   token diterima (213 karakter, isinya tidak dicetak)
+
+2. Kontrol, semester sah "2025-genap" -> HTTP 200
+   <title>KHS 103032300001 2025-genap</title>
+   Semester: 2025-genap
+  LULUS  halaman KHS tampil (HTTP 200)
+  LULUS  tabel nilai ada
+
+3. Penanda 1 semester=<b>s5-penanda</b> -> HTTP 200
+   pantulan: Semester: &lt;b&gt;s5-penanda&lt;/b&gt;
+  LULUS  bentuk ter-escape ada di respons
+  LULUS  bentuk mentah TIDAK ada di respons
+
+4. Penanda 2 semester="><i>s5-penanda</i> -> HTTP 200
+   pantulan: Semester: &quot;&gt;&lt;i&gt;s5-penanda&lt;/i&gt;
+  LULUS  bentuk ter-escape ada di respons
+  LULUS  bentuk mentah TIDAK ada di respons
+
+5. Cabang semester kosong -> HTTP 400
+   <p>Semester "" tidak dikenali</p>
+  LULUS  tidak memantulkan nilai penyerang
+
+6. Tanpa parameter semester -> HTTP 400
+   <p>Semester "" tidak dikenali</p>
+  LULUS  tidak memantulkan nilai penyerang
+
+Ringkasan: 8 lulus, 0 gagal
+KESIMPULAN: S5 TERBUKTI sebagai jebakan FP. Nilai semester selalu dipantulkan ter-escape,
+dan cabang semester kosong tidak memantulkan masukan penyerang sama sekali.
