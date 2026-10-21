@@ -134,7 +134,17 @@ const biayaPercobaanGagal = (gagal, tarif) => {
   return Number(gagal.reduce((s, p) => s + (hitungBiaya(p.usage, tarif) ?? 0), 0).toFixed(6));
 };
 
-const metadata = ({ konteks, tugas, run, idAlert, prompt, hasil, parseOk }) => ({
+// `tanda` menandai keadaan yang perlu dibedakan walaupun panggilannya berhasil. Yang pertama dan
+// sejauh ini satu-satunya: "deteksi_kosong", yaitu jawaban yang lolos skema tetapi tidak berisi satu
+// temuan pun. Tanpa penanda ini, jawaban `{"temuan": []}` tidak terbedakan dari analisis sungguhan
+// yang kebetulan bersih: keduanya tercatat `status: ok`, `parse_ok: true`, nol temuan. Di repo demo
+// Gemini dua kali menjawab begitu setelah berpikir hanya 258 dan 2.372 token, dibanding 23.305 token
+// pada run yang menemukan tujuh temuan pada kode yang sama persis.
+//
+// Arti `status` sengaja tidak diubah: panggilannya memang berhasil dan finishReason-nya memang STOP.
+// Yang kurang selama ini penandanya, bukan statusnya, dan mengubah `status` akan menggeser
+// status_panggilan di seluruh data eksperimen yang sudah diambil.
+const metadata = ({ konteks, tugas, run, idAlert, prompt, hasil, parseOk, tanda = [] }) => ({
   versi_prompt: render.VERSI_PROMPT,
   kondisi: konteks.kondisi,
   tugas,
@@ -162,6 +172,7 @@ const metadata = ({ konteks, tugas, run, idAlert, prompt, hasil, parseOk }) => (
   status: hasil.status,
   detail_status: hasil.detail_status ?? '',
   parse_ok: parseOk,
+  tanda,
   percobaan: hasil.percobaan.length,
   percobaan_gagal: percobaanGagal(hasil.percobaan),
   durasi_ms: new Date(hasil.waktu_selesai) - new Date(hasil.waktu_mulai),
@@ -176,6 +187,10 @@ const kirim = (konteks, prompt, tugas) => panggilDenganUlang({
   vendor: konteks.vendor, model: konteks.model, system: prompt.system, user: prompt.user, blokUser: prompt.blok_user,
   skema: prompt.skema, namaSkema: NAMA_SKEMA[tugas], batasOutput: BATAS_OUTPUT, tingkatThinking: TINGKAT_THINKING,
 });
+
+// Jawaban deteksi yang lolos skema tetapi nol temuan. Dipisah sebagai fungsi supaya bisa diuji
+// tanpa menjalankan satu panggilan pun.
+const tandaDeteksi = (valid) => (valid.parse_ok && valid.temuan.length === 0 ? ['deteksi_kosong'] : []);
 
 class RunDibuang extends Error {}
 
@@ -197,7 +212,10 @@ const jalankanSatuRun = async (konteks, n) => {
     commit_kode: { head: konteks.kodeAlat.head, bersih: konteks.kodeAlat.bersih },
     parse_ok: validDeteksi.parse_ok,
     temuan: validDeteksi.temuan,
-    deteksi: metadata({ konteks, tugas: 'deteksi', run: n, idAlert: null, prompt: promptDeteksi, hasil: hasilDeteksi, parseOk: validDeteksi.parse_ok }),
+    deteksi: metadata({
+      konteks, tugas: 'deteksi', run: n, idAlert: null, prompt: promptDeteksi, hasil: hasilDeteksi,
+      parseOk: validDeteksi.parse_ok, tanda: tandaDeteksi(validDeteksi),
+    }),
     verifikasi: [],
   };
   const simpan = () => {
@@ -247,12 +265,19 @@ const ringkasRun = (c) => {
     // Waktu mulai dan selesai run (panggilan pertama dan terakhir), bukti urutan run berselang-seling antar vendor.
     waktu_mulai: c.deteksi.waktu_mulai, waktu_selesai: (c.verifikasi.at(-1)?.metadata ?? c.deteksi).waktu_selesai,
     commit_kode: c.commit_kode.head,
-    deteksi: { status: c.deteksi.status, parse_ok: c.deteksi.parse_ok, jumlah_temuan: c.temuan.length },
+    deteksi: {
+      status: c.deteksi.status, parse_ok: c.deteksi.parse_ok, jumlah_temuan: c.temuan.length,
+      tanda: [...(c.deteksi.tanda ?? [])], thinking: c.deteksi.usage?.thinking ?? null,
+    },
     verifikasi: c.verifikasi.map((v) => ({ id_alert: v.id_alert, status: v.metadata.status, parse_ok: v.metadata.parse_ok, putusan: v.putusan })),
     panggilan: {
       total: semua.length, refusal: hitung((m) => m.status === 'refusal'), truncated: hitung((m) => m.status === 'truncated'),
       error: hitung((m) => m.status === 'error'), parse_gagal: hitung((m) => m.status === 'ok' && !m.parse_ok),
+      deteksi_kosong: hitung((m) => (m.tanda ?? []).includes('deteksi_kosong')),
     },
+    // Token thinking dijumlahkan dari angka yang SUDAH dicatat adapter; tidak ada panggilan tambahan.
+    // Inilah yang membedakan jawaban kosong karena model nyaris tidak berpikir dari analisis sungguhan.
+    thinking_token: semua.reduce((s, m) => s + (m.usage?.thinking ?? 0), 0),
     biaya_usd: Number(semua.reduce((s, m) => s + (m.biaya_usd ?? 0), 0).toFixed(6)),
   };
 };
@@ -453,4 +478,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, perluSonar, treeSrc, percobaanGagal, biayaPercobaanGagal };
+module.exports = { main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, perluSonar, treeSrc, percobaanGagal, biayaPercobaanGagal, tandaDeteksi };

@@ -1937,10 +1937,21 @@
     const gagal = (sp?.error ?? 0) > 0 || (sp?.parse_gagal ?? 0) > 0 || (sp?.refusal ?? 0) > 0;
     const n = $('run-status');
     if (!sp) { isi(n); n.hidden = true; return; }
+    // Deteksi yang lolos skema tetapi nol temuan. Tanpa lencana ini, "0 temuan" di judul terbaca
+    // sebagai hasil analisis, padahal bisa berarti model menjawab kosong. Field ini opsional di
+    // skema: hasil lama yang belum memuatnya tidak menampilkan apa pun, bukan menampilkan 0.
+    const kosong = sp.deteksi_kosong ?? 0;
+    const think = r.thinking_token?.deteksi;
     n.hidden = false;
     isi(n, el('span', { class: `lencana ${gagal ? 'l-crit' : 'l-ok'}` },
       el('i', { 'aria-hidden': 'true' }),
-      gagal ? 'Selesai dengan panggilan gagal' : 'Selesai'));
+      gagal ? 'Selesai dengan panggilan gagal' : 'Selesai'),
+    kosong > 0 ? el('span', {
+      class: 'lencana l-high',
+      title: Number.isFinite(think)
+        ? `Jawaban deteksi lolos skema tetapi tanpa temuan, setelah ${think} token thinking.`
+        : 'Jawaban deteksi lolos skema tetapi tanpa temuan.',
+    }, el('i', { 'aria-hidden': 'true' }), kosong > 1 ? `Deteksi kosong (${kosong})` : 'Deteksi kosong') : null);
   };
 
   const renderKepalaV2 = () => {

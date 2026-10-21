@@ -126,6 +126,18 @@ const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null
     },
     sonar_beku: run.sonar_beku ? { sha256_isi: run.sonar_beku.sha256_isi ?? null, revisi: run.sonar_beku.revisi ?? null } : null,
     biaya_usd: Number(biaya.toFixed(6)),
+    // Token thinking diambil apa adanya dari metadata panggilan; tidak ada panggilan tambahan dan
+    // tidak ada parameter yang berubah. Angka inilah yang membedakan jawaban kosong karena model
+    // nyaris tidak berpikir dari analisis sungguhan yang kebetulan bersih: di repo demo, deteksi
+    // yang menjawab nol temuan memakai 258 dan 2.372 token thinking, sedangkan yang menemukan tujuh
+    // temuan pada kode yang sama memakai 23.305.
+    //
+    // null, bukan 0, ketika tidak ada panggilan sama sekali: skenario A tidak memanggil model, dan
+    // 0 di situ terbaca seolah model dipanggil lalu tidak berpikir.
+    thinking_token: {
+      deteksi: run.deteksi ? (d.usage?.thinking ?? null) : null,
+      total: panggilan.length ? panggilan.reduce((s, p) => s + (p.usage?.thinking ?? 0), 0) : null,
+    },
     status_panggilan: {
       total: panggilan.length,
       ok: hitung((p) => p.status === 'ok'),
@@ -133,6 +145,9 @@ const susunRun = ({ summary, run, nomor, id = null, repo = null, pipeline = null
       truncated: hitung((p) => p.status === 'truncated'),
       error: hitung((p) => p.status === 'error'),
       parse_gagal: hitung((p) => p.parse_ok === false),
+      // Panggilan deteksi yang lolos skema tetapi nol temuan. Dihitung terpisah supaya "0 temuan"
+      // hasil analisis tidak tertukar dengan "0 temuan" karena model menjawab kosong.
+      deteksi_kosong: hitung((p) => (p.tanda ?? []).includes('deteksi_kosong')),
     },
     pipeline,
   };

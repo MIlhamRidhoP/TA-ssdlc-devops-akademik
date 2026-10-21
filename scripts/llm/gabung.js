@@ -154,15 +154,24 @@ const gabungTemuan = (terpakai) => {
 const gabungRun = (terpakai, gagal, opsi) => {
   const perVendor = {};
   let biaya = 0;
-  const total = { total: 0, ok: 0, refusal: 0, truncated: 0, error: 0, parse_gagal: 0 };
+  // deteksi_kosong ikut dijumlahkan karena ada di daftar kunci ini. Hasil vendor lama yang belum
+  // memuatnya menyumbang 0, bukan membuat seluruh penjumlahan hilang.
+  const total = { total: 0, ok: 0, refusal: 0, truncated: 0, error: 0, parse_gagal: 0, deteksi_kosong: 0 };
+  let thinkingTotal = 0;
+  let adaThinking = false;
   for (const { vendor, hasil } of terpakai) {
     const sp = hasil.run.status_panggilan ?? {};
+    const tt = hasil.run.thinking_token ?? null;
+    if (typeof tt?.total === 'number') { thinkingTotal += tt.total; adaThinking = true; }
     perVendor[vendor] = {
       model_diminta: hasil.run.model_diminta ?? null,
       model_menjawab: hasil.run.model_menjawab ?? null,
       biaya_usd: typeof hasil.run.biaya_usd === 'number' ? hasil.run.biaya_usd : null,
       durasi_detik: hasil.run.durasi_detik ?? null,
       status_panggilan: { ...sp },
+      // Dibawa per vendor, bukan hanya dijumlahkan: yang berguna dibaca justru vendor MANA yang
+      // menjawab kosong dan berapa token yang ia pakai untuk berpikir.
+      thinking_token: tt ? { ...tt } : null,
       jumlah_temuan: (hasil.findings ?? []).length,
     };
     biaya += typeof hasil.run.biaya_usd === 'number' ? hasil.run.biaya_usd : 0;
@@ -198,6 +207,10 @@ const gabungRun = (terpakai, gagal, opsi) => {
     selesai,
     durasi_detik: mulai && selesai ? Math.round((new Date(selesai) - new Date(mulai)) / 1000) : null,
     biaya_usd: Number(biaya.toFixed(6)),
+    // Run gabungan tidak punya satu panggilan deteksi, jadi `deteksi` di tingkat ini null; angkanya
+    // ada per vendor. `...dasar` di atas membawa thinking_token vendor pertama, dan itu harus
+    // ditimpa supaya tidak terbaca sebagai angka seluruh run.
+    thinking_token: { deteksi: null, total: adaThinking ? thinkingTotal : null },
     status_panggilan: total,
     // Hash prompt sama untuk ketiganya karena prompt v2 terkunci; diambil dari vendor pertama.
     hash_prompt: dasar.hash_prompt,

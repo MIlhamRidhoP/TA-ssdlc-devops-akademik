@@ -53,7 +53,12 @@ test('skenario A: hanya alert Sonar, tanpa temuan, tanpa biaya', () => {
   assert.equal(h.findings.length, 0, 'tidak ada panggilan deteksi, jadi tidak boleh ada temuan');
   assert.equal(h.alerts.length, ALERT.length, 'seluruh alert Sonar ikut');
   assert.equal(h.run.biaya_usd, 0);
-  assert.deepEqual(h.run.status_panggilan, { total: 0, ok: 0, refusal: 0, truncated: 0, error: 0, parse_gagal: 0 });
+  assert.deepEqual(h.run.status_panggilan, {
+    total: 0, ok: 0, refusal: 0, truncated: 0, error: 0, parse_gagal: 0, deteksi_kosong: 0,
+  });
+  // Nol panggilan bukan nol token thinking: skenario A tidak memanggil model sama sekali, dan 0 di
+  // sini terbaca seolah model dipanggil lalu tidak berpikir.
+  assert.deepEqual(h.run.thinking_token, { deteksi: null, total: null });
 });
 
 test('skenario A tidak mengaku punya vendor atau model', () => {

@@ -684,6 +684,32 @@ jobs:
             console.log(`Skema ${h.schema_version}, skenario ${h.run.skenario}, mode ${h.run.mode_model}, ${h.alerts.length} alert, ${h.findings.length} temuan`);
           '
 
+      # Notice saja, tidak pernah menggagalkan job: jawaban "tidak ada temuan" memang sah menurut
+      # prompt deteksi, dan menjatuhkan job berarti membuang hasil verifikasi yang sudah dibayar.
+      # Yang diperingatkan adalah keadaan yang selama ini tidak terlihat sama sekali: panggilan
+      # deteksi yang lolos skema tetapi nol temuan. Token thinking ikut disebut karena justru angka
+      # itu yang membedakan jawaban kosong dari analisis yang kebetulan bersih.
+      - name: Peringatkan deteksi yang menjawab kosong
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            if (!fs.existsSync("./results.json")) process.exit(0);
+            const h = JSON.parse(fs.readFileSync("./results.json", "utf8"));
+            const r = h.run ?? {};
+            const n = r.status_panggilan?.deteksi_kosong ?? 0;
+            if (!n) process.exit(0);
+            const per = Object.entries(r.per_vendor ?? {})
+              .filter(([, v]) => (v.status_panggilan?.deteksi_kosong ?? 0) > 0)
+              .map(([nama, v]) => `${nama} (${v.thinking_token?.deteksi ?? "?"} token thinking saat deteksi)`);
+            const siapa = per.length ? per.join(", ") : `${r.vendor ?? "vendor tidak dikenal"} (${r.thinking_token?.deteksi ?? "?"} token thinking saat deteksi)`;
+            const pesan = `Deteksi menjawab kosong pada ${n} panggilan: ${siapa}. Jawabannya lolos skema tetapi tidak berisi satu temuan pun; periksa apakah itu analisis sungguhan atau model berhenti terlalu cepat.`;
+            console.log(`::notice::${pesan}`);
+            const br = String.fromCharCode(10);
+            if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, [br, `> **Perhatian.** ${pesan}`, br].join(""));
+          '
+
       # Lapis 2 opt-in, dijalankan SESUDAH penggabungan supaya sarannya berpijak pada hasil akhir,
       # bukan pada hasil satu vendor. Mode gabungan tidak punya vendor sendiri, jadi vendor
       # penyusun rekomendasi diambil dari input terpisah; mode satu model memakai vendor runnya.
