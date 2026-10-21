@@ -32,7 +32,8 @@ Langgar satu pun dan data eksperimen TA ini rusak atau uangnya terbakar.
      menambah satu varian prompt baru di situ lolos 8/8 OK. `tests/kunci-prompt.test.js` menutup
      arah kedua itu; pengecualiannya hanya HASHES.txt sendiri dan README.md.
    - `src/**` dan `SEEDED.md` — objek uji beserta ground truth kerentanan tertanam
-   - `hasil-eksperimen/**` — data eksperimen yang sudah diambil
+   - `hasil-eksperimen/**` — folder batch yang sudah ada tidak boleh diubah; folder batch baru
+     boleh ditambahkan
    - Skrip penilaian: `scripts/llm/score.js`, `scripts/llm-score.js`, dan
      `scripts/buat-acuan-skor.js` — mengubahnya menggeser angka eksperimen
 6. **Jangan membaca, membuat, atau mengubah GitHub Secrets**, dan jangan menaikkan izin token
