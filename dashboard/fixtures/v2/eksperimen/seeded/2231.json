@@ -1,0 +1,578 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": 2231,
+    "nomor": 2231,
+    "repo": null,
+    "asal": "cli",
+    "vendor": "openai",
+    "model_diminta": "gpt-6.1-sol",
+    "model_menjawab": "gpt-6.1-sol",
+    "kondisi": "utama",
+    "skenario": "B",
+    "mode_model": "tunggal",
+    "mulai": "2026-10-21T17:54:02.236Z",
+    "selesai": "2026-10-21T18:00:17.184Z",
+    "durasi_detik": 375,
+    "objek_uji": {
+      "commit": "6f7e729378f99e9237a07363c5a917abb3c97b4d",
+      "branch": "eksperimen/seeded",
+      "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+    },
+    "commit_kode": {
+      "head": "515dcbf54cb295afbb2141f81a60a888f9346b7a",
+      "bersih": true
+    },
+    "hash_prompt": {
+      "system": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "user_deteksi": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "sumber_sonar": "beku",
+    "analisis_sonar": {
+      "tanggal": "2026-10-10T10:58:15+0000",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+      "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+    },
+    "sonar_beku": {
+      "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8"
+    },
+    "biaya_usd": 0.331094,
+    "thinking_token": {
+      "deteksi": 10358,
+      "total": 12676
+    },
+    "status_panggilan": {
+      "total": 6,
+      "ok": 6,
+      "refusal": 0,
+      "truncated": 0,
+      "error": 0,
+      "parse_gagal": 0,
+      "deteksi_kosong": 0
+    },
+    "pipeline": null
+  },
+  "alerts": [
+    {
+      "id": "SONAR-01",
+      "rule": "javascript:S5122",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/app.js",
+      "baris": 10,
+      "cwe": [
+        "CWE-346",
+        "CWE-942"
+      ],
+      "pesan": "Make sure that enabling CORS is safe here.",
+      "severity_sonar": "MAJOR",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Pemanggilan cors() di src/app.js memang mengizinkan semua origin, tetapi tidak mengaktifkan pengiriman kredensial lintas origin. Endpoint data mahasiswa dilindungi authenticate di src/middleware/auth.js, yang mewajibkan JWT valid melalui header Authorization: Bearer dan tidak menggunakan cookie sebagai autentikasi. Karena situs lain tidak otomatis memperoleh atau mengirim token tersebut, konfigurasi CORS ini sendiri tidak memungkinkan pembacaan data pribadi tanpa otorisasi.",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-02",
+      "rule": "jssecurity:S5131",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "cwe": [
+        "CWE-79"
+      ],
+      "pesan": "Reflected XSS via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Dalam fungsi khs di src/controllers/nilaiController.js, semester selalu berupa string, dan respons HTML pada baris 160 hanya dijalankan ketika !semester, sehingga nilai yang diinterpolasikan pasti string kosong. Input semester yang tidak kosong melewati cabang tersebut dan ditampilkan melalui escapeHtml(semester) di halamanKhs. Karena itu, input pengguna tidak dapat menyisipkan HTML atau skrip melalui lokasi yang dilaporkan.",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-03",
+      "rule": "jssecurity:S5131",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 170,
+      "cwe": [
+        "CWE-79"
+      ],
+      "pesan": "Reflected XSS via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Parameter req.query.semester pada khs diteruskan ke halamanKhs, yang menggunakan escapeHtml(semester) pada judul dan isi HTML sebelum respons dikirim di baris 170. Cabang respons kesalahan hanya dijalankan ketika semester bernilai string kosong, sehingga tidak memantulkan input berbahaya. Dengan demikian, alur parameter tersebut tidak menghasilkan reflected XSS (CWE-79) yang dilaporkan.",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-04",
+      "rule": "jssecurity:S3649",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/models/cutiModel.js",
+      "baris": 93,
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "pesan": "SQL Injection via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "false_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "cutiController.listAdmin memanggil listQuery sebelum meneruskan sort dan order ke cutiModel.listAdmin; listQuery membatasi sort pada kunci model.SORT dan order hanya pada asc atau desc. Walaupun nilai asli sort dan order kemudian diinterpolasikan ke ORDER BY, keduanya telah melewati allowlist sehingga tidak dapat memuat sintaks SQL arbitrer. Nilai pola, limit, offset, dan KEY dikirim sebagai parameter query, sehingga alur ini tidak menghasilkan SQL Injection (CWE-89).",
+      "tanda": []
+    },
+    {
+      "id": "SONAR-05",
+      "rule": "jssecurity:S3649",
+      "tipe": "VULNERABILITY",
+      "sumber": "issue",
+      "file": "src/models/nilaiModel.js",
+      "baris": 124,
+      "cwe": [
+        "CWE-20",
+        "CWE-89"
+      ],
+      "pesan": "SQL Injection via unsanitized user input",
+      "severity_sonar": "BLOCKER",
+      "severity_asal": "sonar",
+      "putusan": "true_positive",
+      "putusan_asal": "verifikasi-model",
+      "keyakinan": "high",
+      "alasan": "Fungsi khs di src/controllers/nilaiController.js menerima req.query.semester sebagai string tidak kosong tanpa validasi SEMESTER_RE. Nilai tersebut diteruskan ke publishedBySemester di src/models/nilaiModel.js dan disisipkan langsung ke SQL melalui '${semester}', sementara hanya mahasiswaId yang diparameterisasi. Mahasiswa yang lolos autentikasi dan requireConsent dapat memasukkan sintaks SQL untuk mengubah kondisi kueri, sehingga CWE-89 benar-benar dapat dieksploitasi.",
+      "tanda": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "T-01",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 55,
+      "fungsi": "listFrom",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter query q dari endpoint daftar mahasiswa diolah menjadi pola oleh listQuery, lalu disisipkan langsung ke literal SQL. Pengolahan tersebut hanya mengamankan karakter wildcard, bukan tanda kutip SQL, sehingga pengguna endpoint admin dapat menyisipkan ekspresi atau subquery. Parameterisasi limit dan offset tidak melindungi bagian pencarian ini.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "7856b7607a83b706",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 52,
+        "baris": [
+          "  FROM mahasiswa m",
+          "  JOIN users u ON u.id = m.user_id",
+          "  WHERE ('${pola}' IS NULL",
+          "    OR m.nim ILIKE '${pola}' OR m.nama ILIKE '${pola}' OR u.email ILIKE '${pola}')`;",
+          "",
+          "exports.list = async ({ pola, orderBy, limit, offset }) => {",
+          "  const from = listFrom(pola);"
+        ]
+      }
+    },
+    {
+      "id": "T-02",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 145,
+      "fungsi": "exports.updateByUserId",
+      "jenis": "SQL Injection melalui nama kolom",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Nama properti body PUT /api/mahasiswa/me diteruskan oleh exports.updateMe dan dipakai langsung untuk membentuk bagian SET. Mahasiswa dapat mengirim nama properti yang mengandung sintaks SQL, termasuk assignment tambahan dengan subquery untuk menyalin data sensitif ke field profil yang dikembalikan. Placeholder hanya melindungi nilai properti, sedangkan nama kolom tidak dibatasi atau diamankan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "83075a9b4582fdea",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 142,
+        "baris": [
+          "    const kolom = Object.keys(d);",
+          "    const set = kolom.map((k, i) => `${k} = $${i + 2}`).join(', ');",
+          "    const { rows } = await client.query(",
+          "      `UPDATE mahasiswa SET ${set}, updated_at = now()",
+          "       WHERE user_id = $1",
+          "       RETURNING id`,",
+          "      [userId, ...kolom.map((k) => d[k])]"
+        ]
+      }
+    },
+    {
+      "id": "T-03",
+      "file": "src/models/nilaiModel.js",
+      "baris": 133,
+      "fungsi": "exports.publishedBySemester",
+      "jenis": "SQL Injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter semester pada GET /api/nilai/me/khs hanya diperiksa sebagai string tidak kosong oleh exports.khs sebelum disisipkan langsung ke SQL. Mahasiswa yang dapat mengakses endpoint ini dapat menyisipkan kondisi SQL untuk melewati filter kepemilikan maupun status published dan membaca nilai mahasiswa lain. Parameterisasi mahasiswaId tidak mengamankan nilai semester yang diinterpolasi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "d9fa5fdb7e08aca0",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 130,
+        "baris": [
+          "     JOIN mata_kuliah mk ON mk.id = k.mata_kuliah_id",
+          "     WHERE ks.mahasiswa_id = $1",
+          "       AND n.status = 'published'",
+          "       AND ks.semester = '${semester}'",
+          "     ORDER BY mk.kode`,",
+          "    [mahasiswaId]",
+          "  );"
+        ]
+      }
+    },
+    {
+      "id": "T-04",
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "fungsi": "PUT /:id/status",
+      "jenis": "Otorisasi keputusan cuti tidak diterapkan",
+      "cwe": [
+        "CWE-862"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Route perubahan status cuti hanya dilindungi authenticate, tanpa authorize('admin'). Controller menerima ID pengajuan dari URL dan memutuskan pengajuan tersebut tanpa pemeriksaan kepemilikan atau peran tambahan. Akibatnya, mahasiswa yang terautentikasi dapat menyetujui atau menolak pengajuan cuti sendiri maupun milik mahasiswa lain.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "cac20721db470491",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 14,
+        "baris": [
+          "",
+          "router.get('/', authorize('admin'), c.listAdmin);",
+          "router.get('/:id', authorize('admin'), c.getById);",
+          "router.put('/:id/status', c.updateStatus);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "T-05",
+      "file": "src/models/cutiModel.js",
+      "baris": 53,
+      "fungsi": "exports.findOwned",
+      "jenis": "IDOR pembacaan pengajuan cuti",
+      "cwe": [
+        "CWE-639"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "ID pengajuan dari GET /api/cuti/me/:id digunakan untuk mengambil data, tetapi parameter mahasiswaId yang diberikan controller tidak dipakai dalam kondisi SQL. Mahasiswa yang mengetahui UUID pengajuan orang lain dapat membaca alasan cuti, alamat, nomor telepon, dan catatan admin. Validasi UUID hanya memeriksa format dan tidak menggantikan pemeriksaan kepemilikan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "f8039fdb4f671e02",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 50,
+        "baris": [
+          "",
+          "exports.findOwned = async (id, mahasiswaId) => {",
+          "  const { rows } = await pool.query(",
+          "    `${DETAIL_SELECT} WHERE c.id = $2`,",
+          "    [KEY, id]",
+          "  );",
+          "  return rows[0] || null;"
+        ]
+      }
+    },
+    {
+      "id": "T-06",
+      "file": "src/models/profilModel.js",
+      "baris": 38,
+      "fungsi": "exports.removeEmail",
+      "jenis": "IDOR penghapusan email tambahan",
+      "cwe": [
+        "CWE-639"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Endpoint DELETE /api/mahasiswa/me/email/:id meneruskan ID email dan identitas mahasiswa, tetapi query penghapusan hanya mencocokkan ID email. Mahasiswa yang mengetahui UUID email tambahan milik orang lain dapat menghapusnya. Parameter mahasiswaId diabaikan sehingga tidak ada pembatasan penghapusan pada pemilik data.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "d8d5d04431bef0aa",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 35,
+        "baris": [
+          "",
+          "exports.removeEmail = async (id, mahasiswaId) => {",
+          "  const { rowCount } = await pool.query(",
+          "    'DELETE FROM email_mahasiswa WHERE id = $1',",
+          "    [id]",
+          "  );",
+          "  return rowCount > 0;"
+        ]
+      }
+    },
+    {
+      "id": "T-07",
+      "file": "src/controllers/cutiController.js",
+      "baris": 50,
+      "fungsi": "exports.create",
+      "jenis": "Mass Assignment status cuti",
+      "cwe": [
+        "CWE-915"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Body POST /api/cuti/me dapat menyertakan status yang langsung ditambahkan ke data pengajuan tanpa validasi kewenangan. cutiModel.create kemudian menyimpan nilai tersebut melalui COALESCE, sehingga mahasiswa dapat membuat pengajuan dengan status disetujui tanpa keputusan admin. Status awal tidak ditetapkan secara wajib menjadi diajukan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "6934101fd7ff5259",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 47,
+        "baris": [
+          "    data.dokumen_id = dokumenId;",
+          "  }",
+          "",
+          "  if (req.body?.status) data.status = req.body.status;",
+          "  const id = await model.create({ ...data, mahasiswa_id: mahasiswaId });",
+          "  ",
+          "  const row = await model.findById(id);"
+        ]
+      }
+    },
+    {
+      "id": "T-08",
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 96,
+      "fungsi": "exports.updateMe",
+      "jenis": "Mass Assignment profil mahasiswa",
+      "cwe": [
+        "CWE-915"
+      ],
+      "kategori_owasp": "A01",
+      "penjelasan": "Seluruh properti body PUT /api/mahasiswa/me, selain rekening, diteruskan ke model sebagai kolom yang akan diperbarui. Tanpa perlu menyisipkan SQL, mahasiswa dapat mengubah atribut seperti user_id, nim, nisn, dan field lain yang bukan sekadar data domisili atau kontak. Tidak ada allowlist field untuk mencegah perubahan pengaitan kepemilikan dan identitas akademik melalui endpoint layanan mandiri.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "14b02101d032ab8a",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 93,
+        "baris": [
+          "};",
+          "",
+          "exports.updateMe = async (req, res) => {",
+          "  const data = { ...req.body };",
+          "  delete data.rekening;",
+          "",
+          "  const rekeningBody = req.body?.rekening;"
+        ]
+      }
+    },
+    {
+      "id": "T-09",
+      "file": "src/controllers/nilaiController.js",
+      "baris": 120,
+      "fungsi": "halamanKhs",
+      "jenis": "Injeksi HTML tersimpan",
+      "cwe": [
+        "CWE-79"
+      ],
+      "kategori_owasp": "A05",
+      "penjelasan": "Nama mata kuliah yang disimpan melalui endpoint admin dapat mengandung markup, lalu dimasukkan langsung ke respons HTML KHS sebagai i.nama tanpa escapeHtml. Nilai tersebut dapat menyisipkan elemen, tautan, atau CSS untuk memalsukan tampilan dokumen KHS mahasiswa. CSP dari helmet membatasi eksekusi skrip, tetapi tidak menetralkan injeksi HTML ini.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "a7ba466aa1a06352",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 117,
+        "baris": [
+          "  const baris = items.map((i) => `",
+          "      <tr>",
+          "        <td>${escapeHtml(i.kode)}</td>",
+          "        <td>${i.nama}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.sks)}</td>",
+          "        <td class=\"angka\">${escapeHtml(i.nilai_huruf)}</td>",
+          "      </tr>`).join('');"
+        ]
+      }
+    },
+    {
+      "id": "T-10",
+      "file": "src/models/krsModel.js",
+      "baris": 46,
+      "fungsi": "exports.addItem",
+      "jenis": "Race Condition pemeriksaan status KRS",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A06",
+      "penjelasan": "Permintaan penambahan mata kuliah memeriksa status draft di controller sebelum menjalankan INSERT yang terpisah. Mahasiswa dapat mengirim permintaan paralel sehingga status berubah menjadi submitted atau locked setelah pemeriksaan, tetapi item tetap ditambahkan. INSERT tidak memeriksa kembali status dan tidak memakai penguncian transaksi yang menyatukan pemeriksaan dengan perubahan item.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "4c79b365c8083c4b",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 43,
+        "baris": [
+          "",
+          "exports.addItem = async (headerId, mataKuliahId) => {",
+          "  const { rows } = await pool.query(",
+          "    'INSERT INTO krs (krs_semester_id, mata_kuliah_id) VALUES ($1, $2) RETURNING id',",
+          "    [headerId, mataKuliahId]",
+          "  );",
+          "  return rows[0].id;"
+        ]
+      }
+    },
+    {
+      "id": "T-11",
+      "file": "src/models/krsModel.js",
+      "baris": 65,
+      "fungsi": "exports.removeItem",
+      "jenis": "Race Condition penghapusan item KRS",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A06",
+      "penjelasan": "Status draft diperiksa saat controller membaca item, sedangkan DELETE berikutnya hanya mencocokkan ID item. Permintaan penghapusan yang berjalan paralel dengan submit atau penguncian dapat menghapus item setelah KRS tidak lagi berstatus draft. Tidak ada pemeriksaan status pada operasi penghapusan maupun transaksi dengan penguncian untuk mencegah penggunaan hasil pemeriksaan yang sudah kedaluwarsa.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "fff54d617caa9aa2",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 62,
+        "baris": [
+          "};",
+          "",
+          "exports.removeItem = async (itemId) => {",
+          "  await pool.query('DELETE FROM krs WHERE id = $1', [itemId]);",
+          "};",
+          "",
+          "// Update hanya berhasil kalau status saat ini sama dengan `from`"
+        ]
+      }
+    },
+    {
+      "id": "T-12",
+      "file": "src/controllers/krsController.js",
+      "baris": 110,
+      "fungsi": "exports.submit",
+      "jenis": "Race Condition validasi kuota SKS",
+      "cwe": [
+        "CWE-367"
+      ],
+      "kategori_owasp": "A06",
+      "penjelasan": "Daftar item dan total SKS dibaca sebelum transisi ke submitted, tanpa transaksi yang menjaga konsistensi daftar tersebut. Mahasiswa dapat menambahkan mata kuliah secara paralel setelah perhitungan kuota tetapi sebelum transisi, sehingga KRS yang melebihi kuota tetap berhasil diajukan. Operasi transition hanya mencocokkan status draft dan tidak memastikan bahwa total SKS yang divalidasi masih berlaku.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "1d9244ccaf4cdad7",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 107,
+        "baris": [
+          "      { kuota, diajukan: total });",
+          "  }",
+          "",
+          "  const updated = await model.transition(header.id, 'draft', 'submitted');",
+          "  if (!updated) throw new AppError(409, 'CONFLICT', 'KRS tidak dalam status draft');",
+          "",
+          "  res.json({ success: true, data: updated });"
+        ]
+      }
+    },
+    {
+      "id": "T-13",
+      "file": "src/models/profilModel.js",
+      "baris": 29,
+      "fungsi": "exports.createEmail",
+      "jenis": "Race Condition batas jumlah email",
+      "cwe": [
+        "CWE-362"
+      ],
+      "kategori_owasp": "A06",
+      "penjelasan": "Batas lima email tambahan diperiksa menggunakan count dalam INSERT, tetapi tidak ada penguncian yang menserialisasi penambahan untuk mahasiswa yang sama. Beberapa permintaan paralel dapat sama-sama melihat jumlah di bawah batas dan seluruhnya melakukan INSERT. Akibatnya, mahasiswa dapat melewati batas jumlah email yang diterapkan endpoint.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "6b5c1cc9a6739875",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 26,
+        "baris": [
+          "  const { rows } = await pool.query(",
+          "    `INSERT INTO email_mahasiswa (mahasiswa_id, tipe, email)",
+          "     SELECT $1, $2, $3",
+          "     WHERE (SELECT count(*) FROM email_mahasiswa WHERE mahasiswa_id = $1) < $4",
+          "     RETURNING id, tipe, email, created_at`,",
+          "    [mahasiswaId, tipe, email, maks]",
+          "  );"
+        ]
+      }
+    },
+    {
+      "id": "T-14",
+      "file": "src/controllers/authController.js",
+      "baris": 20,
+      "fungsi": "exports.register",
+      "jenis": "Regular Expression Denial of Service",
+      "cwe": [
+        "CWE-1333"
+      ],
+      "kategori_owasp": "A06",
+      "penjelasan": "Email dari endpoint registrasi diuji dengan EMAIL_RE sebelum pemeriksaan batas panjang 255 karakter. Email panjang berisi banyak titik dan karakter akhir yang menggagalkan pencocokan dapat memicu backtracking kuadratik karena bagian sebelum dan sesudah titik dapat mencocokkan karakter yang sama. Evaluasi regex berlangsung sinkron dan dapat memblokir event loop Node.js melalui permintaan tanpa autentikasi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "fingerprint": "101413e08dd3ad1c",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 17,
+        "baris": [
+          "exports.register = async (req, res) => {",
+          "  const { email, password } = readCredentials(req.body);",
+          "",
+          "  if (!EMAIL_RE.test(email) || email.length > 255) {",
+          "    throw new AppError(400, 'VALIDATION_ERROR', 'Format email tidak valid');",
+          "  }",
+          "  // bcrypt hanya membaca 72 byte pertama"
+        ]
+      }
+    },
+    {
+      "id": "T-15",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Pembatasan percobaan login tidak tersedia",
+      "cwe": [
+        "CWE-307"
+      ],
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint login langsung menjalankan pemeriksaan kredensial tanpa pembatasan percobaan berdasarkan akun atau sumber permintaan pada kode aplikasi. Pencatatan riwayat login tidak membatasi percobaan berikutnya, sehingga tidak ada hambatan aplikasi terhadap brute force atau credential stuffing. Temuan ini merupakan hardening karena keberhasilan pengambilalihan akun tetap bergantung pada kredensial yang ditebak.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "fingerprint": "65207dc305893411",
+      "tanda": [],
+      "potongan_kode": {
+        "mulai": 2,
+        "baris": [
+          "const auth = require('../controllers/authController');",
+          "",
+          "router.post('/register', auth.register);",
+          "router.post('/login', auth.login);",
+          "",
+          "module.exports = router;",
+          ""
+        ]
+      }
+    }
+  ]
+}

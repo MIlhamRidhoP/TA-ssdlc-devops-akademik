@@ -576,7 +576,8 @@
     if (state.demo) bannerDemo();
   };
   const bannerDemo = () => tampilBanner('demo',
-    'Mode demo. Data eksperimen 19 Okt 2026 (eksperimen/seeded, commit 97cfb00): tiga vendor, satu run masing-masing, dijalankan dari CLI. '
+    'Mode demo. Data eksperimen dari fixture lokal, keduanya di branch eksperimen/seeded dan dijalankan dari CLI: '
+    + 'batch 19 Okt 2026 (commit 97cfb00, satu run per vendor) dan batch 22 Okt 2026 (commit 6f7e729, tiga run per vendor). '
     + 'Branch feat/prompt-v2 memuat rekaman run CI #54 yang benar-benar berjalan di GitHub Actions, lengkap dengan status tiap job.',
     { label: 'Keluar dari mode demo', fn: () => keluarDemo() });
 

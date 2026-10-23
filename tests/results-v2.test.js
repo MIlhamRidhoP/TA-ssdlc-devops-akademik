@@ -18,6 +18,11 @@ const acuan = require('./fixtures/acuan-skor-20261019.json');
 const skemaV2 = require('../docs/design/results-v2.schema.json');
 const skemaV1 = require('../docs/design/results.schema.json');
 const fixtureV2 = [1, 2, 3].map((n) => require(`../dashboard/fixtures/v2/eksperimen/seeded/${n}.json`));
+// Batch 22 Okt 2026: sembilan run, tiga vendor kali tiga run, diimpor ke fixture demo supaya tiap
+// run yang dinilai di paper bisa dibuka di dashboard. Sengaja di luar fixtureV2: berkas ini tidak
+// membawa blok eksperimen, sedangkan fixtureV2 dipakai tes yang memang menuntut blok itu.
+const fixture22Okt = [2211, 2212, 2213, 2221, 2222, 2223, 2231, 2232, 2233]
+  .map((n) => require(`../dashboard/fixtures/v2/eksperimen/seeded/${n}.json`));
 // Rekaman run CI #54: hasil yang benar-benar terbit, dipakai mode demo untuk menggambar graf
 // pipeline. Ikut diperiksa di sini supaya index demo dan berkasnya tidak pernah berbeda.
 // Fixture contoh lapis 2: alert dan temuan run #54 ditambah saran yang disusun sendiri sebagai
@@ -26,6 +31,7 @@ const fixtureV2 = [1, 2, 3].map((n) => require(`../dashboard/fixtures/v2/eksperi
 // berkas demo, tetapi bentuknya harus persis sama dengan yang dihasilkan pipeline sungguhan.
 const fixtureSemua = [
   ...fixtureV2,
+  ...fixture22Okt,
   require('../dashboard/fixtures/v2/feat/prompt-v2/54.json'),
   require('../dashboard/fixtures/v2/contoh/rekomendasi-ai.json'),
   require('../dashboard/fixtures/v2/contoh/gabungan.json'),

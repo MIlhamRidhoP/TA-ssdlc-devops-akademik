@@ -126,6 +126,22 @@
       ],
       "sumber": ["https://cwe.mitre.org/data/definitions/639.html"]
     },
+    "CWE-755": {
+      "id": "CWE-755",
+      "judul": "Kondisi luar biasa tidak ditangani dengan benar",
+      "langkah": [
+        "Pasang penangan error global supaya error yang tidak terduga tetap tertangani dan tidak lolos apa adanya ke klien.",
+        "Kirim pesan generik ke klien, lalu catat detail error di sisi server untuk investigasi; halaman debug hanya untuk pengembangan.",
+        "Bedakan status respons: 4xx untuk kesalahan dari klien dan 5xx untuk kegagalan server yang tidak terduga.",
+        "Pantau respons 5xx, karena itu tanda aplikasi gagal untuk masukan tertentu."
+      ],
+      "sumber": [
+        "https://cwe.mitre.org/data/definitions/755.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
+      ],
+      "perlu_dicek": false,
+      "catatan_verifikasi": "Diverifikasi manual 2026-10-23. Halaman MITRE tanpa Potential Mitigations, hanya deskripsi bahwa produk tidak menangani atau salah menangani suatu kondisi luar biasa; langkah berasal dari OWASP Error Handling Cheat Sheet, bukan dari MITRE."
+    },
     "CWE-770": {
       "id": "CWE-770",
       "judul": "Alokasi sumber daya tanpa batas atau pembatasan laju",
@@ -149,6 +165,19 @@
       "sumber": ["https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"],
       "perlu_dicek": false,
       "catatan_verifikasi": "Diverifikasi manual 2026-10-20. Halaman MITRE tanpa Potential Mitigations; langkah dicocokkan dengan bagian Rate limiting, Session, dan User lockout di OWASP Denial of Service Cheat Sheet."
+    },
+    "CWE-841": {
+      "id": "CWE-841",
+      "judul": "Urutan alur kerja tidak ditegakkan",
+      "langkah": [
+        "Wajibkan pengguna menyelesaikan langkah-langkah alur kerja dalam urutan yang benar sesuai logika bisnisnya.",
+        "Periksa di sisi server bahwa setiap langkah sebelumnya sudah selesai, dan cegah langkah dilewati, diulang, atau dikerjakan di luar urutan."
+      ],
+      "sumber": [
+        "https://cwe.mitre.org/data/definitions/841.html"
+      ],
+      "perlu_dicek": false,
+      "catatan_verifikasi": "Diverifikasi manual 2026-10-23. Halaman MITRE tanpa Potential Mitigations, hanya deskripsi bahwa produk tidak memastikan aktor melakukan perilaku dalam urutan yang diwajibkan; langkah berasal dari OWASP Web Security Testing Guide WSTG-BUSL-06, Testing for the Circumvention of Work Flows, bukan dari MITRE. URL panduan itu ada di owasp.org, yang di luar sumber_diizinkan, jadi tidak dicantumkan di sumber."
     },
     "CWE-862": {
       "id": "CWE-862",
