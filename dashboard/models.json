@@ -25,7 +25,7 @@
     {
       "vendor": "google",
       "id": "gemini-3.1-pro-preview",
-      "label": "Gemini 3.1 Pro Preview",
+      "label": "Gemini 3.1 Pro",
       "jalur": "v2",
       "bawaan": true,
       "secret": "GEMINI_API_KEY",
