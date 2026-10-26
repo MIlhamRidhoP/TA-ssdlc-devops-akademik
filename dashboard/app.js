@@ -1259,8 +1259,16 @@
   // DIBACA tidak pernah ikut berpindah: itu kontrol terpisah di rail.
   const PENJELASAN_SKENARIO = {
     A: 'Hanya SonarCloud. Tanpa panggilan LLM, tanpa biaya. Hasilnya terbit dalam format lama (skema 1) yang tidak ditampilkan dashboard ini.',
-    B: 'Satu panggilan deteksi untuk seluruh kode, lalu satu panggilan verifikasi per alert SonarCloud.',
+    B: 'Satu panggilan deteksi untuk seluruh kode, lalu satu panggilan verifikasi per alert dari perkakas SAST yang dipilih.',
     C: 'Satu panggilan deteksi untuk seluruh kode, tanpa verifikasi. SonarCloud tetap berjalan tetapi alertnya tidak dikirim ke model dan tidak ikut di hasil.',
+  };
+
+  // Nomor bagian drawer dihitung dari bagian yang TERLIHAT. Angka tetap di HTML membuat nomornya
+  // loncat (1, 3, 4) begitu satu bagian disembunyikan, misalnya Perkakas SAST di skenario A dan C
+  // atau Model di skenario A, dan loncatan itu terbaca seolah ada langkah yang hilang.
+  const nomori = () => {
+    document.querySelectorAll('#run-form .bagian:not([hidden]) .bagian-no')
+      .forEach((n, i) => { n.textContent = String(i + 1); });
   };
 
   const renderDrawer = () => {
@@ -1315,6 +1323,7 @@
     $('branch-hint').textContent = skenario === 'B' && branchSesuai(branchJalan()) && branchJalan()?.name !== 'main'
       ? 'Analisis Sonar diambil dari main; kecocokan kode diperiksa lewat hash tree src/ sebelum ada panggilan berbayar.'
       : '';
+    nomori();
     perbaruiTombolJalankan();
   };
 

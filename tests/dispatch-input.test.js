@@ -224,6 +224,42 @@ test('perubahan pilihan sast memicu render ulang drawer', () => {
   assert.match(baris, /input\[name="sast"\]/, 'radio sast harus ikut memicu renderDrawer');
 });
 
+test('nomor bagian drawer dihitung dari bagian yang terlihat, bukan dari angka di HTML', () => {
+  // Ditemukan lewat tangkapan layar pengguna: di skenario A bagian Perkakas SAST disembunyikan dan
+  // drawer menampilkan 1 lalu 3. Tes statis di bawah hanya membaca HTML mentah, jadi ia lolos
+  // sementara yang terlihat salah; yang diuji di sini adalah fungsinya, dengan DOM tiruan.
+  const i = app.indexOf('  const nomori = () => {');
+  const j = app.indexOf('\n  };', i);
+  assert.ok(i > 0 && j > i, 'nomori tidak ditemukan di dashboard/app.js');
+  const jalankan = (terlihat) => {
+    const simpul = terlihat.map(() => ({ textContent: 'x' }));
+    let selektor = null;
+    const document = { querySelectorAll: (s) => { selektor = s; return simpul; } };
+    // eslint-disable-next-line no-new-func
+    new Function('document', `${app.slice(i, j + 5)}\n  nomori();`)(document);
+    return { teks: simpul.map((n) => n.textContent), selektor };
+  };
+  // Tiga bagian terlihat (skenario A: Skenario, Branch, dan satu lagi) bernomor 1, 2, 3.
+  const a = jalankan([1, 2, 3]);
+  assert.deepEqual(a.teks, ['1', '2', '3']);
+  // Yang disaring selektornya: hanya bagian yang tidak tersembunyi yang dinomori.
+  assert.match(a.selektor, /\.bagian:not\(\[hidden\]\) \.bagian-no/, 'harus hanya menomori bagian yang terlihat');
+  assert.deepEqual(jalankan([]).teks, [], 'tanpa bagian terlihat tidak boleh melempar');
+  // renderDrawer harus benar-benar memanggilnya, kalau tidak fungsinya ada tetapi tidak pernah jalan.
+  const render = app.slice(app.indexOf('  const renderDrawer = () => {'), app.indexOf('  const konfirmasiV2'));
+  assert.match(render, /\bnomori\(\);/, 'renderDrawer harus memanggil nomori()');
+});
+
+test('kartu skenario tidak lagi menyebut SonarCloud untuk B dan C, tetapi A tetap', () => {
+  // A memakai jalur v1 yang memang hanya SonarCloud. B dan C ikut sumbu sast, jadi tidak boleh
+  // memaku satu perkakas di teksnya.
+  const html = fs.readFileSync(path.join(ROOT, 'dashboard', 'index.html'), 'utf8');
+  const kartu = (v) => html.match(new RegExp(`name="skenario" value="${v}"[^]*?<small>([^<]*)</small>`))[1];
+  assert.match(kartu('A'), /SonarCloud saja/);
+  assert.equal(/SonarCloud/.test(kartu('B')), false, `kartu B: "${kartu('B')}"`);
+  assert.equal(/SonarCloud/.test(kartu('C')), false, `kartu C: "${kartu('C')}"`);
+});
+
 test('drawer punya pemilih sast, dan nomor bagiannya berurut', () => {
   const html = fs.readFileSync(path.join(ROOT, 'dashboard', 'index.html'), 'utf8');
   assert.match(html, /id="sast-field"/, 'fieldset pemilih sast tidak ada di drawer');
