@@ -41,9 +41,18 @@ const periksaKombinasi = ({ sast, skenario, kondisi }) => {
 // Alert dari dua perkakas disatukan menjadi SATU daftar berurutan. Id tidak pernah diubah, jadi
 // tabrakan id adalah galat, bukan sesuatu yang diselesaikan diam-diam dengan penomoran ulang.
 //
-// Urutan: berkas, lalu baris, lalu id. Id dipakai sebagai pemutus seri terakhir supaya urutannya
-// tidak bergantung pada urutan masukan maupun pada perkakas mana yang dibaca lebih dulu.
-const urut = (a, b) => String(a.file ?? '').localeCompare(String(b.file ?? ''), 'en')
+// Urutan: PERKAKAS lebih dulu, lalu berkas, lalu baris, lalu id.
+//
+// Mengelompokkan per perkakas disengaja: seluruh alert Sonar muncul lebih dulu dan dalam urutan yang
+// persis sama dengan batch satu perkakas, sehingga lengan dua perkakas dapat dibandingkan baris demi
+// baris dengan angka yang sudah terbit. Mengurutkan per berkas lebih dulu akan menyelipkan alert
+// CodeQL di antara alert Sonar, dan perbandingan itu menjadi jauh lebih sulit dibaca.
+//
+// Id dipakai sebagai pemutus seri terakhir supaya urutannya tidak bergantung pada urutan masukan
+// maupun pada perkakas mana yang dibaca lebih dulu.
+const URUTAN_PERKAKAS = ['sonar', 'codeql'];
+const urut = (a, b) => URUTAN_PERKAKAS.indexOf(a.sumber_sast) - URUTAN_PERKAKAS.indexOf(b.sumber_sast)
+  || String(a.file ?? '').localeCompare(String(b.file ?? ''), 'en')
   || (a.baris ?? 0) - (b.baris ?? 0)
   || String(a.id).localeCompare(String(b.id), 'en');
 

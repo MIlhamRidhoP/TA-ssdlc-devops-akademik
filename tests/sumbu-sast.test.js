@@ -197,16 +197,46 @@ test('versi format yang tidak dikenal ditolak', () => {
 
 // ---------- 3. Penggabungan himpunan alert ----------
 
-test('penggabungan menyatukan dua himpunan tanpa menomori ulang, urut berkas lalu baris lalu id', () => {
+test('penggabungan menyatukan dua himpunan tanpa menomori ulang, perkakas lalu berkas lalu baris lalu id', () => {
   const hasil = sumbu.gabungAlert({ sonar: DUA_SONAR, codeql: DUA_CQL });
   assert.equal(hasil.length, 4);
   assert.deepEqual(hasil.map((a) => `${a.id}@${a.file}:${a.baris}`), [
     'SONAR-02@src/app.js:10',
-    'CQL-01@src/models/a.js:10',
     'SONAR-01@src/models/a.js:11',
+    'CQL-01@src/models/a.js:10',
     'CQL-02@src/routes/b.js:4',
   ]);
-  assert.deepEqual(hasil.map((a) => a.sumber_sast), ['sonar', 'codeql', 'sonar', 'codeql']);
+  assert.deepEqual(hasil.map((a) => a.sumber_sast), ['sonar', 'sonar', 'codeql', 'codeql']);
+});
+
+test('seluruh alert Sonar mendahului seluruh alert CodeQL, tanpa selang-seling', () => {
+  // Keputusan 26 Okt 2026: lengan dua perkakas memverifikasi SONAR-01..05 lebih dulu, baru CQL-xx,
+  // supaya urutan alert Sonar persis sama dengan batch satu perkakas dan keduanya bisa dibandingkan
+  // baris demi baris. Diuji dengan himpunan yang SENGAJA menggoda urutan per berkas: alert CodeQL
+  // di berkas yang secara alfabet lebih awal, dan di baris yang lebih kecil.
+  const sonar = [
+    { id: 'SONAR-01', rule: 'r', tipe: 'VULNERABILITY', sumber: 'issue', file: 'src/z.js', baris: 99, cwe: ['CWE-89'], pesan: 's1' },
+    { id: 'SONAR-02', rule: 'r', tipe: 'VULNERABILITY', sumber: 'issue', file: 'src/y.js', baris: 50, cwe: ['CWE-89'], pesan: 's2' },
+  ];
+  const codeql = [
+    alertCodeql(1, 'src/a.js', 1, 'js/sql-injection'),
+    alertCodeql(2, 'src/b.js', 2, 'js/path-injection'),
+  ];
+  const hasil = sumbu.gabungAlert({ sonar, codeql });
+  assert.deepEqual(hasil.map((a) => a.id), ['SONAR-02', 'SONAR-01', 'CQL-01', 'CQL-02']);
+
+  // Dinyatakan juga sebagai sifat, bukan hanya sebagai urutan yang kebetulan benar: indeks terakhir
+  // yang bersumber sonar harus lebih kecil dari indeks pertama yang bersumber codeql.
+  const sumberUrut = hasil.map((a) => a.sumber_sast);
+  const sonarTerakhir = sumberUrut.lastIndexOf('sonar');
+  const codeqlPertama = sumberUrut.indexOf('codeql');
+  assert.ok(sonarTerakhir < codeqlPertama, `sonar terakhir di ${sonarTerakhir}, codeql pertama di ${codeqlPertama}`);
+
+  // Urutan di dalam kelompok Sonar sama dengan urutan Sonar sendirian.
+  assert.deepEqual(
+    hasil.filter((a) => a.sumber_sast === 'sonar').map((a) => a.id),
+    sumbu.gabungAlert({ sonar }).map((a) => a.id),
+  );
 });
 
 test('urutan hasil penggabungan tidak bergantung urutan masukan', () => {
