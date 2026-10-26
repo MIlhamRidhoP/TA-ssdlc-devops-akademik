@@ -1,0 +1,554 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik/docs/design/results-v3.schema.json",
+  "title": "Hasil analisis keamanan per run, prompt v2 (results.json schema_version 2)",
+  "description": "Skema 3: skema 2 ditambah sumbu `sast`, yaitu perkakas analisis statis mana yang memasok alert. Alert bisa berasal dari lebih dari satu perkakas, sehingga id alert tidak lagi selalu berawalan SONAR, severity tidak lagi selalu dari SonarCloud, dan run mencatat perkakas yang memasoknya. Skema 2 tetap berlaku apa adanya untuk run satu perkakas dan berkasnya TIDAK perlu diubah. Selebihnya sama dengan skema 2: Keluaran jalur v2 (scripts/llm-scan.js dan scripts/llm-score.js) untuk Security Dashboard. Berbeda mendasar dari versi 1: alert Sonar dan temuan LLM adalah dua himpunan terpisah, status alert berasal dari putusan verifikasi model (bukan pencocokan lokasi dan CWE), dan tidak ada severity untuk temuan LLM. Ditulis oleh scripts/merge-results.js --v2. Naikkan schema_version bila ada perubahan yang tidak kompatibel.",
+  "type": "object",
+  "required": ["schema_version", "run", "alerts", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 3 },
+
+    "run": {
+      "type": "object",
+      "required": ["id", "nomor", "vendor", "model_diminta", "model_menjawab", "kondisi", "mulai", "selesai", "objek_uji", "sumber_sonar"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "integer", "description": "Pengenal run untuk dashboard; untuk data CLI dipakai nomor run dalam folder" },
+        "nomor": { "type": "integer" },
+        "repo": { "type": ["string", "null"], "description": "owner/repo; null untuk run yang dijalankan dari CLI" },
+        "asal": { "enum": ["workflow", "cli", null], "description": "Asal run. Tidak ada pada berkas yang terbit sebelum field ini, jadi null dan tidak-ada sama-sama berarti tidak diketahui" },
+        "vendor": { "enum": ["google", "anthropic", "openai", "gabungan", null], "description": "Vendor tunggal, atau gabungan bila hasil tiga vendor disatukan. null pada skenario A, yang tidak memanggil model sama sekali sehingga tidak punya vendor" },
+        "model_diminta": { "type": ["string", "null"], "description": "null pada mode gabungan, yang tidak punya satu model" },
+        "model_menjawab": { "type": ["string", "null"], "description": "Model yang benar-benar menjawab; dibandingkan dengan model_diminta sebagai bukti" },
+        "kondisi": { "type": "string", "description": "utama, sonar_di_deteksi, komentar_menyesatkan" },
+        "mulai": { "type": ["string", "null"], "format": "date-time" },
+        "selesai": { "type": ["string", "null"], "format": "date-time" },
+        "durasi_detik": { "type": ["integer", "null"], "minimum": 0 },
+        "objek_uji": {
+          "type": "object",
+          "required": ["commit", "tree_src"],
+          "additionalProperties": false,
+          "properties": {
+            "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+            "branch": { "type": ["string", "null"] },
+            "tree_src": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" }
+          }
+        },
+        "commit_kode": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "head": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" },
+            "bersih": { "type": ["boolean", "null"] }
+          }
+        },
+        "hash_prompt": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "system": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+            "user_deteksi": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+          }
+        },
+        "sumber_sonar": { "enum": ["beku", "api", null], "description": "Asal laporan SonarCloud. null untuk run yang memang tidak mengambilnya sama sekali: kondisi komentar_menyesatkan, dan skenario C yang tidak memakai alert Sonar. analisis_sonar dan sonar_beku sudah mengizinkan null untuk alasan yang sama." },
+        "analisis_sonar": {
+          "type": ["object", "null"],
+          "description": "Analisis SonarCloud yang dipakai run ini. tree_src harus sama dengan objek_uji.tree_src; itulah yang menjamin data Sonar cocok dengan kode yang dianalisis.",
+          "additionalProperties": false,
+          "properties": {
+            "tanggal": { "type": ["string", "null"] },
+            "revisi": { "type": ["string", "null"] },
+            "tree_src": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" }
+          }
+        },
+        "sonar_beku": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "sha256_isi": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+            "revisi": { "type": ["string", "null"] }
+          }
+        },
+        "sast": { "enum": ["sonar", "codeql", "keduanya"], "description": "Perkakas analisis statis pemasok alert. Sumbu TERPISAH dari kondisi dan skenario; tidak ada skenario D. Tidak ada pada run satu perkakas, dan yang tidak menyebutkannya adalah sonar" },
+        "codeql_beku": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "nama": { "type": ["string", "null"], "description": "Nama berkas beku saja, bukan path" },
+            "sha256_isi": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+            "jumlah_alert": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "biaya_usd": { "type": ["number", "null"], "minimum": 0 },
+        "thinking_token": {
+          "type": "object",
+          "description": "Token thinking yang dicatat vendor. Opsional: results.json yang terbit sebelum field ini ada tetap sah. null berarti tidak ada panggilan, bukan nol token.",
+          "additionalProperties": false,
+          "properties": {
+            "deteksi": { "type": ["integer", "null"], "minimum": 0 },
+            "total": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "status_panggilan": {
+          "type": "object",
+          "required": ["total", "ok"],
+          "additionalProperties": false,
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "ok": { "type": "integer", "minimum": 0 },
+            "refusal": { "type": "integer", "minimum": 0 },
+            "truncated": { "type": "integer", "minimum": 0 },
+            "error": { "type": "integer", "minimum": 0 },
+            "parse_gagal": { "type": "integer", "minimum": 0 },
+            "deteksi_kosong": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Panggilan deteksi yang lolos skema tetapi tidak berisi satu temuan pun. Opsional: hasil lama yang belum memuatnya tetap sah."
+            }
+          }
+        },
+        "vendor_dipakai": {
+          "type": "array",
+          "items": { "enum": ["google", "anthropic", "openai"] },
+          "description": "Vendor yang hasilnya benar-benar masuk penggabungan. Hanya ada pada mode gabungan."
+        },
+        "vendor_gagal": {
+          "type": "array",
+          "description": "Vendor yang hasilnya tidak bisa dipakai, beserta alasannya. Hanya ada pada mode gabungan.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["vendor", "alasan"],
+            "properties": {
+              "vendor": { "type": ["string", "null"] },
+              "alasan": { "type": "string" }
+            }
+          }
+        },
+        "per_vendor": {
+          "type": "object",
+          "description": "Biaya, token, dan status panggilan per vendor, plus penanda vendor yang gagal. Hanya ada pada mode gabungan.",
+          "additionalProperties": { "type": "object" }
+        },
+        "skenario": {
+          "enum": ["A", "B", "C"],
+          "description": "Skenario analisis TA. A = SAST saja (tanpa panggilan LLM), B = SAST + LLM dengan verifikasi alert, C = LLM saja tanpa SonarCloud. Tidak ada pada run lama; yang tidak menyebutkannya adalah B."
+        },
+        "mode_model": {
+          "enum": ["tunggal", "gabungan"],
+          "description": "Satu vendor, atau gabungan tiga vendor yang hasilnya disatukan. Tidak ada pada run lama; yang tidak menyebutkannya adalah tunggal."
+        },
+        "pipeline": {
+          "type": ["object", "null"],
+          "description": "Status job GitHub Actions. null untuk run CLI yang tidak lewat pipeline.",
+          "additionalProperties": { "type": ["string", "null"] }
+        },
+        "remediasi": {
+          "type": "object",
+          "description": "Ringkasan panggilan rekomendasi lapis 2. Biaya, token, dan status panggilannya terpisah dari deteksi dan verifikasi. Tidak ada pada run yang tidak menjalankan remediasi.",
+          "additionalProperties": false,
+          "required": ["status", "versi_prompt", "hash_prompt", "vendor", "model_diminta", "item_dikirim", "item_terisi", "tidak_konsisten", "status_panggilan"],
+          "properties": {
+            "status": { "enum": ["ok", "gagal", "tidak_dijalankan"] },
+            "alasan": { "type": ["string", "null"] },
+            "versi_prompt": { "type": "string" },
+            "hash_prompt": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["system", "task", "schema"],
+              "properties": {
+                "system": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "task": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "vendor": { "type": "string" },
+            "model_diminta": { "type": "string" },
+            "model_menjawab": { "type": ["string", "null"] },
+            "item_dikirim": { "type": "integer", "minimum": 0 },
+            "item_terisi": { "type": "integer", "minimum": 0 },
+            "tidak_konsisten": { "type": "integer", "minimum": 0 },
+            "usage": { "type": ["object", "null"] },
+            "biaya_usd": { "type": ["number", "null"] },
+            "status_panggilan": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["total", "ok", "refusal", "truncated", "error", "parse_gagal"],
+              "properties": {
+                "total": { "type": "integer", "minimum": 0 },
+                "ok": { "type": "integer", "minimum": 0 },
+                "refusal": { "type": "integer", "minimum": 0 },
+                "truncated": { "type": "integer", "minimum": 0 },
+                "error": { "type": "integer", "minimum": 0 },
+                "parse_gagal": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "waktu_mulai": { "type": ["string", "null"] },
+            "waktu_selesai": { "type": ["string", "null"] },
+            "durasi_ms": { "type": ["integer", "null"] }
+          }
+        }
+      }
+    },
+
+    "alerts": {
+      "type": "array",
+      "description": "Alert SonarCloud beserta putusan verifikasi model. Satu entri per alert yang dikirim ke model.",
+      "items": {
+        "type": "object",
+        "required": ["id", "cwe", "severity_asal", "putusan", "putusan_asal"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z]+-[0-9]{2,}$", "description": "Awalan menandai perkakasnya: SONAR untuk SonarCloud, CQL untuk CodeQL" },
+          "rule": { "type": ["string", "null"] },
+          "tipe": { "type": ["string", "null"], "description": "VULNERABILITY, SECURITY_HOTSPOT, CODE_SMELL; null bila laporan Sonar tidak menyebutkannya" },
+          "sumber": { "enum": ["issue", "hotspot", "codeql"] },
+          "file": { "type": ["string", "null"] },
+          "baris": { "type": ["integer", "null"] },
+          "cwe": { "type": "array", "items": { "type": "string", "pattern": "^CWE-[0-9]+$" } },
+          "pesan": { "type": ["string", "null"] },
+          "severity": { "type": ["string", "null"], "description": "Severity apa adanya dari perkakasnya, tidak diterjemahkan. Untuk CodeQL berisi security-severity" },
+          "severity_asal": { "enum": ["sonar", "codeql"] },
+          "sumber_sast": { "enum": ["sonar", "codeql"], "description": "Perkakas pemasok alert ini. Hanya ada pada run dua perkakas" },
+          "kembar_dengan": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z]+-[0-9]{2,}$" }, "description": "Id alert dari perkakas LAIN yang menunjuk item ground truth yang sama. Metadata pelaporan: kembar tidak digabung, masing-masing tetap mendapat panggilan verifikasi sendiri" },
+          "putusan": { "enum": ["true_positive", "false_positive", "uncertain", null], "description": "null berarti model tidak memberi putusan sah untuk alert ini" },
+          "putusan_asal": { "enum": ["verifikasi-model", "suara-terbanyak", "tanpa-verifikasi", null], "description": "Asal putusan alert. tanpa-verifikasi dipakai skenario A, yang memang tidak menjalankan verifikasi; bedanya dengan null penting, karena null berarti verifikasi dijalankan tetapi jawabannya tidak sah" },
+          "putusan_gabungan": {
+            "enum": ["true_positive", "false_positive", "uncertain", "tidak_sepakat"],
+            "description": "Putusan hasil suara terbanyak. tidak_sepakat berarti tidak ada putusan yang meraih minimal dua suara; alert tetap dipertahankan dan TIDAK dianggap false positive. Hanya ada pada mode gabungan."
+          },
+          "suara": { "type": "integer", "minimum": 0, "description": "Jumlah suara yang diraih putusan gabungan" },
+          "putusan_vendor": {
+            "type": "object",
+            "description": "Putusan tiap vendor apa adanya, termasuk null bila vendor itu tidak memberi putusan sah",
+            "additionalProperties": { "enum": ["true_positive", "false_positive", "uncertain", null] }
+          },
+          "keyakinan_vendor": {
+            "type": "object",
+            "additionalProperties": { "enum": ["high", "medium", "low"] }
+          },
+          "alasan_vendor": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "keyakinan": { "enum": ["high", "medium", "low", null] },
+          "alasan": { "type": ["string", "null"] },
+          "tanda": { "type": "array", "items": { "type": "string" } },
+          "rekomendasi_ai": {
+            "type": ["object", "null"],
+            "description": "Saran perbaikan lapis 2 dari model untuk item ini. Tidak ada pada run yang tidak menjalankan remediasi; null bila item ini tidak diberi saran.",
+            "additionalProperties": false,
+            "required": ["asal", "vendor", "model_diminta", "versi_prompt", "hash_prompt", "cwe_dirujuk", "langkah", "catatan_risiko", "tidak_konsisten"],
+            "properties": {
+              "asal": { "const": "model" },
+              "vendor": { "type": "string" },
+              "model_diminta": { "type": "string" },
+              "model_menjawab": { "type": ["string", "null"] },
+              "versi_prompt": { "type": "string" },
+              "hash_prompt": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["system", "task", "schema"],
+                "properties": {
+                  "system": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "task": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                }
+              },
+              "cwe_dirujuk": { "type": "string", "pattern": "^CWE-\\d+$" },
+              "langkah": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 4 },
+              "potongan_kode_usulan": { "type": ["string", "null"] },
+              "catatan_risiko": { "type": "string" },
+              "tidak_konsisten": { "type": "boolean", "description": "true bila cwe_dirujuk tidak termasuk CWE item ini" }
+            }
+          }
+        }
+      }
+    },
+
+    "findings": {
+      "type": "array",
+      "description": "Temuan hasil panggilan deteksi LLM. Tidak punya severity: v2 memakai keyakinan dan sifat.",
+      "items": {
+        "type": "object",
+        "required": ["id", "file", "baris", "jenis", "cwe", "sifat", "keyakinan", "fingerprint"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^T-[0-9]{2,}$" },
+          "file": { "type": ["string", "null"] },
+          "baris": { "type": ["integer", "null"] },
+          "fungsi": { "type": ["string", "null"] },
+          "jenis": { "type": "string" },
+          "cwe": { "type": "array", "items": { "type": "string", "pattern": "^CWE-[0-9]+$" } },
+          "kategori_owasp": { "type": ["string", "null"] },
+          "penjelasan": { "type": ["string", "null"] },
+          "sifat": { "enum": ["vulnerability", "hardening"] },
+          "keyakinan": { "enum": ["high", "medium", "low"] },
+          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{16}$", "description": "sha256 16 heksa dari file:baris|cwe|jenis" },
+          "tanda": { "type": "array", "items": { "type": "string" } },
+          "penjelasan_vendor": {
+            "type": "object",
+            "description": "Penjelasan tiap vendor yang menemukan temuan ini. Hanya ada pada mode gabungan; justru perbedaan alasannya yang berguna dibaca.",
+            "additionalProperties": { "type": "string" }
+          },
+          "vendor_penemu": {
+            "type": "array",
+            "items": { "enum": ["google", "anthropic", "openai"] },
+            "description": "Vendor yang menemukan temuan ini. Hanya ada pada mode gabungan."
+          },
+          "kesepakatan": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Berapa vendor yang menemukan temuan ini. Hanya ada pada mode gabungan."
+          },
+          "potongan_kode": {
+            "type": ["object", "null"],
+            "description": "Jendela baris di sekitar temuan, dihitung dari worktree objek uji saat produksi. null bila worktree tidak tersedia.",
+            "additionalProperties": false,
+            "properties": {
+              "mulai": { "type": "integer", "minimum": 1 },
+              "baris": { "type": "array", "items": { "type": "string" }, "maxItems": 7 }
+            }
+          },
+          "rekomendasi_ai": {
+            "type": ["object", "null"],
+            "description": "Saran perbaikan lapis 2 dari model untuk item ini. Tidak ada pada run yang tidak menjalankan remediasi; null bila item ini tidak diberi saran.",
+            "additionalProperties": false,
+            "required": ["asal", "vendor", "model_diminta", "versi_prompt", "hash_prompt", "cwe_dirujuk", "langkah", "catatan_risiko", "tidak_konsisten"],
+            "properties": {
+              "asal": { "const": "model" },
+              "vendor": { "type": "string" },
+              "model_diminta": { "type": "string" },
+              "model_menjawab": { "type": ["string", "null"] },
+              "versi_prompt": { "type": "string" },
+              "hash_prompt": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["system", "task", "schema"],
+                "properties": {
+                  "system": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "task": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                }
+              },
+              "cwe_dirujuk": { "type": "string", "pattern": "^CWE-\\d+$" },
+              "langkah": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 4 },
+              "potongan_kode_usulan": { "type": ["string", "null"] },
+              "catatan_risiko": { "type": "string" },
+              "tidak_konsisten": { "type": "boolean", "description": "true bila cwe_dirujuk tidak termasuk CWE item ini" }
+            }
+          }
+        }
+      }
+    },
+
+    "eksperimen": {
+      "type": ["object", "null"],
+      "description": "Blok riset. Angka disalin apa adanya dari berkas skor llm-score.js; tidak dihitung ulang kecuali rata_rata, yang dinyatakan di sini.",
+      "required": ["sumber", "per_model"],
+      "additionalProperties": false,
+      "properties": {
+        "sumber": {
+          "type": "object",
+          "required": ["skor_utama"],
+          "additionalProperties": false,
+          "properties": {
+            "skor_utama": { "type": "string" },
+            "skor_triase_utama": { "type": ["string", "null"] },
+            "skor_triase_konservatif": { "type": ["string", "null"] },
+            "skor_sensitivitas": { "type": ["string", "null"] },
+            "commit_kode_scoring": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" },
+            "aturan_hardening": { "type": ["string", "null"] },
+            "objek_uji_commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" }
+          }
+        },
+        "sensitivitas": { "type": "boolean" },
+        "label_alert_sensitivitas": {
+          "type": ["object", "null"],
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": { "enum": ["nyata", "fp", "laten", null] },
+              "sumber": { "enum": ["otomatis", "manual", "paksa", null] }
+            }
+          }
+        },
+        "label_alert": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": { "enum": ["nyata", "fp", "laten", null] },
+              "sumber": { "enum": ["otomatis", "manual", "paksa", null] }
+            }
+          }
+        },
+        "per_model": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["vendor", "model", "jumlah_run", "runs", "rata_rata"],
+            "additionalProperties": false,
+            "properties": {
+              "vendor": { "enum": ["google", "anthropic", "openai"] },
+              "model": { "type": "string" },
+              "jumlah_run": { "type": "integer", "minimum": 1 },
+              "biaya_total_usd": { "type": ["number", "null"], "minimum": 0 },
+              "skenario_a": { "$ref": "#/$defs/metrik" },
+              "status_panggilan": {
+                "type": "object",
+                "additionalProperties": { "type": ["integer", "object", "null"] }
+              },
+              "runs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["run", "skenario_b", "skenario_c"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "run": { "type": "integer", "minimum": 1 },
+                    "biaya_usd": { "type": ["number", "null"], "minimum": 0 },
+                    "skenario_b": { "$ref": "#/$defs/varian" },
+                    "skenario_c": { "$ref": "#/$defs/varian" },
+                    "verifikasi": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "jumlah": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "identified_fp": { "type": "integer", "minimum": 0 },
+                            "missed_fp": { "type": "integer", "minimum": 0 },
+                            "misidentified_fp": { "type": "integer", "minimum": 0 },
+                            "correct_retention": { "type": "integer", "minimum": 0 }
+                          }
+                        },
+                        "metrik_fp_positif": { "$ref": "#/$defs/pr" },
+                        "sensitivitas": {
+                          "type": ["object", "null"],
+                          "description": "Verifikasi empat kategori dengan label SONAR-03 dipaksa nyata. Dari berkas skor sensitivitas.",
+                          "additionalProperties": false,
+                          "properties": {
+                            "jumlah": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "identified_fp": { "type": "integer", "minimum": 0 },
+                                "missed_fp": { "type": "integer", "minimum": 0 },
+                                "misidentified_fp": { "type": "integer", "minimum": 0 },
+                                "correct_retention": { "type": "integer", "minimum": 0 }
+                              }
+                            },
+                            "metrik_fp_positif": { "$ref": "#/$defs/pr" }
+                          }
+                        },
+                        "uncertain_dipertahankan": { "type": "array", "items": { "type": "string" } },
+                        "tanpa_hasil": { "type": "array", "items": { "type": "string" } }
+                      }
+                    }
+                  }
+                }
+              },
+              "rata_rata": {
+                "type": "object",
+                "required": ["skenario_b", "skenario_c"],
+                "additionalProperties": false,
+                "properties": {
+                  "skenario_b": { "$ref": "#/$defs/varian_rata" },
+                  "skenario_c": { "$ref": "#/$defs/varian_rata" }
+                }
+              }
+            }
+          }
+        },
+        "tabel_per_item": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "kelas": { "type": ["string", "null"] },
+              "klasifikasi": { "type": ["string", "null"] },
+              "sonar_a": { "type": ["string", "null"] },
+              "sonar_b": { "type": ["string", "null"] },
+              "per_model": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "skenario_b": { "type": ["object", "null"], "additionalProperties": { "type": ["integer", "null"] } },
+                    "skenario_c": { "type": ["object", "null"], "additionalProperties": { "type": ["integer", "null"] } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "pr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "precision": { "type": ["number", "null"] },
+        "recall": { "type": ["number", "null"] },
+        "f1": { "type": ["number", "null"] }
+      }
+    },
+    "metrik": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tp": { "type": "integer", "minimum": 0 },
+        "fp": { "type": "integer", "minimum": 0 },
+        "fn": { "type": "integer", "minimum": 0 },
+        "precision": { "type": ["number", "null"] },
+        "recall": { "type": ["number", "null"] },
+        "f1": { "type": ["number", "null"] }
+      }
+    },
+    "metrik_triase": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "varian": { "enum": ["utama", "konservatif"] },
+        "fp": { "type": "integer", "minimum": 0 },
+        "precision": { "type": ["number", "null"] },
+        "recall": { "type": ["number", "null"] },
+        "f1": { "type": ["number", "null"] },
+        "rincian_triase": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "belum_ditriase": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "varian": {
+      "type": "object",
+      "required": ["ketat"],
+      "additionalProperties": false,
+      "properties": {
+        "ketat": { "$ref": "#/$defs/metrik" },
+        "triase_utama": { "$ref": "#/$defs/metrik_triase" },
+        "triase_konservatif": { "$ref": "#/$defs/metrik_triase" }
+      }
+    },
+    "varian_rata": {
+      "type": "object",
+      "required": ["ketat"],
+      "additionalProperties": false,
+      "properties": {
+        "ketat": { "$ref": "#/$defs/pr" },
+        "triase_utama": { "$ref": "#/$defs/pr" },
+        "triase_konservatif": { "$ref": "#/$defs/pr" }
+      }
+    }
+  }
+}
