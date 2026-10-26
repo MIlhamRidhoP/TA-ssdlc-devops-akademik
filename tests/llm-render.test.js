@@ -429,11 +429,16 @@ test('tarif cache Gemini dari halaman harga resmi', () => {
 
 test('koneksi: headersTimeout dan bodyTimeout sama dengan timeout SDK 20 menit, dipakai ketiga adapter', async () => {
   const duaPuluhMenit = 20 * 60 * 1000;
+  // Batas membuat sambungan ditambahkan 2026-10-26 (U2): bawaan undici 10 detik membuat satu percobaan
+  // gagal "Request timed out." pada 10,6 detik. Pin ini tetap eksak; hanya satu kunci yang bertambah.
+  const tigaPuluhDetik = 30 * 1000;
   assert.equal(httpLlm.TIMEOUT_MS, duaPuluhMenit);
-  assert.deepEqual(httpLlm.OPSI_AGENT, { headersTimeout: duaPuluhMenit, bodyTimeout: duaPuluhMenit });
+  assert.equal(httpLlm.CONNECT_TIMEOUT_MS, tigaPuluhDetik);
+  assert.deepEqual(httpLlm.OPSI_AGENT, { headersTimeout: duaPuluhMenit, bodyTimeout: duaPuluhMenit, connectTimeout: tigaPuluhDetik });
   assert.ok(httpLlm.dispatcher instanceof undici.Agent);
   assert.deepEqual(httpLlm.pengaturanKoneksi(), {
-    timeout_sdk_ms: duaPuluhMenit, headers_timeout_ms: duaPuluhMenit, body_timeout_ms: duaPuluhMenit, fetch: 'undici 7.30.1',
+    timeout_sdk_ms: duaPuluhMenit, headers_timeout_ms: duaPuluhMenit, body_timeout_ms: duaPuluhMenit,
+    connect_timeout_ms: tigaPuluhDetik, fetch: 'undici 7.30.1',
   });
   // SDK OpenAI dan Anthropic: fetch undici dipasangkan dengan dispatcher yang sama, timeout SDK 20 menit, tanpa retry SDK.
   // Konstruktor SDK OpenAI menolak berjalan tanpa API key, jadi tes memakai key palsu sementara (CI tidak punya key).

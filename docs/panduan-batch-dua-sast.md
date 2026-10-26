@@ -173,6 +173,36 @@ Kunci API dimuat di dalam proses Node oleh `scripts/llm-scan.js:40` (`require('d
 jadi tidak ada `source .env`. Variabel yang dibutuhkan: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`. `SONAR_TOKEN` tidak diperlukan karena kedua laporan dibaca dari berkas beku.
 
+### Kalau satu run berhenti karena deteksinya gagal
+
+Panggilan deteksi mencoba maksimal tiga kali. Kalau ketiganya gagal (koneksi putus, timeout), alat
+**berhenti** dengan kode keluar 1 dan tidak melanjutkan ke verifikasi, supaya tidak ada run separuh sah
+yang tersimpan dan ditagih. Yang terjadi pada folder hasil:
+
+| Berkas | Isi |
+|---|---|
+| `run-N.json` dan `run-N.raw.json` | **Tidak ditulis.** Nomor run itu belum terpakai. |
+| `run-N.gagal-K.json` | Bukti kegagalan: metadata ketiga percobaan dan data mentahnya. K naik tiap kegagalan; tidak pernah menimpa. |
+| `summary.json` → `runs_gagal` | Daftar kegagalan: nomor run, sebab, jumlah percobaan, berkas bukti, dan `commit_kode`. |
+
+Ulangi dengan `--lanjut=<folder>` dan argumen yang sama. Nomor yang gagal dijalankan lagi, jadi nomor
+run di folder tetap berurutan 1..target. Sebab tiap percobaan tertulis di `detail_status`, misalnya
+`stream terputus: terminated (sebab UND_ERR_SOCKET; 453 event, terakhir response.output_text.delta)`:
+kode sebabnya membedakan koneksi yang ditutup dari seberang (`UND_ERR_SOCKET`), ditolak
+(`ECONNREFUSED`), dan gagal tersambung dalam 30 detik (`UND_ERR_CONNECT_TIMEOUT`).
+
+Percobaan yang gagal **tidak mencatat biaya** (`tidak_tercatat`), padahal stream yang sudah mengalir
+mungkin sudah ditagih vendor. Periksa halaman usage vendor untuk angka sebenarnya.
+
+Batas membuat sambungan (`connect_timeout_ms`, 30 detik) masuk `pengaturan.koneksi` dan karena itu masuk
+sidik. Folder yang dibuat sebelum kunci itu ada, misalnya hasil pilot 26 Okt 2026, **tidak bisa
+dilanjutkan** dengan alat ini dan tidak boleh dicampur ke batch.
+
+Penilai `scripts/sast/skor-b-dua-sast.js` mengecualikan run yang `deteksi.status`-nya `error` dari
+rata-rata B dan C, mencetak `PERINGATAN` ke stderr sebelum angka, dan tetap menuliskan run itu di
+`runs` dengan `deteksi_gagal: true` beserta `rata_rata_termasuk_run_gagal` sebagai pembanding.
+Status `refusal`, `truncated`, dan `parse_ok: false` bukan penanda ini: itu jawaban model.
+
 ---
 
 ## 6. Setelah batch jalan

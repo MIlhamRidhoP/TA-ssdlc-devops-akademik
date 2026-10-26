@@ -69,16 +69,18 @@ const tafsirGalat = (err) => {
 // sebelum message_stop) diperlakukan sebagai timeout dan diulang. Output parsial disimpan di mentah.
 const tafsirGalatStream = (err, parsial) => {
   const dasar = err instanceof APIError && err.status ? tafsirGalat(err) : {
-    http_status: null, status: 'error', detail_status: `stream terputus: ${err.message}`, ulang: true, fatal: false, retry_after: null,
+    http_status: null, status: 'error', ulang: true, fatal: false, retry_after: null,
+    detail_status: `stream terputus: ${err.message}${http.rincianGalat(err, { jumlah: parsial?.jumlah_event ?? 0, terakhir: parsial?.event_terakhir })}`,
   };
   return { ...dasar, mentah: { galat: err.message, status: dasar.http_status, error: err.error ?? null, parsial } };
 };
 
 const panggil = async (opsi) => {
   const body = bodyRequest(opsi);
-  const parsial = { teks: '' };
+  const parsial = { teks: '', jumlah_event: 0, event_terakhir: null };
   try {
     const stream = ambilKlien().messages.stream(body);
+    stream.on('streamEvent', (e) => { parsial.jumlah_event += 1; parsial.event_terakhir = e.type; });
     stream.on('text', (t) => { parsial.teks += t; });
     const msg = await stream.finalMessage();
     return { http_status: 200, ...tafsirRespons(msg), ulang: false, mentah: msg };

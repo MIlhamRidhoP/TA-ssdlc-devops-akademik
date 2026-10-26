@@ -25,6 +25,10 @@
 //                                                        ditolak kalau sidik run berbeda atau target sudah tercapai
 //                                                        (--lewati-target untuk sengaja melewati target)
 //
+// Deteksi yang gagal setelah semua percobaan ulang (koneksi putus, timeout) MENGHENTIKAN run dengan kode
+// keluar 1, tanpa verifikasi. Nomor run itu tidak terpakai: tidak ada run-N.json, hanya run-N.gagal-K.json
+// dan catatan di summary.json (runs_gagal), sehingga --lanjut menjalankan nomor yang sama lagi.
+//
 // Setiap run mencatat commit_kode (HEAD repo alat); run ditolak kalau file dalam lingkup repo alat belum bersih.
 //   node scripts/llm-scan.js --bekukan-sonar --objek=<worktree> [--keluar=<file>]
 //                                                        ambil laporan Sonar dari API sekali dan tulis file beku
@@ -207,14 +211,37 @@ const tandaDeteksi = (valid) => (valid.parse_ok && valid.temuan.length === 0 ? [
 
 class RunDibuang extends Error {}
 
+// Run yang BERHENTI karena deteksinya gagal habis (percobaan ulang sudah terpakai, tetapi galatnya bukan
+// fatal): biasanya jaringan atau sisi vendor yang putus-putus, bukan kesalahan kode. Berbeda dari
+// RunDibuang, yang artinya "perbaiki kode lalu ulang seluruh run".
+//
+// Run seperti ini TIDAK menghabiskan satu nomor: run-N.json tidak ditulis, sehingga --lanjut menjalankan
+// nomor yang sama lagi di folder yang sama, dan nomor run tetap berurutan 1..target tanpa lubang. Bukti
+// kegagalannya disimpan di run-N.gagal-K.json (tidak pernah ditimpa) dan dicatat di summary.json.
+class RunGagal extends Error {
+  constructor(pesan, catatan) {
+    super(pesan);
+    this.catatan = catatan;
+  }
+}
+
+// Nama berkas bukti kegagalan berikutnya untuk satu nomor run: tidak menimpa yang sudah ada.
+const berkasGagalBerikutnya = (folder, n) => {
+  const pola = new RegExp(`^run-${n}\\.gagal-(\\d+)\\.json$`);
+  const ada = fs.readdirSync(folder).map((f) => f.match(pola)).filter(Boolean).map((m) => Number(m[1]));
+  return `run-${n}.gagal-${(ada.length ? Math.max(...ada) : 0) + 1}.json`;
+};
+
 const jalankanSatuRun = async (konteks, n) => {
   const { template, kode, alert, kondisi, skenario } = konteks;
+  // konteks.kirim hanya ada supaya tes bisa menyuntik panggilan palsu; alat sungguhan selalu memakai kirim.
+  const kirimPanggilan = konteks.kirim ?? kirim;
   const mentah = { deteksi: null, verifikasi: {} };
   const promptDeteksi = render.rakitPrompt({
     template, kondisi, tugas: 'deteksi', kodeSumber: kode.teks, sonarTeks: kondisi === 'sonar_di_deteksi' ? konteks.sonarTeks : null,
   });
   console.log(`Run ${n}: deteksi...`);
-  const hasilDeteksi = await kirim(konteks, promptDeteksi, 'deteksi');
+  const hasilDeteksi = await kirimPanggilan(konteks, promptDeteksi, 'deteksi');
   mentah.deteksi = hasilDeteksi.percobaan;
   const validDeteksi = hasilDeteksi.status === 'ok' ? validasiDeteksi(hasilDeteksi.teks, kode.file) : { parse_ok: false, temuan: [] };
   const catatan = {
@@ -245,13 +272,36 @@ const jalankanSatuRun = async (konteks, n) => {
   }
   console.log(`  deteksi ${hasilDeteksi.status}, parse_ok ${validDeteksi.parse_ok}, ${validDeteksi.temuan.length} temuan`);
 
+  // Deteksi yang gagal habis (status error, bukan fatal) menghentikan run di sini. Sebelumnya alat terus
+  // ke 23 verifikasi, dan pada pilot 26 Oktober 2026 itu menghasilkan run yang separuh sah: verifikasinya
+  // tersimpan dan ditagih, deteksinya kosong, dan angkanya ikut terhitung. Hanya status `error` yang
+  // berhenti. refusal, truncated, dan parse_ok false tetap berjalan seperti sebelumnya: itu keadaan
+  // jawaban model yang dicatat sebagai panggilan tanpa hasil, bukan kegagalan menjangkau vendor.
+  if (hasilDeteksi.status === 'error') {
+    const berkas = berkasGagalBerikutnya(konteks.folder, n);
+    tulisJson(path.join(konteks.folder, berkas), {
+      run: n, sebab: 'deteksi_gagal_setelah_percobaan_ulang', detail_status: hasilDeteksi.detail_status,
+      deteksi: catatan.deteksi, mentah: mentah.deteksi,
+    });
+    throw new RunGagal(
+      `Run ${n} dihentikan: deteksi gagal setelah ${hasilDeteksi.percobaan.length} percobaan (${hasilDeteksi.detail_status}). `
+      + `Verifikasi tidak dijalankan. Bukti di ${berkas} dan summary.json (runs_gagal). `
+      + 'Nomor run ini belum terpakai: ulangi dengan --lanjut',
+      {
+        run: n, sebab: 'deteksi_gagal_setelah_percobaan_ulang', detail_status: hasilDeteksi.detail_status,
+        percobaan: hasilDeteksi.percobaan.length, waktu_mulai: hasilDeteksi.waktu_mulai, waktu_selesai: hasilDeteksi.waktu_selesai,
+        berkas, commit_kode: konteks.kodeAlat.head,
+      },
+    );
+  }
+
   // Skenario C berhenti di deteksi: tidak ada panggilan verifikasi, dan karena itu tidak ada
   // putusan alert sama sekali. Prompt deteksinya sendiri tidak berubah sedikit pun dari skenario B.
   if (kondisi === 'utama' && skenario !== 'C') {
     for (const a of alert) {
       const promptVer = render.rakitPrompt({ template, kondisi, tugas: 'verifikasi', kodeSumber: kode.teks, alertTeks: a.teks });
       console.log(`Run ${n}: verifikasi ${a.id}...`);
-      const hasilVer = await kirim(konteks, promptVer, 'verifikasi');
+      const hasilVer = await kirimPanggilan(konteks, promptVer, 'verifikasi');
       mentah.verifikasi[a.id] = hasilVer.percobaan;
       const validVer = hasilVer.status === 'ok' ? validasiVerifikasi(hasilVer.teks, a.id) : { parse_ok: false, hasil: null };
       catatan.verifikasi.push({
@@ -272,6 +322,36 @@ const jalankanSatuRun = async (konteks, n) => {
   }
   simpan();
   return catatan;
+};
+
+// Menjalankan nomor-nomor run berurutan dan berhenti di kegagalan pertama. Diekstrak dari main() supaya
+// perilaku berhenti dan pencatatannya bisa diuji tanpa melewati gerbang "kode alat bersih", yang menolak
+// run apa pun selama pohon kerja berubah.
+//   galat        pesan RunDibuang (perbaiki kode, ulang seluruh run); permanen di summary.json
+//   gagalDeteksi true bila berhenti karena RunGagal; kegagalannya masuk runsGagal, BUKAN galat, karena
+//                galat ikut terbawa ke setiap --lanjut dan akan membuat run yang berhasil berikutnya
+//                tetap berkode keluar non-nol
+const jalankanDaftarRun = async (konteks, nomor, { ringkasan, runsGagal, tulisSummary }) => {
+  let galat = null;
+  let gagalDeteksi = false;
+  for (const n of nomor) {
+    try {
+      ringkasan.push(ringkasRun(await jalankanSatuRun(konteks, n)));
+      tulisSummary(); // diperbarui setelah setiap run
+    } catch (err) {
+      if (err instanceof RunGagal) {
+        runsGagal.push(err.catatan);
+        console.error(err.message);
+        gagalDeteksi = true;
+        break;
+      }
+      if (!(err instanceof RunDibuang)) throw err;
+      galat = `${err.message}. Run dibuang: perbaiki kode, lalu ulang seluruh run (README bagian 8)`;
+      console.error(galat);
+      break;
+    }
+  }
+  return { galat, gagalDeteksi };
 };
 
 const ringkasRun = (c) => {
@@ -492,6 +572,8 @@ const main = async () => {
 
   const ringkasan = [...(summaryLama?.runs ?? [])];
   let galat = summaryLama?.galat ?? null;
+  // Run yang berhenti karena deteksi gagal habis, termasuk yang dicatat folder ini sebelum --lanjut.
+  const runsGagal = [...(summaryLama?.runs_gagal ?? [])];
   const tulisSummary = () => tulisJson(path.join(folder, 'summary.json'), {
     dibuat: summaryLama?.dibuat ?? new Date().toISOString(), diperbarui: new Date().toISOString(),
     versi_prompt: versiPrompt, vendor, model_diminta: model, kondisi, skenario,
@@ -506,24 +588,19 @@ const main = async () => {
     commit_kode: kodeAlat,
     pengaturan,
     tarif: VENDOR[vendor].tarif, sdk, total_run_diminta: target, galat,
+    // Hanya ditulis kalau ada, supaya summary run yang tidak pernah gagal tetap identik dengan sebelumnya.
+    ...(runsGagal.length ? { runs_gagal: runsGagal } : {}),
     sidik_run: sidik,
     biaya_total_usd: Number(ringkasan.reduce((s, r) => s + r.biaya_usd, 0).toFixed(6)),
     runs: ringkasan,
   });
-  for (const n of nomor) {
-    try {
-      ringkasan.push(ringkasRun(await jalankanSatuRun(konteks, n)));
-      tulisSummary(); // diperbarui setelah setiap run
-    } catch (err) {
-      if (!(err instanceof RunDibuang)) throw err;
-      galat = `${err.message}. Run dibuang: perbaiki kode, lalu ulang seluruh run (README bagian 8)`;
-      console.error(galat);
-      break;
-    }
-  }
+  const hasilLoop = await jalankanDaftarRun(konteks, nomor, { ringkasan, runsGagal, tulisSummary });
+  if (hasilLoop.galat) galat = hasilLoop.galat;
   tulisSummary();
-  console.log(`Selesai. Hasil di ${path.relative(ROOT, folder).split(path.sep).join('/')}/`);
-  if (galat) process.exitCode = 1;
+  const lokasiHasil = `${path.relative(ROOT, folder).split(path.sep).join('/')}/`;
+  // "Selesai" hanya untuk run yang benar-benar selesai; run yang berhenti tidak boleh berakhir dengan kalimat itu.
+  console.log(hasilLoop.gagalDeteksi ? `Dihentikan, hasil sebagian di ${lokasiHasil}` : `Selesai. Hasil di ${lokasiHasil}`);
+  if (galat || hasilLoop.gagalDeteksi) process.exitCode = 1;
 };
 
 if (require.main === module) {
@@ -533,4 +610,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, perluSonar, treeSrc, percobaanGagal, biayaPercobaanGagal, tandaDeteksi };
+module.exports = { RunGagal, jalankanSatuRun, jalankanDaftarRun, berkasGagalBerikutnya, main, periksaObjek, periksaBranchKondisi, ambilSonar, siapkanSonar, runKering, perluSonar, treeSrc, percobaanGagal, biayaPercobaanGagal, tandaDeteksi };

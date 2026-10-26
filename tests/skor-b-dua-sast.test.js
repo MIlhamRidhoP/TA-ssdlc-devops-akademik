@@ -107,6 +107,9 @@ const lingkungan = () => {
 const folderRun = ({
   objek, versiPrompt = 'v3', sast = 'keduanya', vendor = 'google', kondisi = 'utama',
   alert = URUTAN_ALERT, putusan = {}, hashKode = 'e'.repeat(64),
+  // Tiap entri satu run. deteksiStatus 'error' meniru run pilot nyata 26 Okt 2026: deteksi gagal habis
+  // karena stream putus, sedangkan 23 verifikasinya tetap ok.
+  runs = [{ nomor: 1 }],
 } = {}) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'run-b-'));
   fs.writeFileSync(path.join(dir, 'summary.json'), JSON.stringify({
@@ -115,22 +118,28 @@ const folderRun = ({
     sumber_sonar: 'beku', hash_kode_sumber: hashKode,
     ...(sast === 'sonar' ? {} : { sast }),
   }, null, 2));
-  fs.writeFileSync(path.join(dir, 'run-1.json'), JSON.stringify({
-    run: 1,
-    parse_ok: true,
-    // Blok `deteksi` wajib ada: score.hitungStatusPanggilan membaca r.deteksi.tugas untuk setiap run.
-    // Bentuk medannya diambil dari run-1.json nyata batch 22 Okt, dipangkas ke yang benar-benar dibaca.
-    deteksi: { tugas: 'deteksi', status: 'ok', parse_ok: true },
-    temuan: [{ file: 'src/a.js', baris: 1, jenis: 'SQL Injection', cwe: 'CWE-89', sifat: null }],
-    verifikasi: alert.map((a) => ({
-      id_alert: a.id,
-      putusan: putusan[a.id] ?? 'true_positive',
-      keyakinan: 'high',
-      alasan: 'terbukti',
-      tanda: [],
-      metadata: { tugas: 'verifikasi', status: 'ok', parse_ok: true },
-    })),
-  }, null, 2));
+  for (const { nomor, deteksiStatus = 'ok', detail = null } of runs) {
+    const gagal = deteksiStatus === 'error';
+    fs.writeFileSync(path.join(dir, `run-${nomor}.json`), JSON.stringify({
+      run: nomor,
+      parse_ok: !gagal,
+      // Blok `deteksi` wajib ada: score.hitungStatusPanggilan membaca r.deteksi.tugas untuk setiap run.
+      // Bentuk medannya diambil dari run-1.json nyata batch 22 Okt, dipangkas ke yang benar-benar dibaca.
+      deteksi: {
+        tugas: 'deteksi', status: deteksiStatus, parse_ok: !gagal,
+        ...(gagal ? { detail_status: detail ?? 'stream terputus: terminated (sebab UND_ERR_SOCKET; 14 event) (gagal setelah 3 percobaan)' } : {}),
+      },
+      temuan: gagal ? [] : [{ file: 'src/a.js', baris: 1, jenis: 'SQL Injection', cwe: 'CWE-89', sifat: null }],
+      verifikasi: alert.map((a) => ({
+        id_alert: a.id,
+        putusan: putusan[a.id] ?? 'true_positive',
+        keyakinan: 'high',
+        alasan: 'terbukti',
+        tanda: [],
+        metadata: { tugas: 'verifikasi', status: 'ok', parse_ok: true },
+      })),
+    }, null, 2));
+  }
   fs.writeFileSync(path.join(dir, 'sonar-alert.json'), JSON.stringify(alert, null, 2));
   return dir;
 };
@@ -431,4 +440,88 @@ test('alertUntuk meniru llm-scan untuk ketiga nilai sumbu sast', () => {
   // sast=sonar tidak pernah melewati penggabung di llm-scan, jadi alertnya tidak membawa sumber_sast.
   assert.ok(penilai.alertUntuk('sonar', sumber).every((a) => !('sumber_sast' in a)));
   assert.ok(penilai.alertUntuk('keduanya', sumber).every((a) => 'sumber_sast' in a));
+});
+
+// ---------- 5. U4: run dengan deteksi error ditandai dan tidak masuk rata-rata tanpa tanda ----------
+// Pilot nyata 26 Okt 2026 menghasilkan run dengan deteksi gagal habis tetapi 23 verifikasi ok. Penilai
+// menerimanya tanpa peringatan dan menghitungnya ke rata-rata: "B F1 0,200 / C F1 0,000" tampak seperti
+// hasil, padahal C nol karena jaringan, bukan karena model tidak menemukan apa-apa.
+
+test('U4 run dengan deteksi error dikecualikan dari rata-rata B dan C, ditandai, dan diperingatkan', () => {
+  const lg = lingkungan();
+  const campur = nilai(lg, folderRun({ objek: lg.objek, runs: [{ nomor: 1, deteksiStatus: 'error' }, { nomor: 2 }] }));
+  assert.equal(campur.r.status, 0, campur.r.stderr);
+  // Pembanding: folder yang hanya memuat run sah itu. Rata-rata harus sama persis dengannya.
+  const sah = nilai(lg, folderRun({ objek: lg.objek, runs: [{ nomor: 2 }] }));
+  assert.equal(sah.r.status, 0, sah.r.stderr);
+
+  const m = campur.laporan.per_model[0];
+  assert.equal(m.jumlah_run_total, 2);
+  assert.equal(m.rata_rata.skenario_b.jumlah_run, 1, 'hanya satu run sah yang dirata-ratakan');
+  assert.deepEqual(m.rata_rata.skenario_b, sah.laporan.per_model[0].rata_rata.skenario_b, 'B sama dengan folder berisi run sah saja');
+  assert.deepEqual(m.rata_rata.skenario_c, sah.laporan.per_model[0].rata_rata.skenario_c, 'C sama dengan folder berisi run sah saja');
+  assert.deepEqual(m.run_dikecualikan.map((x) => x.run), [1]);
+  assert.match(m.run_dikecualikan[0].sebab, /UND_ERR_SOCKET/, 'sebab dari U1 ikut terbawa ke laporan skor');
+
+  // Tidak hilang diam-diam: run itu tetap ada di daftar run dengan penandanya, dan rata-rata
+  // seandainya ia ikut dihitung dilaporkan terpisah supaya selisihnya terlihat.
+  assert.deepEqual(m.runs.map((x) => [x.run, x.deteksi_gagal]), [[1, true], [2, false]]);
+  assert.equal(m.rata_rata_termasuk_run_gagal.skenario_c.jumlah_run, 2);
+  assert.ok(m.rata_rata_termasuk_run_gagal.skenario_c.recall < m.rata_rata.skenario_c.recall,
+    'run gagal menurunkan recall C; itulah yang tidak boleh tersamar');
+  assert.equal(m.status_panggilan.deteksi.error, 1, 'status panggilan tetap menghitung kegagalannya');
+
+  // Peringatan: di laporan, di stderr, dan di baris ringkasan. Sebelum angka, bukan sesudahnya.
+  assert.equal(campur.laporan.peringatan.length, 1);
+  assert.match(campur.laporan.peringatan[0], /PERINGATAN google sast keduanya: run 1 berstatus deteksi error/);
+  assert.match(campur.laporan.peringatan[0], /DIKECUALIKAN dari rata-rata B dan C \(1 dari 2 run dipakai\)/);
+  assert.match(campur.r.stderr, /PERINGATAN .*DIKECUALIKAN/);
+  assert.match(campur.r.stdout, /\[1 dari 2 run dikecualikan: deteksi error\]/);
+});
+
+test('U4 semua run gagal: tanpa angka, dengan pernyataan jelas bahwa tidak ada run sah', () => {
+  const lg = lingkungan();
+  const { r, laporan } = nilai(lg, folderRun({ objek: lg.objek, runs: [{ nomor: 1, deteksiStatus: 'error' }, { nomor: 2, deteksiStatus: 'error' }] }));
+  assert.equal(r.status, 0, `tidak boleh runtuh; stderr:
+${r.stderr}`);
+  const m = laporan.per_model[0];
+  assert.equal(m.rata_rata.skenario_b.jumlah_run, 0);
+  for (const k of ['precision', 'recall', 'f1']) {
+    assert.equal(m.rata_rata.skenario_b[k], null, `B ${k} harus null, bukan nol`);
+    assert.equal(m.rata_rata.skenario_c[k], null, `C ${k} harus null, bukan nol`);
+  }
+  assert.match(r.stdout, /TIDAK ADA run sah/);
+  assert.match(r.stdout, /B P - R - F1 - \| C P - R - F1 -/, 'baris ringkasan menampilkan tanda hubung, bukan 0,000');
+  // Skenario A tidak bergantung pada deteksi dan tetap ada.
+  assert.equal(typeof m.rata_rata.skenario_a.f1, 'number');
+});
+
+test('U4 folder tanpa run gagal tidak berubah: tanpa peringatan, tanpa kunci tambahan yang menyesatkan', () => {
+  const lg = lingkungan();
+  const { r, laporan } = nilai(lg, folderRun({ objek: lg.objek, runs: [{ nomor: 1 }, { nomor: 2 }] }));
+  assert.equal(r.status, 0, r.stderr);
+  const m = laporan.per_model[0];
+  assert.deepEqual(laporan.peringatan, []);
+  assert.doesNotMatch(r.stderr, /PERINGATAN/);
+  assert.deepEqual(m.run_dikecualikan, []);
+  assert.ok(!('rata_rata_termasuk_run_gagal' in m), 'tanpa run bertanda, tidak ada rata-rata pembanding');
+  assert.equal(m.rata_rata.skenario_b.jumlah_run, 2);
+  assert.ok(m.runs.every((x) => x.deteksi_gagal === false));
+  assert.doesNotMatch(r.stdout, /dikecualikan/);
+});
+
+test('U4 hanya status error yang menjadi penanda, bukan refusal, truncated, atau parse_ok false', () => {
+  assert.equal(penilai.deteksiGagal({ deteksi: { status: 'error' } }), true);
+  for (const status of ['ok', 'refusal', 'truncated']) {
+    assert.equal(penilai.deteksiGagal({ deteksi: { status, parse_ok: false } }), false, `${status} adalah jawaban model, bukan kegagalan jaringan`);
+  }
+  assert.equal(penilai.deteksiGagal({ deteksi: { status: 'ok', parse_ok: false } }), false);
+  // Run tanpa blok deteksi tidak boleh membuat penilai melempar.
+  assert.equal(penilai.deteksiGagal({}), false);
+  const { gagal, nomorGagal } = penilai.pisahkanRunGagal([
+    { run: 1, deteksi: { status: 'error', detail_status: 'putus' } }, { run: 2, deteksi: { status: 'ok' } },
+    { run: 3, deteksi: { status: 'error' } },
+  ]);
+  assert.deepEqual(gagal, [{ run: 1, sebab: 'putus' }, { run: 3, sebab: null }]);
+  assert.deepEqual([...nomorGagal], [1, 3]);
 });

@@ -91,8 +91,9 @@ const tafsirRespons = (isi) => {
   return { status, detail_status: `finishReason ${alasan}`, teks, model_menjawab: model, usage };
 };
 
-const streamTerputus = (alasan, potongan) => ({
-  http_status: 200, status: 'error', detail_status: `stream terputus: ${alasan}`, ulang: true, fatal: false,
+const streamTerputus = (alasan, potongan, err = null) => ({
+  http_status: 200, status: 'error', ulang: true, fatal: false,
+  detail_status: `stream terputus: ${alasan}${err ? http.rincianGalat(err, { jumlah: potongan.length, satuan: 'potongan' }) : ''}`,
   mentah: { potongan, galat: alasan },
 });
 
@@ -107,7 +108,7 @@ const panggil = async ({ model, system, user, skema, batasOutput, tingkatThinkin
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch (err) {
-    return { http_status: null, status: 'error', detail_status: `galat jaringan atau timeout: ${err.message}`, ulang: true, mentah: { galat_jaringan: err.message } };
+    return { http_status: null, status: 'error', detail_status: `galat jaringan atau timeout: ${err.message}${http.rincianGalat(err)}`, ulang: true, mentah: { galat_jaringan: err.message } };
   }
   if (!res.ok) {
     const teksBody = await res.text().catch(() => '');
@@ -133,7 +134,7 @@ const panggil = async ({ model, system, user, skema, batasOutput, tingkatThinkin
     buffer += decoder.decode();
     if (buffer.trim()) potongan.push(...pecahSse(`${buffer}\n\n`).potongan);
   } catch (err) {
-    return streamTerputus(err.message, potongan);
+    return streamTerputus(err.message, potongan, err);
   }
   const gabung = gabungPotongan(potongan);
   // Stream yang selesai tanpa finishReason dan tanpa blockReason dianggap terputus.
