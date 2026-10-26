@@ -1,0 +1,728 @@
+{
+  "versi_format": 1,
+  "dibuat": "2026-10-26T02:48:55.621Z",
+  "sumber": "CodeQL CLI, suite javascript-security-extended dan javascript-code-scanning, SARIF 2.1.0",
+  "lingkungan": {
+    "cli": "2.27.3",
+    "pack": [
+      "codeql/javascript-queries@2.4.8",
+      "codeql/javascript-all@2.10.4",
+      "codeql/threat-models@1.1.0"
+    ],
+    "konfig_sha256": "d4e1ec91f005f03d8785ba3201faac66d34a400b8176b85f0d7529d672030110"
+  },
+  "sarif": [
+    {
+      "nama": "hasil-extended.sarif",
+      "suite": "extended",
+      "sha256": "ea3502fe0ce2e9237545ea306081bcdfa5ccaf2834b974e58691a5b934d34ffb",
+      "jumlah_result": 22
+    },
+    {
+      "nama": "hasil-code-scanning.sarif",
+      "suite": "code-scanning",
+      "sha256": "3010b2fcb1a3558af64d679db0743ce95d4214c7c402a681b21d25b2146e3f39",
+      "jumlah_result": 19
+    }
+  ],
+  "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+  "filter_alert": "tingkat 1 (tag security) di dalam src/**, digabung per ruleId+file+baris, tanpa entri js/diagnostics/* dan js/summary/* (lihat scripts/sast/codeql-tahap1.js)",
+  "saringan": null,
+  "gerbang_sanity": {
+    "extended": {
+      "rule_diagnostik_yang_diminta": {
+        "js/diagnostics/successfully-extracted-files": {
+          "rule_terdaftar": false,
+          "entri_hasil": 0,
+          "nilai_metricResults": null
+        },
+        "js/diagnostics/extraction-errors": {
+          "rule_terdaftar": false,
+          "entri_hasil": 0,
+          "nilai_metricResults": null
+        },
+        "js/summary/lines-of-code": {
+          "rule_terdaftar": true,
+          "entri_hasil": 0,
+          "nilai_metricResults": 3613
+        },
+        "js/summary/lines-of-user-code": {
+          "rule_terdaftar": true,
+          "entri_hasil": 0,
+          "nilai_metricResults": 3613
+        }
+      },
+      "bukti_pengganti": {
+        "catatan": "js/diagnostics/successfully-extracted-files dan js/diagnostics/extraction-errors tidak terdaftar sebagai rule di kedua suite, dan js/summary/* terdaftar tetapi nilainya ada di run.properties.metricResults, bukan di run.results. Gerbang karena itu dinilai dari artifacts[] dan invocations[].",
+        "artifacts_total": 56,
+        "src_js": 43,
+        "luar_src": 13,
+        "executionSuccessful": [
+          true
+        ],
+        "notifikasi_per_level": {
+          "none": 110
+        },
+        "notifikasi_error_atau_warning": 0,
+        "lines_of_code": 3613,
+        "lines_of_user_code": 3613
+      },
+      "lulus": {
+        "src_js_43": true,
+        "tanpa_galat_ekstraksi": true
+      }
+    },
+    "code-scanning": {
+      "rule_diagnostik_yang_diminta": {
+        "js/diagnostics/successfully-extracted-files": {
+          "rule_terdaftar": false,
+          "entri_hasil": 0,
+          "nilai_metricResults": null
+        },
+        "js/diagnostics/extraction-errors": {
+          "rule_terdaftar": false,
+          "entri_hasil": 0,
+          "nilai_metricResults": null
+        },
+        "js/summary/lines-of-code": {
+          "rule_terdaftar": true,
+          "entri_hasil": 0,
+          "nilai_metricResults": 3613
+        },
+        "js/summary/lines-of-user-code": {
+          "rule_terdaftar": true,
+          "entri_hasil": 0,
+          "nilai_metricResults": 3613
+        }
+      },
+      "bukti_pengganti": {
+        "catatan": "js/diagnostics/successfully-extracted-files dan js/diagnostics/extraction-errors tidak terdaftar sebagai rule di kedua suite, dan js/summary/* terdaftar tetapi nilainya ada di run.properties.metricResults, bukan di run.results. Gerbang karena itu dinilai dari artifacts[] dan invocations[].",
+        "artifacts_total": 56,
+        "src_js": 43,
+        "luar_src": 13,
+        "executionSuccessful": [
+          true
+        ],
+        "notifikasi_per_level": {
+          "none": 110
+        },
+        "notifikasi_error_atau_warning": 0,
+        "lines_of_code": 3613,
+        "lines_of_user_code": 3613
+      },
+      "lulus": {
+        "src_js_43": true,
+        "tanpa_galat_ekstraksi": true
+      }
+    }
+  },
+  "alert": [
+    {
+      "id": "CQL-01",
+      "rule": "js/polynomial-redos",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/controllers/authController.js",
+      "baris": 20,
+      "cwe": [
+        "CWE-1333",
+        "CWE-730",
+        "CWE-400"
+      ],
+      "pesan": "This [regular expression](1) that depends on [a user-provided value](2) may run slow on strings starting with '!@!.' and with many repetitions of '!.'.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        8,
+        8
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-1333",
+        "external/cwe/cwe-730",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-02",
+      "rule": "js/path-injection",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/middleware/upload.js",
+      "baris": 34,
+      "cwe": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "pesan": "This path depends on a [user-provided value](1).\nThis path depends on a [user-provided value](2).\nThis path depends on a [user-provided value](3).",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        47,
+        47
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-022",
+        "external/cwe/cwe-023",
+        "external/cwe/cwe-036",
+        "external/cwe/cwe-073",
+        "external/cwe/cwe-099"
+      ]
+    },
+    {
+      "id": "CQL-03",
+      "rule": "js/path-injection",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/middleware/upload.js",
+      "baris": 39,
+      "cwe": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "pesan": "This path depends on a [user-provided value](1).",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        32,
+        32
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-022",
+        "external/cwe/cwe-023",
+        "external/cwe/cwe-036",
+        "external/cwe/cwe-073",
+        "external/cwe/cwe-099"
+      ]
+    },
+    {
+      "id": "CQL-04",
+      "rule": "js/sql-injection",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/models/cutiModel.js",
+      "baris": 94,
+      "cwe": [
+        "CWE-89",
+        "CWE-90",
+        "CWE-943"
+      ],
+      "pesan": "This query string depends on a [user-provided value](1).\nThis query string depends on a [user-provided value](2).",
+      "severity_codeql": "8.8",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        7,
+        7
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-089",
+        "external/cwe/cwe-090",
+        "external/cwe/cwe-943"
+      ]
+    },
+    {
+      "id": "CQL-05",
+      "rule": "js/sql-injection",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 59,
+      "cwe": [
+        "CWE-89",
+        "CWE-90",
+        "CWE-943"
+      ],
+      "pesan": "This query string depends on a [user-provided value](1).",
+      "severity_codeql": "8.8",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        34,
+        34
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-089",
+        "external/cwe/cwe-090",
+        "external/cwe/cwe-943"
+      ]
+    },
+    {
+      "id": "CQL-06",
+      "rule": "js/sql-injection",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 61,
+      "cwe": [
+        "CWE-89",
+        "CWE-90",
+        "CWE-943"
+      ],
+      "pesan": "This query string depends on a [user-provided value](1).",
+      "severity_codeql": "8.8",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        5,
+        5
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-089",
+        "external/cwe/cwe-090",
+        "external/cwe/cwe-943"
+      ]
+    },
+    {
+      "id": "CQL-07",
+      "rule": "js/sql-injection",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/models/nilaiModel.js",
+      "baris": 125,
+      "cwe": [
+        "CWE-89",
+        "CWE-90",
+        "CWE-943"
+      ],
+      "pesan": "This query string depends on a [user-provided value](1).",
+      "severity_codeql": "8.8",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        5,
+        5
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-089",
+        "external/cwe/cwe-090",
+        "external/cwe/cwe-943"
+      ]
+    },
+    {
+      "id": "CQL-08",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/authRoutes.js",
+      "baris": 4,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [a database access](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        26,
+        26
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-09",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [a database access](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        23,
+        23
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-10",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 8,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        12,
+        12
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-11",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/konsenRoutes.js",
+      "baris": 5,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        12,
+        12
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-12",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/krsRoutes.js",
+      "baris": 8,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        12,
+        12
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-13",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/mahasiswaRoutes.js",
+      "baris": 8,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        12,
+        12
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-14",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/mahasiswaRoutes.js",
+      "baris": 19,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [a file system access](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        55,
+        55
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-15",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/mahasiswaRoutes.js",
+      "baris": 27,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [a file system access](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        43,
+        43
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-16",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/mahasiswaRoutes.js",
+      "baris": 29,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [a file system access](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        59,
+        59
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-17",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/mataKuliahRoutes.js",
+      "baris": 5,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        12,
+        12
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    },
+    {
+      "id": "CQL-18",
+      "rule": "js/missing-rate-limiting",
+      "tipe": "SECURITY",
+      "sumber": "codeql",
+      "file": "src/routes/nilaiRoutes.js",
+      "baris": 6,
+      "cwe": [
+        "CWE-770",
+        "CWE-307",
+        "CWE-400"
+      ],
+      "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+      "severity_codeql": "7.5",
+      "severity_asal": "codeql",
+      "precision_codeql": "high",
+      "suite": [
+        "code-scanning",
+        "extended"
+      ],
+      "hanya_extended": false,
+      "entri_sarif_digabung": 2,
+      "kolom": [
+        12,
+        12
+      ],
+      "tags": [
+        "security",
+        "external/cwe/cwe-770",
+        "external/cwe/cwe-307",
+        "external/cwe/cwe-400"
+      ]
+    }
+  ],
+  "ringkasan": {
+    "jumlah_alert": 18,
+    "hash_laporan_alert": "9084ba5d80632d49807c6083b4539ec577fb0252abc428fb1947ca77472b21a9"
+  },
+  "sha256_isi": "2ca6fb8d94de97068ffabb3d39470a4db4b4c4298bec0ee0ce8bb1bce68534c8"
+}
