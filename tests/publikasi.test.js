@@ -44,7 +44,9 @@ const tulis = (dir, isi) => {
 const bacaIndex = (dir, nama) => (fs.existsSync(path.join(dir, nama)) ? baca(path.join(dir, nama)) : null);
 
 test('skema 2 terbit ke index.json, skema 1 ke index-v1.json', () => {
-  assert.deepEqual(FILE_INDEX, { 1: 'index-v1.json', 2: 'index.json' });
+  // Daftar lengkap, bukan pemeriksaan per entri: setiap berkas index baru di branch security-results
+  // harus disetujui orang, bukan muncul diam-diam. Skema 3 (sumbu sast) disetujui 26 Okt 2026.
+  assert.deepEqual(FILE_INDEX, { 1: 'index-v1.json', 2: 'index.json', 3: 'index-v3.json' });
   const dir = dirBaru();
   terbitkan(tulis(dir, hasilV2({ nomor: 46, id: 39343292014 })), dir);
   terbitkan(tulis(dir, hasilV1()), dir);

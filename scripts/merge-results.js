@@ -12,6 +12,10 @@
 //     [--skor=<skor-utama.json> --skor-triase=<...> --skor-triase-konservatif=<...>] [--repo=owner/repo]
 //     [--objek=<worktree objek uji>]  (untuk potongan kode di sekitar baris temuan)
 //     [--biaya=<folder induk vendor>] (untuk biaya per run dan per vendor di blok eksperimen)
+//
+// Skema keluaran jalur itu diturunkan dari isi summary.json, bukan dari flag: folder run dengan medan
+// `sast` bukan 'sonar' dirakit sebagai skema 3 (docs/design/results-v3.schema.json) dan diterbitkan
+// ke index-v3.json. Satu perkakas tetap skema 2 dan index.json, tidak berubah sedikit pun.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -277,15 +281,32 @@ const perbaruiIndex = (index, entri) => {
 // jalur mana pun MENGHAPUS entri jalur lain (itu yang menghilangkan hasil v2 run #46). Sekarang
 // index.json milik skema 2 — satu-satunya yang dibaca dashboard — dan jalur v1 menulis ke
 // index-v1.json, jadi tidak ada jalur penerbitan yang bisa membuang entri skema lain.
-const FILE_INDEX = { 1: 'index-v1.json', 2: 'index.json' };
+// Skema 3 ikut aturan yang sama dan karena itu TIDAK boleh menumpang index.json: dashboard membaca
+// index.json sebagai daftar skema 2 (SKEMA_DIDUKUNG di dashboard/app.js), jadi entri skema 3 di situ
+// akan terbaca sebagai run yang bentuknya salah, dan gerbang satu-skema-per-index di bawah justru
+// akan menolak penerbitan berikutnya.
+const FILE_INDEX = { 1: 'index-v1.json', 2: 'index.json', 3: 'index-v3.json' };
+
+// Bentuk entri index berbeda per skema, dan skema 3 menambah hitungan alert per perkakas. Dipilih
+// dari schema_version, bukan dari flag --v2 di baris perintah: yang menentukan adalah isi berkas
+// hasilnya, bukan cara pemanggilnya menyebut jalur.
+const ENTRI_INDEX = {
+  1: (r, relPath) => entriIndex(r, relPath),
+  2: (r, relPath) => require('./llm/results-v2').entriIndexV2(r, relPath),
+  3: (r, relPath) => require('./llm/results-v3').entriIndexV3(r, relPath),
+};
 
 // Menerbitkan results.json ke worktree branch security-results dan memperbarui index skemanya.
 const terbitkan = (fileHasil, dir) => {
   const r = bacaJson(fileHasil);
-  const v2 = r.schema_version === 2;
+  // Jalur LLM adalah skema 2 dan 3: keduanya menyimpan branch objek uji di run.objek_uji, sedangkan
+  // skema 1 memakai run.branch. Skema 3 adalah skema 2 ditambah sumbu sast, jadi blok run-nya sama;
+  // memperlakukannya seperti skema 1 membuat pathBranch menerima undefined dan menerbitkan hasil ke
+  // folder bernama "undefined".
+  const jalurLlm = r.schema_version === 2 || r.schema_version === 3;
   const namaIndex = FILE_INDEX[r.schema_version];
   if (!namaIndex) throw new Error(`schema_version ${r.schema_version} tidak punya berkas index`);
-  const branch = v2 ? (r.run.objek_uji?.branch ?? 'main') : r.run.branch;
+  const branch = jalurLlm ? (r.run.objek_uji?.branch ?? 'main') : r.run.branch;
   const relPath = `${pathBranch(branch)}/${r.run.nomor}.json`;
   fs.mkdirSync(path.join(dir, path.dirname(relPath)), { recursive: true });
   tulisJson(path.join(dir, relPath), r);
@@ -297,7 +318,10 @@ const terbitkan = (fileHasil, dir) => {
     throw new Error(`${namaIndex} berisi skema ${lama.schema_version ?? 1}, bukan ${r.schema_version}. `
       + 'Penerbitan dihentikan supaya tidak ada entri yang terbuang; rapikan berkas index itu dulu.');
   }
-  const entri = v2 ? require('./llm/results-v2').entriIndexV2(r, relPath) : entriIndex(r, relPath);
+  // FILE_INDEX dan ENTRI_INDEX harus selalu sejalan; kalau tidak, pemanggilannya melempar TypeError
+  // yang tidak menyebutkan sebabnya sama sekali.
+  if (!ENTRI_INDEX[r.schema_version]) throw new Error(`schema_version ${r.schema_version} tidak punya pembangun entri index`);
+  const entri = ENTRI_INDEX[r.schema_version](r, relPath);
   const baru = perbaruiIndex(lama, entri);
   baru.schema_version = r.schema_version;
   tulisJson(fileIndex, baru);
@@ -367,9 +391,30 @@ const mergeV2 = () => {
   const potongan = objek ? ((file, baris) => potonganKode(objek, file, baris)) : null;
   // --id adalah run id GitHub (bukan run number); dipakai dashboard untuk menarik status job.
   const idRun = ambilArg('id') ? Number(ambilArg('id')) : null;
-  const hasil = susunHasilV2({ summary, run, nomor, id: idRun, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen, potongan });
-  tulisJson(ambilArg('out') || 'results-v2.json', hasil);
-  console.log(`results v2: ${hasil.findings.length} temuan, ${hasil.alerts.length} alert, vendor ${hasil.run.vendor}, eksperimen ${eksperimen ? 'ada' : 'tidak'}`);
+  const bahan = { summary, run, nomor, id: idRun, alert, parseCwe, repo: ambilArg('repo') || null, eksperimen, potongan };
+
+  // Sumbu sast menentukan skema keluarannya, dan nilainya dibaca dari summary.json, bukan dari flag
+  // baris perintah: llm-scan.js hanya menulis medan `sast` kalau bukan 'sonar', jadi run satu
+  // perkakas tetap melewati susunHasilV2 apa adanya dan berkasnya tidak mendapat satu medan baru pun.
+  //
+  // Tanpa percabangan ini, run dua perkakas dirakit sebagai skema 2: medan sumber_sast, kembar_dengan,
+  // run.sast, dan run.codeql_beku hilang tanpa suara, dan asal tiap alert tidak bisa lagi dipulihkan
+  // dari berkas hasilnya. Itu baru terasa SETELAH batch berbayar selesai.
+  const { susunHasilV3, SAST_BAWAAN } = require('./llm/results-v3');
+  const { SAST_DIDUKUNG } = require('./sast/sumbu-sast');
+  const sast = summary.sast ?? SAST_BAWAAN;
+  // Nilai sast yang tidak dikenal ditolak di sini, bukan dibiarkan lewat. Tanpa gerbang ini, satu
+  // salah tulis di summary.json menghasilkan results.json yang tidak sah terhadap skema mana pun,
+  // dan itu baru ketahuan saat penerbitan — setelah run-nya dibayar.
+  if (!SAST_DIDUKUNG.includes(sast)) {
+    throw new Error(`summary.json memuat sast "${sast}" yang tidak dikenal; yang ada: ${SAST_DIDUKUNG.join(', ')}`);
+  }
+  const hasil = sast === SAST_BAWAAN
+    ? susunHasilV2(bahan)
+    : susunHasilV3({ ...bahan, sast, codeqlBeku: summary.codeql_beku ?? null });
+  tulisJson(ambilArg('out') || `results-v${hasil.schema_version}.json`, hasil);
+  console.log(`results v${hasil.schema_version}: ${hasil.findings.length} temuan, ${hasil.alerts.length} alert, `
+    + `sast ${sast}, vendor ${hasil.run.vendor}, eksperimen ${eksperimen ? 'ada' : 'tidak'}`);
 };
 
 const main = () => {
