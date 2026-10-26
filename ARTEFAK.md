@@ -1,8 +1,15 @@
 # Artefak penelitian
 
 Peta artefak untuk makalah ICICyTA 2026 dan cara memeriksa ulang angkanya. Repositori:
-`MIlhamRidhoP/TA-ssdlc-devops-akademik`. Tag acuan: **`icicyta2026-artefak`**, dipasang pada ujung
-`feat/prompt-v2` dan ujung `eksperimen/seeded` (nama sama, dua branch).
+`MIlhamRidhoP/TA-ssdlc-devops-akademik`. Satu nama tag hanya bisa menunjuk satu commit, jadi ada dua
+tag acuan:
+
+- **`icicyta2026-artefak`**: ujung `eksperimen/seeded` (answer key, laporan beku, hasil dan skor
+  kedua batch, dan berkas ini).
+- **`icicyta2026-artefak-alat`**: ujung `feat/prompt-v2` (prompt v2 dan kode alat batch 22 Okt).
+
+Kode alat batch 26 Okt (prompt v3 dan penilai dua perkakas) ada di branch `feat/sast-codeql`, commit
+`dbd81ac`.
 
 ## Peringatan keamanan
 
