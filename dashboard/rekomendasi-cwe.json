@@ -1,6 +1,6 @@
 {
-  "versi": 1,
-  "tanggal_disusun": "2026-10-20",
+  "versi": 2,
+  "tanggal_disusun": "2026-10-26",
   "catatan": "Panduan umum per CWE untuk lapis 1 rekomendasi perbaikan. Langkah diturunkan dari bagian Potential Mitigations di cwe.mitre.org, atau dari OWASP Cheat Sheet Series bila CWE itu tidak punya bagian tersebut. Bersifat umum: pola perbaikan, bukan analisis atas kode tertentu, dan tidak memuat cara mengeksploitasi. Entri dengan perlu_dicek true belum ditinjau manusia dan membawa alasan_perlu_dicek. Entri dengan perlu_dicek false sudah ditinjau dan membawa catatan_verifikasi berisi hasilnya.",
   "sumber_diizinkan": ["cwe.mitre.org", "cheatsheetseries.owasp.org"],
   "cwe": {
@@ -14,6 +14,48 @@
         "Ulangi setiap pemeriksaan sisi klien di sisi server, karena pemeriksaan di klien bisa dilewati."
       ],
       "sumber": ["https://cwe.mitre.org/data/definitions/20.html"]
+    },
+    "CWE-22": {
+      "id": "CWE-22",
+      "judul": "Pembatasan path ke direktori terbatas yang tidak memadai (path traversal)",
+      "langkah": [
+        "Petakan pengenal tetap ke path berkas yang sudah ditentukan dan tolak masukan lain; ini cara terkuat bila himpunan berkasnya memang diketahui.",
+        "Kanonikalisasi path dengan fungsi bawaan sebelum diperiksa, sehingga urutan \"..\" dan symlink sudah terurai saat validasi berjalan.",
+        "Pakai daftar putih karakter nama berkas, bukan daftar hitam pola berbahaya yang mudah tidak lengkap.",
+        "Jalankan proses dengan hak paling rendah dan simpan berkas di luar document root."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/22.html"]
+    },
+    "CWE-23": {
+      "id": "CWE-23",
+      "judul": "Path traversal relatif",
+      "langkah": [
+        "Batasi nama berkas dengan daftar putih karakter: satu titik saja, tanpa pemisah direktori, dan hanya ekstensi yang disetujui.",
+        "Kanonikalisasi path dengan fungsi bawaan sebelum divalidasi, dan jangan mendekode masukan yang sama dua kali.",
+        "Tolak masukan yang tidak persis sesuai spesifikasi alih-alih menyaring pola yang dianggap berbahaya."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/23.html"]
+    },
+    "CWE-36": {
+      "id": "CWE-36",
+      "judul": "Path traversal absolut",
+      "langkah": [
+        "Tolak path absolut dan terima hanya nama berkas yang cocok dengan daftar putih karakter serta ekstensi yang disetujui.",
+        "Dekode dan kanonikalisasi masukan sebelum divalidasi, dan pastikan masukan yang sama tidak didekode dua kali.",
+        "Jangan bergantung pada penyaringan karakter berbahaya, karena daftar seperti itu mudah tidak lengkap."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/36.html"]
+    },
+    "CWE-73": {
+      "id": "CWE-73",
+      "judul": "Nama atau path berkas dikendalikan dari luar",
+      "langkah": [
+        "Petakan nilai masukan tetap, misalnya id numerik, ke nama berkas di sisi server, lalu tolak nilai di luar daftar itu.",
+        "Ulangi setiap pemeriksaan sisi klien di sisi server, karena pemeriksaan di klien bisa dilewati.",
+        "Pakai fungsi kanonikalisasi path bawaan untuk mengurai urutan \"..\" dan symlink sebelum berkas dibuka.",
+        "Jalankan proses sebagai pengguna berhak rendah sehingga dampak penyalahgunaan tetap terbatas."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/73.html"]
     },
     "CWE-79": {
       "id": "CWE-79",
@@ -36,6 +78,26 @@
         "Jaga pesan error tetap minim supaya struktur query dan detail internal tidak ikut terungkap."
       ],
       "sumber": ["https://cwe.mitre.org/data/definitions/89.html"]
+    },
+    "CWE-90": {
+      "id": "CWE-90",
+      "judul": "Elemen khusus pada query LDAP tidak dinetralkan (LDAP injection)",
+      "langkah": [
+        "Terima hanya nilai yang persis cocok dengan daftar nilai yang sah, lalu tolak atau ubah sisanya.",
+        "Validasi lebih dari formatnya: panjang, tipe, rentang nilai, sintaks, dan konsistensi antar-field.",
+        "Jangan mengandalkan pemblokiran masukan yang diketahui buruk, karena daftar seperti itu bisa terlewat."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/90.html"]
+    },
+    "CWE-99": {
+      "id": "CWE-99",
+      "judul": "Pengenal sumber daya tidak dikendalikan dengan benar (resource injection)",
+      "langkah": [
+        "Perlakukan setiap pengenal sumber daya yang datang dari pengguna sebagai tidak dipercaya sebelum dipakai.",
+        "Terima hanya pengenal yang cocok dengan daftar nilai yang sah, dan tolak atau ubah yang lainnya.",
+        "Validasi panjang, tipe, rentang nilai, sintaks, dan konsistensi antar-field, bukan hanya bentuk formatnya."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/99.html"]
     },
     "CWE-285": {
       "id": "CWE-285",
@@ -125,6 +187,18 @@
         "Samarkan atau tandatangani kunci sehingga nilai yang sah sulit ditebak dan perubahannya terdeteksi di server."
       ],
       "sumber": ["https://cwe.mitre.org/data/definitions/639.html"]
+    },
+    "CWE-730": {
+      "id": "CWE-730",
+      "judul": "Kategori OWASP Top Ten 2004 A9: denial of service",
+      "langkah": [
+        "Rancang pembatasan laju dan kuota sumber daya sejak arsitektur, bukan sebagai tambalan di akhir.",
+        "Tetapkan batas yang spesifik pada tiap titik masuk, lalu pastikan kegagalan alokasi meninggalkan sistem dalam keadaan aman.",
+        "Petakan alert ini ke kelemahan anggota yang konkret, misalnya konsumsi sumber daya tanpa kendali, sebelum menindaklanjutinya."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/730.html"],
+      "perlu_dicek": true,
+      "alasan_perlu_dicek": "CWE-730 adalah Category, bukan Weakness: halaman MITRE-nya menandai mapping usage PROHIBITED dan tidak punya bagian Potential Mitigations sama sekali. Langkah di sini diturunkan dari kelemahan anggotanya, terutama CWE-400 Uncontrolled Resource Consumption yang panduannya sudah ada di berkas ini, jadi perlu ditinjau manusia sebelum dipakai sebagai panduan resmi."
     },
     "CWE-755": {
       "id": "CWE-755",
@@ -221,6 +295,18 @@
         "Batasi kebijakan hanya pada sumber daya yang memang perlu diakses lintas domain."
       ],
       "sumber": ["https://cwe.mitre.org/data/definitions/942.html"]
+    },
+    "CWE-943": {
+      "id": "CWE-943",
+      "judul": "Elemen khusus pada logika query data tidak dinetralkan",
+      "langkah": [
+        "Pakai API yang aman: antarmuka berparameter, atau API yang menghindari interpreter sama sekali.",
+        "Kalau antarmuka berparameter tidak tersedia, escape karakter khusus dengan sintaks milik interpreter itu lewat pustaka encoder, bukan kode sendiri.",
+        "Pakai validasi daftar putih beserta kanonikalisasi sebagai lapis tambahan, bukan sebagai pengganti parameterisasi."
+      ],
+      "sumber": ["https://cwe.mitre.org/data/definitions/943.html", "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"],
+      "perlu_dicek": true,
+      "alasan_perlu_dicek": "Halaman MITRE CWE-943 tidak punya bagian Potential Mitigations, hanya deskripsi bahwa produk tidak menetralkan elemen khusus yang bisa mengubah logika query yang dimaksud. Langkah di sini diturunkan dari OWASP Injection Prevention Cheat Sheet, jadi perlu ditinjau manusia sebelum dipakai sebagai panduan resmi."
     },
     "CWE-1333": {
       "id": "CWE-1333",
