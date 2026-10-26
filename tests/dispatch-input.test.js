@@ -183,3 +183,105 @@ test('skenario yang dikirim cocok dengan mode yang dikirim', () => {
     if (inputs.vendor_v2 === 'gabungan') assert.equal(inputs.skenario, 'B', `${k.nama}: gabungan di luar skenario B`);
   }
 });
+
+// ---------- Sumbu sast: input baru dan penjaga K8 di job rencana ----------
+// Kasus DITAMBAHKAN, tidak menggantikan kasus lama. Yang diuji di bawah adalah PERILAKU penjaganya,
+// bukan keberadaan teksnya: blok shell step `mode` diekstrak dari YAML lalu dijalankan dengan bash
+// pada kombinasi env yang berbeda-beda, dan yang diperiksa adalah kode keluarnya.
+
+test('input sast ada di workflow dengan opsi dan bawaan yang benar', () => {
+  assert.ok(INPUT.sast, 'input sast tidak terbaca dari workflow');
+  assert.deepEqual(INPUT.sast.opsi, ['sonar', 'codeql', 'keduanya'], 'opsi input sast');
+  assert.equal(INPUT.sast.bawaan, 'sonar', 'bawaan input sast harus sonar');
+});
+
+test('dashboard tidak pernah mengirim input sast, jadi bawaan sonar selalu berlaku', () => {
+  // dashboard/ sengaja belum menyentuh sumbu ini. Selama itu, setiap dispatch memakai bawaan, dan
+  // tidak ada satu pun kombinasi yang bisa diam-diam menjadi dua perkakas.
+  for (const k of KOMBINASI) {
+    assert.ok(!('sast' in lengkap(k.arg)), `${k.nama}: mengirim input sast`);
+  }
+});
+
+const skripRencana = (() => {
+  const awal = wf.indexOf('        id: mode\n');
+  const run = wf.indexOf('        run: |\n', awal);
+  const akhir = wf.indexOf('\n  sonarcloud:', run);
+  assert.ok(awal > 0 && run > awal && akhir > run, 'blok shell job rencana tidak ditemukan');
+  return wf.slice(run + '        run: |\n'.length, akhir)
+    .split('\n')
+    .map((b) => b.replace(/^ {10}/, ''))
+    .join('\n');
+})();
+
+const jalankanRencana = (env) => {
+  const { spawnSync } = require('node:child_process');
+  const os = require('node:os');
+  const keluaran = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rencana-')), 'out.txt');
+  const h = spawnSync('bash', ['-c', skripRencana], {
+    encoding: 'utf8',
+    env: {
+      PATH: process.env.PATH,
+      GITHUB_OUTPUT: keluaran,
+      MODE_INPUT: '', USE_GEMINI: 'false', SKENARIO_INPUT: '', VENDOR_V2: 'google', JALUR: 'v2', SAST_INPUT: 'sonar',
+      ...env,
+    },
+  });
+  const out = fs.existsSync(keluaran) ? fs.readFileSync(keluaran, 'utf8') : '';
+  fs.rmSync(path.dirname(keluaran), { recursive: true, force: true });
+  return { kode: h.status, galat: h.stderr ?? '', out };
+};
+
+test('penjaga rencana: kombinasi bawaan tetap lolos', () => {
+  // Jaring untuk tes di bawahnya: kalau ini gagal, penolakan apa pun di bawah tidak membuktikan apa-apa.
+  const b = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B' });
+  assert.equal(b.kode, 0, `bawaan harus lolos, galat: ${b.galat}`);
+  assert.match(b.out, /skenario=B/);
+  assert.match(b.out, /mode=sast-llm/);
+
+  // Tanpa input sast sama sekali, seperti dispatch lama yang tidak mengenal input ini.
+  const lama = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B', SAST_INPUT: '' });
+  assert.equal(lama.kode, 0, `dispatch tanpa input sast harus lolos, galat: ${lama.galat}`);
+
+  // Skenario C dengan sonar: perilaku yang sudah ada, tidak boleh ikut tertolak.
+  const c = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'C' });
+  assert.equal(c.kode, 0, `C dengan sonar harus lolos, galat: ${c.galat}`);
+});
+
+test('penjaga rencana K8: skenario C dengan codeql atau keduanya ditolak dengan sebabnya', () => {
+  for (const sast of ['codeql', 'keduanya']) {
+    const h = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'C', SAST_INPUT: sast });
+    assert.notEqual(h.kode, 0, `C + ${sast} harus ditolak`);
+    assert.match(h.galat, /Skenario C tidak memakai alert SAST sama sekali/, `C + ${sast}: sebab penolakan`);
+    assert.match(h.galat, new RegExp(`sast=${sast}`), `C + ${sast}: pesan menyebut nilainya`);
+  }
+});
+
+test('penjaga rencana: codeql dan keduanya di skenario B ditolak karena belum didukung CI', () => {
+  // Penjaga kedua, dan sebabnya BERBEDA dari penjaga K8 di atas. Keduanya harus terjangkau: input
+  // yang diterima lalu diam-diam tidak berpengaruh lebih menyesatkan daripada yang ditolak terbuka.
+  for (const skenario of ['A', 'B']) {
+    for (const sast of ['codeql', 'keduanya']) {
+      const mode = skenario === 'A' ? 'sast' : 'sast-llm';
+      const h = jalankanRencana({ MODE_INPUT: mode, SKENARIO_INPUT: skenario, SAST_INPUT: sast });
+      assert.notEqual(h.kode, 0, `${skenario} + ${sast} harus ditolak`);
+      assert.match(h.galat, /belum didukung di CI/, `${skenario} + ${sast}: sebab penolakan`);
+      assert.match(h.galat, /Tidak ada CodeQL yang dijalankan di CI/, `${skenario} + ${sast}: menegaskan CI tidak menjalankan CodeQL`);
+    }
+  }
+});
+
+test('penjaga rencana: penjaga lama tetap berlaku apa adanya', () => {
+  // Penambahan sumbu sast tidak boleh menggeser satu pun penolakan yang sudah ada.
+  const gabungan = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'C', VENDOR_V2: 'gabungan' });
+  assert.notEqual(gabungan.kode, 0);
+  assert.match(gabungan.galat, /Mode gabungan hanya sah untuk skenario B/);
+
+  const aDenganLlm = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'A' });
+  assert.notEqual(aDenganLlm.kode, 0);
+  assert.match(aDenganLlm.galat, /Skenario A tidak memakai LLM/);
+
+  const cDiV1 = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'C', JALUR: 'v1' });
+  assert.notEqual(cDiV1.kode, 0);
+  assert.match(cDiV1.galat, /Skenario C hanya tersedia di jalur v2/);
+});

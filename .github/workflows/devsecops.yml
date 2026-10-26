@@ -46,6 +46,15 @@ on:
         type: choice
         options: [google, anthropic, openai, gabungan]
         default: google
+      sast:
+        description: >-
+          Perkakas analisis statis pemasok alert. Sumbu TERPISAH dari skenario; tidak ada skenario D.
+          codeql dan keduanya hanya berarti untuk skenario A dan B, dan untuk sekarang hanya didukung
+          lewat CLI: CI menolaknya. Tidak ada CodeQL yang dijalankan di CI; alertnya dibaca dari
+          berkas beku yang di-commit.
+        type: choice
+        options: [sonar, codeql, keduanya]
+        default: sonar
       konfirmasi_v2:
         description: 'Ketik JALANKAN untuk menyetujui biaya panggilan berbayar jalur v2'
         type: string
@@ -170,6 +179,7 @@ jobs:
           SKENARIO_INPUT: ${{ inputs.skenario }}
           VENDOR_V2: ${{ inputs.vendor_v2 }}
           JALUR: ${{ inputs.jalur }}
+          SAST_INPUT: ${{ inputs.sast }}
         run: |
           set -euo pipefail
           mode=none
@@ -197,6 +207,26 @@ jobs:
           # panggilan berbayar. Job rencana tidak pernah memanggil LLM.
           if [ "$gabungan" = "true" ] && [ "$skenario" != "B" ]; then
             echo "::error::Mode gabungan hanya sah untuk skenario B. Skenario yang diminta: $skenario." >&2
+            exit 1
+          fi
+          # K8: perkakas kedua hanya berarti pada skenario yang MEMAKAI alert. Dua penjaga berurutan,
+          # masing-masing dengan pesannya sendiri, supaya keduanya terjangkau dan sebab penolakannya
+          # tidak pernah tertukar.
+          #
+          # Kondisi sonar_di_deteksi TIDAK dijaga di sini, dan itu bukan kelalaian: kondisi bukan
+          # input workflow sama sekali. Job analisis-v2 memaku --kondisi=utama, jadi kombinasi itu
+          # tidak dapat dibentuk lewat dispatch, dan penolakannya hidup di scripts/sast/sumbu-sast.js
+          # tempat kombinasi itu memang bisa diminta.
+          sast="${SAST_INPUT:-sonar}"
+          if [ -z "$sast" ]; then sast=sonar; fi
+          if [ "$sast" != "sonar" ] && [ "$skenario" = "C" ]; then
+            echo "::error::Skenario C tidak memakai alert SAST sama sekali, jadi sast=$sast tidak punya arti di situ. Pakai sast=sonar, atau pilih skenario A atau B." >&2
+            exit 1
+          fi
+          # Sisanya ditolak karena belum diteruskan ke job analisis. Input yang diterima lalu
+          # diam-diam tidak berpengaruh lebih menyesatkan daripada input yang ditolak terang-terangan.
+          if [ "$sast" != "sonar" ]; then
+            echo "::error::sast=$sast belum didukung di CI; jalankan lewat CLI scripts/llm-scan.js --sast=$sast dengan --codeql-beku. Tidak ada CodeQL yang dijalankan di CI." >&2
             exit 1
           fi
           if [ "$skenario" = "A" ] && [ "$mode" = "sast-llm" ]; then
