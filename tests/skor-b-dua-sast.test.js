@@ -364,3 +364,71 @@ test('kategoriPerPerkakas tahan terhadap verifikasi tanpa kategori', () => {
     ['correct_retention', 'identified_fp', 'misidentified_fp', 'missed_fp']);
   for (const v of Object.values(kosong)) assert.deepEqual(v, {});
 });
+
+// ---------- 4. Lengan kontrol (sast=sonar) dinilai bersama lengan uji ----------
+// Satu batch nyata menghasilkan dua jenis folder untuk tiap vendor: lengan uji (dua perkakas, 23
+// alert) dan lengan kontrol (Sonar saja, 5 alert). Penilai ini semula membandingkan SEMUA folder
+// dengan himpunan dua perkakas dan memakai vendor/kondisi sebagai kunci, jadi lengan kontrol ditolak
+// dan dua lengan satu vendor dianggap folder ganda. Tak satu pun tes memakai folder kontrol.
+
+// Alert lengan kontrol persis seperti yang ditulis llm-scan untuk sast=sonar: tanpa sumber_sast,
+// karena jalur itu tidak pernah melewati penggabung.
+const SONAR_SAJA = URUTAN_ALERT.filter((a) => a.sumber_sast === 'sonar').map(({ sumber_sast: _, ...a }) => a);
+
+test('lengan kontrol (Sonar saja, prompt v3) dinilai terhadap himpunannya sendiri', () => {
+  const lg = lingkungan();
+  const { r, laporan } = nilai(lg, folderRun({ objek: lg.objek, sast: 'sonar', alert: SONAR_SAJA }));
+  assert.equal(r.status, 0, `lengan kontrol harus dapat dinilai; stderr:\n${r.stderr}`);
+  const m = laporan.per_model[0];
+  assert.equal(m.sast, 'sonar');
+  assert.equal(m.versi_prompt, 'v3');
+  assert.equal(m.jumlah_alert, 2, 'lengan kontrol hanya menerima alert Sonar');
+  assert.deepEqual(m.per_perkakas.jumlah_alert, { sonar: 2 });
+  // Alert CodeQL tidak pernah dikirim ke lengan ini, jadi tidak boleh ikut "dipertahankan".
+  assert.deepEqual(m.per_perkakas.dipertahankan_per_run, [{ run: 1, sonar: 2 }]);
+  assert.equal(Object.keys(m.label_alert).length, 2);
+});
+
+test('lengan uji dan lengan kontrol satu vendor dinilai dalam satu laporan', () => {
+  const lg = lingkungan();
+  const uji = folderRun({ objek: lg.objek, sast: 'keduanya' });
+  const kontrol = folderRun({ objek: lg.objek, sast: 'sonar', alert: SONAR_SAJA });
+  const { r, laporan } = nilai(lg, [uji, kontrol]);
+  assert.equal(r.status, 0, `dua lengan satu vendor adalah rancangan batch, bukan folder ganda; stderr:\n${r.stderr}`);
+  assert.deepEqual(laporan.per_model.map((m) => [m.vendor, m.sast, m.jumlah_alert]),
+    [['google', 'keduanya', 4], ['google', 'sonar', 2]]);
+  // Ringkasan atas tetap himpunan penuh sebagai rujukan.
+  assert.equal(laporan.jumlah_alert, 4);
+});
+
+test('lengan kontrol yang membawa himpunan dua perkakas ditolak', () => {
+  // Kebalikan dari tes di atas: folder yang mengaku Sonar saja tetapi memuat alert CodeQL berarti
+  // berkas yang dinilai bukan yang dikirim ke model.
+  const lg = lingkungan();
+  const { r } = nilai(lg, folderRun({ objek: lg.objek, sast: 'sonar', alert: URUTAN_ALERT }));
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /tidak sama dengan alert yang dibangun ulang/);
+});
+
+test('dua folder dengan vendor, kondisi, dan sumbu sast yang sama tetap ditolak', () => {
+  const lg = lingkungan();
+  const a = folderRun({ objek: lg.objek, sast: 'sonar', alert: SONAR_SAJA });
+  const b = folderRun({ objek: lg.objek, sast: 'sonar', alert: SONAR_SAJA });
+  const { r } = nilai(lg, [a, b]);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Lebih dari satu folder untuk google\/utama\/sonar/);
+});
+
+test('alertUntuk meniru llm-scan untuk ketiga nilai sumbu sast', () => {
+  const sumbu = require('../scripts/sast/sumbu-sast');
+  const sonar = [{ id: 'SONAR-01', file: 'src/a.js', baris: 1 }, { id: 'SONAR-02', file: 'src/a.js', baris: 2 }];
+  const codeql = [{ id: 'CQL-01', file: 'src/a.js', baris: 1 }];
+  const sumber = { alertSonar: sonar, alertCodeql: codeql, gabungAlert: sumbu.gabungAlert, perkakasUntuk: sumbu.perkakasUntuk };
+  const id = (sast) => penilai.alertUntuk(sast, sumber).map((a) => a.id);
+  assert.deepEqual(id('sonar'), ['SONAR-01', 'SONAR-02']);
+  assert.deepEqual(id('codeql'), ['CQL-01']);
+  assert.deepEqual(id('keduanya'), ['SONAR-01', 'SONAR-02', 'CQL-01'], 'Sonar lebih dulu, lalu CodeQL');
+  // sast=sonar tidak pernah melewati penggabung di llm-scan, jadi alertnya tidak membawa sumber_sast.
+  assert.ok(penilai.alertUntuk('sonar', sumber).every((a) => !('sumber_sast' in a)));
+  assert.ok(penilai.alertUntuk('keduanya', sumber).every((a) => 'sumber_sast' in a));
+});

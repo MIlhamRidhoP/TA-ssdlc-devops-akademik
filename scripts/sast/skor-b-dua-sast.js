@@ -80,7 +80,7 @@ const periksaFolder = (data, { periksaKombinasi, SAST_DIDUKUNG, VERSI_PROMPT_DID
   if (new Set(data.map((d) => d.summary.hash_kode_sumber)).size > 1) {
     throw new Error('Hash kode sumber berbeda antar folder; folder yang menilai kode berbeda tidak boleh digabung');
   }
-  const kunci = data.map((d) => `${d.summary.vendor}/${d.summary.kondisi}`);
+  const kunci = data.map((d) => `${d.summary.vendor}/${d.summary.kondisi}/${d.summary.sast ?? 'sonar'}`);
   const ganda = kunci.filter((k, i) => kunci.indexOf(k) !== i);
   if (ganda.length) throw new Error(`Lebih dari satu folder untuk ${[...new Set(ganda)].join(', ')}`);
 };
@@ -100,6 +100,21 @@ const periksaAlertFolder = (data, alertAcuan) => {
         + 'Berkas beku yang diberikan bukan yang dipakai saat memindai; penilaian ditolak.');
     }
   }
+};
+
+// Himpunan alert yang SEHARUSNYA dikirim llm-scan untuk satu nilai sumbu sast, dibangun dengan cara
+// yang sama persis dengan llm-scan.js: sast=sonar memakai daftar Sonar apa adanya tanpa melewati
+// penggabung (jadi alertnya tidak membawa sumber_sast), sisanya lewat gabungAlert.
+//
+// Dipisah per folder karena SATU penilaian memuat lengan uji (dua perkakas, 23 alert) dan lengan
+// kontrol (Sonar saja, 5 alert) bersamaan. Membandingkan semua folder dengan himpunan 23 alert
+// menolak lengan kontrol, dan kalau lolos pun 18 alert CodeQL akan dihitung "dipertahankan" pada
+// lengan yang tidak pernah menerimanya.
+const alertUntuk = (sast, { alertSonar, alertCodeql, gabungAlert, perkakasUntuk }) => {
+  const pakai = perkakasUntuk(sast);
+  const dariSonar = pakai.includes('sonar') ? alertSonar : [];
+  const dariCodeql = pakai.includes('codeql') ? alertCodeql : [];
+  return sast === 'sonar' ? dariSonar : gabungAlert({ sonar: dariSonar, codeql: dariCodeql });
 };
 
 // Rincian per perkakas: dari satu himpunan id, berapa milik Sonar dan berapa milik CodeQL.
@@ -158,21 +173,28 @@ const main = () => {
   const c = bekuCodeql.bacaBeku(path.resolve(wajib('codeql-beku')), objek);
   const templateAlert = render.bacaTemplate().alert.teks;
   const alertSonar = render.pilihAlert(s.ringkasan).map((a) => ({ ...a, teks: render.formatAlert(a, templateAlert) }));
+  // Himpunan penuh dua perkakas, hanya untuk rujukan di bagian atas laporan.
   const alert = sumbu.gabungAlert({ sonar: alertSonar, codeql: c.alert });
-  periksaAlertFolder(data, alert);
+  const sumberAlert = { alertSonar, alertCodeql: c.alert, gabungAlert: sumbu.gabungAlert, perkakasUntuk: sumbu.perkakasUntuk };
+  const alertFolder = new Map(data.map((d) => [d, alertUntuk(d.summary.sast ?? 'sonar', sumberAlert)]));
+  for (const d of data) periksaAlertFolder([d], alertFolder.get(d));
 
-  const asal = new Map(alert.map((a) => [a.id, a.sumber_sast]));
   const gt = gs.bacaGroundTruth();
   const fileLabel = ambilArg('label-alert');
-  const label = score.labelAlert(alert, gt, fileLabel ? bacaJson(path.resolve(fileLabel)) : {}, {});
+  const labelManual = fileLabel ? bacaJson(path.resolve(fileLabel)) : {};
+  const label = score.labelAlert(alert, gt, labelManual, {});
   const opsiTriase = { konservatif: process.argv.includes('--triase-konservatif') };
 
-  // Skenario A ikut dihitung dari himpunan yang sama, supaya tabel per item punya kolom A dan ketiga
-  // skenario dalam satu berkas berasal dari satu himpunan alert yang persis sama.
+  // Skenario A dihitung dari himpunan penuh untuk rujukan, dan dari himpunan tiap folder untuk
+  // penilaian per lengan: lengan kontrol harus mendapat angka Sonar saja, bukan angka dua perkakas.
   const skorA = score.skenarioA(petakanK6(alert), gt);
 
   const perModel = data.map((d) => {
-    const skorRun = d.runs.map((run) => score.skorRunUtama({ run, alert, gt, label, triase: d.triase, opsiTriase }));
+    const alertD = alertFolder.get(d);
+    const asal = new Map(alertD.map((a) => [a.id, a.sumber_sast ?? 'sonar']));
+    const labelD = score.labelAlert(alertD, gt, labelManual, {});
+    const skorAD = score.skenarioA(petakanK6(alertD), gt);
+    const skorRun = d.runs.map((run) => score.skorRunUtama({ run, alert: alertD, gt, label: labelD, triase: d.triase, opsiTriase }));
     score.validasiTriase(d.triase, d.runs, Object.fromEntries(skorRun.map((x) => [x.run, x.penilaian_c])));
     const dipertahankan = skorRun.map((x) => x.sonar_setelah_verifikasi.alert);
     return {
@@ -182,7 +204,7 @@ const main = () => {
       versi_prompt: d.summary.versi_prompt,
       status_panggilan: score.hitungStatusPanggilan(d.runs),
       rata_rata: {
-        skenario_a: score.rataMetrik([skorA.b_filter_v2]),
+        skenario_a: score.rataMetrik([skorAD.b_filter_v2]),
         skenario_b: score.rataMetrik(skorRun.map((x) => x.skenario_b)),
         skenario_c: score.rataMetrik(skorRun.map((x) => x.skenario_c)),
       },
@@ -190,12 +212,14 @@ const main = () => {
       // dipecah per perkakas. Tanpa ini, lengan dua perkakas hanya menghasilkan satu angka gabungan
       // dan pertanyaan "perkakas mana yang alertnya lebih sering salah dibuang" tidak terjawab.
       per_perkakas: {
-        jumlah_alert: perPerkakas(alert.map((a) => a.id), asal),
+        jumlah_alert: perPerkakas(alertD.map((a) => a.id), asal),
         dipertahankan_per_run: dipertahankan.map((ids, i) => ({ run: skorRun[i].run, ...perPerkakas(ids, asal) })),
         kategori_verifikasi_per_run: skorRun.map((x) => ({ run: x.run, ...kategoriPerPerkakas(x.verifikasi, asal) })),
       },
       runs: skorRun.map(({ penilaian_c: _, ...x }) => x),
-      tabel_per_item: score.tabelPerItem({ gt, skorA, skorRun }),
+      jumlah_alert: alertD.length,
+      label_alert: labelD,
+      tabel_per_item: score.tabelPerItem({ gt, skorA: skorAD, skorRun }),
     };
   });
 
@@ -210,8 +234,10 @@ const main = () => {
     sonar_beku: { sha256_isi: s.info.sha256_isi, revisi: s.info.revisi },
     codeql_beku: { nama: c.info.nama, sha256_isi: c.info.sha256_isi, jumlah_alert: c.info.jumlah_alert },
     ground_truth: { jumlah_positif: gt.filter((g) => g.status === 'terbukti').length, jumlah_item: gt.length },
+    // Himpunan penuh dua perkakas, untuk rujukan. Tiap lengan dinilai terhadap himpunannya sendiri;
+    // lihat jumlah_alert dan label_alert di dalam per_model.
     jumlah_alert: alert.length,
-    jumlah_alert_per_perkakas: perPerkakas(alert.map((a) => a.id), asal),
+    jumlah_alert_per_perkakas: perPerkakas(alert.map((a) => a.id), new Map(alert.map((a) => [a.id, a.sumber_sast]))),
     label_alert: label,
     triase_varian: opsiTriase.konservatif ? 'konservatif' : 'utama',
     folder: data.map((d) => ({
@@ -236,6 +262,6 @@ const main = () => {
   console.log(`Laporan: ${path.basename(keluar)}`);
 };
 
-module.exports = { bacaFolder, periksaFolder, sidikAlert, periksaAlertFolder, perPerkakas, kategoriPerPerkakas };
+module.exports = { bacaFolder, periksaFolder, sidikAlert, periksaAlertFolder, alertUntuk, perPerkakas, kategoriPerPerkakas };
 
 if (require.main === module) main();
