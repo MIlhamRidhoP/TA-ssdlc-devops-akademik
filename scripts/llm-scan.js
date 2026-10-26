@@ -15,6 +15,8 @@
 //                            --objek=<worktree commit yang dianalisis> [--runs=N]
 //
 //   node scripts/llm-scan.js ... --sonar-beku=<file>     alert Sonar dari file beku (wajib untuk data eksperimen)
+//   node scripts/llm-scan.js ... --sast=sonar|codeql|keduanya   perkakas SAST pemasok alert (bawaan sonar)
+//   node scripts/llm-scan.js ... --codeql-beku=<file>    alert CodeQL dari file beku (wajib kalau sast memuat codeql)
 //   node scripts/llm-scan.js ... --kering                rakit prompt dan tampilkan hash tanpa memanggil API LLM
 //   node scripts/llm-scan.js ... --runs=3 --jalankan=1   buat folder dengan target 3 run, jalankan run-1 saja
 //   node scripts/llm-scan.js ... --lanjut=<folder>       tambah run berikutnya ke folder itu (bawaan 1 run);
@@ -24,6 +26,13 @@
 // Setiap run mencatat commit_kode (HEAD repo alat); run ditolak kalau file dalam lingkup repo alat belum bersih.
 //   node scripts/llm-scan.js --bekukan-sonar --objek=<worktree> [--keluar=<file>]
 //                                                        ambil laporan Sonar dari API sekali dan tulis file beku
+//
+// sast adalah sumbu KETIGA, terpisah dari kondisi dan dari skenario; tidak ada "skenario D".
+// Bawaannya sonar, sehingga pemanggilan yang tidak menyebutnya berperilaku persis seperti sebelum
+// sumbu ini ada: daftar alertnya tidak pernah melewati penggabung, dan run-N.json maupun summary.json
+// tidak memuat medan sast sama sekali. Dua kombinasi ditolak di scripts/sast/sumbu-sast.js, masing-
+// masing dengan sebabnya sendiri: skenario C (tidak memakai alert sama sekali) dan kondisi
+// sonar_di_deteksi (bentuk laporan gabungan dua perkakas belum dirancang).
 //
 // --objek harus worktree git tanpa perubahan yang belum di-commit. Tanpa --sonar-beku, kondisi utama dan
 // sonar_di_deteksi mengambil laporan dari API (butuh SONAR_TOKEN, SONAR_PROJECT, SONAR_BRANCH), dan hash tree src/
@@ -38,6 +47,8 @@ const { panggilDenganUlang, ADAPTER } = require('./llm/panggil');
 const { VENDOR, BATAS_OUTPUT, TINGKAT_THINKING, versiSdk, hitungBiaya } = require('./llm/vendor');
 const { pengaturanKoneksi } = require('./llm/http');
 const { buatIsiBeku, tulisBeku, bacaBeku } = require('./llm/sonar-beku');
+const { SAST_BAWAAN, perkakasUntuk, periksaKombinasi, gabungAlert } = require('./sast/sumbu-sast');
+const { bacaBeku: bacaBekuCodeql } = require('./sast/codeql-beku');
 const {
   infoKodeAlat, periksaKodeAlat, hashFilePrompt, bentukSidik, rencanaNomorRun, periksaLanjut,
 } = require('./llm/lanjut');
@@ -209,6 +220,10 @@ const jalankanSatuRun = async (konteks, n) => {
     commit_objek_uji: konteks.objek.commit, branch_objek_uji: konteks.objek.branch, tree_src_objek_uji: konteks.objek.tree_src,
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     sumber_sonar: konteks.sumberSonar, sonar_beku: konteks.infoBeku,
+    // Ditulis hanya kalau bukan nilai bawaan, mengikuti cara `skenario` dulu diperkenalkan: run
+    // sonar-saja karena itu menghasilkan berkas yang byte-identik dengan sebelum sumbu ini ada, dan
+    // run yang TIDAK menyebut sast memang berarti sonar saja.
+    ...(konteks.sast !== 'sonar' ? { sast: konteks.sast, codeql_beku: konteks.infoBekuCodeql } : {}),
     commit_kode: { head: konteks.kodeAlat.head, bersih: konteks.kodeAlat.bersih },
     parse_ok: validDeteksi.parse_ok,
     temuan: validDeteksi.temuan,
@@ -344,6 +359,11 @@ const main = async () => {
   if (!SKENARIO_ALAT.includes(skenario)) throw new Error(`--skenario harus ${SKENARIO_ALAT.join(' atau ')}`);
   if (!VENDOR[vendor]) throw new Error('--vendor harus google, anthropic, atau openai');
   if (!render.KONDISI.includes(kondisi)) throw new Error(`--kondisi harus ${render.KONDISI.join(', ')}`);
+  // Sumbu sast, bawaan sonar: pemanggilan yang tidak menyebutnya berperilaku persis seperti
+  // sebelumnya, termasuk tidak pernah melewati penggabung alert. Diperiksa setelah kondisi dan
+  // skenario sah, supaya pesan galat yang muncul lebih dulu adalah yang paling dekat ke sebabnya.
+  const sast = (ambilArg('sast') ?? SAST_BAWAAN).toLowerCase();
+  periksaKombinasi({ sast, skenario, kondisi });
   if (!kering && !process.env[KUNCI_API[vendor]]) throw new Error(`${KUNCI_API[vendor]} tidak diset`);
   const jumlahRun = Number(ambilArg('runs') ?? 1);
   if (!Number.isInteger(jumlahRun) || jumlahRun < 1) throw new Error('--runs harus bilangan bulat >= 1');
@@ -360,9 +380,25 @@ const main = async () => {
   let sonar = null;
   let sumberSonar = null;
   let infoBeku = null;
+  let infoBekuCodeql = null;
   if (perluSonar({ kondisi, skenario })) {
-    ({ sonar, sumber: sumberSonar, infoBeku } = await siapkanSonar(objek, ambilArg('sonar-beku')));
-    alert = render.pilihAlert(sonar.ringkasan).map((a) => ({ ...a, teks: render.formatAlert(a, template.alert.teks) }));
+    let alertSonar = [];
+    if (perkakasUntuk(sast).includes('sonar')) {
+      ({ sonar, sumber: sumberSonar, infoBeku } = await siapkanSonar(objek, ambilArg('sonar-beku')));
+      alertSonar = render.pilihAlert(sonar.ringkasan).map((a) => ({ ...a, teks: render.formatAlert(a, template.alert.teks) }));
+    }
+    let alertCodeql = [];
+    if (perkakasUntuk(sast).includes('codeql')) {
+      const fileCodeql = ambilArg('codeql-beku');
+      if (!fileCodeql) throw new Error(`--codeql-beku wajib untuk --sast=${sast}`);
+      const b = bacaBekuCodeql(path.resolve(fileCodeql), objek);
+      infoBekuCodeql = b.info;
+      alertCodeql = b.alert;
+    }
+    // sast=sonar memakai daftar alert itu apa adanya dan tidak pernah melewati penggabung, sehingga
+    // perilakunya identik dengan sebelum sumbu ini ada. Penggabungan hanya untuk sumbu yang memang
+    // memuat lebih dari satu perkakas.
+    alert = sast === 'sonar' ? alertSonar : gabungAlert({ sonar: alertSonar, codeql: alertCodeql });
     sonarTeks = render.laporanSonar(alert.map((a) => a.teks));
   }
   infoBeku = infoBekuRelatif(infoBeku, objek);
@@ -431,7 +467,7 @@ const main = async () => {
     vendor, model, kondisi, skenario, objek, kode, template, alert, sonarTeks, folder, sdk,
     analisisSonar: sonar ? sonar.laporan.analisis.tanggal : null,
     revisiSonar: sonar ? sonar.laporan.analisis.revisi : null,
-    sumberSonar, infoBeku, kodeAlat,
+    sumberSonar, infoBeku, kodeAlat, sast, infoBekuCodeql,
   };
   console.log(`Vendor ${vendor} (${model}), skenario ${skenario}, kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, kode ${kodeAlat.head.slice(0, 7)}, `
     + `${kode.file.length} file, ${alert.length} alert, run ${nomor.join(', ')} dari ${target}${summaryLama ? ' (lanjut)' : ''}`);
@@ -445,6 +481,7 @@ const main = async () => {
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     tree_src_analisis_sonar: sonar ? sonar.tree_src_analisis : null,
     sumber_sonar: sumberSonar, sonar_beku: infoBeku,
+    ...(sast !== 'sonar' ? { sast, codeql_beku: infoBekuCodeql } : {}),
     sonar: sonar ? { project: sonar.laporan.project, branch: sonar.laporan.branch, jumlah_issue: sonar.laporan.issues.length, jumlah_hotspot: sonar.laporan.hotspots.length, jumlah_alert: alert.length } : null,
     hash_laporan_sonar: hashLaporanSonar,
     hash_kode_sumber: render.sha256(kode.teks), jumlah_file: kode.file.length,

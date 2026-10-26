@@ -105,13 +105,23 @@ const bentukKodeSumber = (dirObjek) => {
 // ---------- Alert Sonar (README bagian 5) ----------
 
 // Masukan: hasil ringkasSonar() di gemini-scan.js. Filter sama dengan sonarKeFormatTemuan.
-const pilihAlert = (ringkasan) => ringkasan
-  .filter((t) => t.keamanan || t.cwe.length > 0)
-  .map((t) => ({ ...t }))
-  .sort((a, b) => bandingString(a.file ?? '', b.file ?? '')
-    || (a.baris ?? 0) - (b.baris ?? 0)
-    || bandingString(a.rule ?? '', b.rule ?? ''))
-  .map((t, i) => ({ id: `SONAR-${String(i + 1).padStart(2, '0')}`, ...t }));
+//
+// awalanId dijadikan parameter dengan bawaan 'SONAR' supaya perkakas analisis statis kedua bisa
+// memakai awalan sendiri (CQL) tanpa mengubah satu pun id run yang sudah terbit: pemanggil yang
+// tidak menyebut awalan menghasilkan id yang persis sama dengan sebelumnya. Awalan dibatasi huruf
+// besar supaya id tetap cocok dengan pola id alert di skema hasil.
+const AWALAN_ID_ALERT = 'SONAR';
+const POLA_AWALAN_ID = /^[A-Z]+$/;
+const pilihAlert = (ringkasan, awalanId = AWALAN_ID_ALERT) => {
+  if (!POLA_AWALAN_ID.test(awalanId)) throw new Error(`Awalan id alert harus huruf besar: ${awalanId}`);
+  return ringkasan
+    .filter((t) => t.keamanan || t.cwe.length > 0)
+    .map((t) => ({ ...t }))
+    .sort((a, b) => bandingString(a.file ?? '', b.file ?? '')
+      || (a.baris ?? 0) - (b.baris ?? 0)
+      || bandingString(a.rule ?? '', b.rule ?? ''))
+    .map((t, i) => ({ id: `${awalanId}-${String(i + 1).padStart(2, '0')}`, ...t }));
+};
 
 const formatAlert = (alert, templateAlert) => isiTemplate(templateAlert, {
   ID: alert.id,
@@ -181,7 +191,7 @@ const rakitPrompt = ({ template, kondisi, tugas, kodeSumber, sonarTeks = null, a
 };
 
 module.exports = {
-  VERSI_PROMPT, VERSI_PROMPT_DIDUKUNG, dirPrompt, PROMPT_DIR, KONDISI, sha256, cekHashPrompt,
-  isiTemplate, bandingString, barisKode,
+  VERSI_PROMPT, VERSI_PROMPT_DIDUKUNG, dirPrompt, PROMPT_DIR, KONDISI, AWALAN_ID_ALERT,
+  sha256, cekHashPrompt, isiTemplate, bandingString, barisKode,
   bentukKodeSumber, pilihAlert, formatAlert, laporanSonar, bacaTemplate, rakitPrompt,
 };

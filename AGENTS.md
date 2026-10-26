@@ -193,6 +193,7 @@ docker compose down
 | `dashboard/fixtures/` | Data mode demo: data nyata dari run eksperimen 19 Okt dan rekaman run CI #54, kecuali fixture yang ditandai contoh mock (misalnya rekomendasi AI), yang di dashboard selalu tampil dengan label contoh |
 | `.github/workflows/devsecops.yml` | Pipeline: rencana (turunkan skenario, tolak kombinasi tidak sah), build-test, sonarcloud, analisis (v1), analisis-v2 (matriks vendor, tidak menerbitkan), terbit-v2 (gabung tiga vendor lalu terbit; satu-satunya penerbit jalur v2), hasil (penerbit jalur v1) |
 | `scripts/llm/` | Mesin analisis v2: deteksi, verifikasi, penyusun `results.json` skema 2, penggabung tiga vendor (`gabung.js`), penilaian |
+| `scripts/sast/` | Sumbu `sast` (perkakas SAST pemasok alert): laporan CodeQL beku, penggabung himpunan alert, pengurai SARIF. Terpisah dari `scripts/llm/` dan tidak mengubah penilai |
 | `prompts/v2/` | Prompt jalur v2: deteksi dan verifikasi. **Terkunci hash** |
 | `prompts/v3/` | Salinan v2 yang netral terhadap perkakas SAST, tiga baris berbeda. **Terkunci hash** |
 | `prompts/remediasi-v1/` | Prompt rekomendasi lapis 2. **Terkunci hash** |
