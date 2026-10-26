@@ -1,4 +1,5 @@
-// Analisis keamanan dengan prompt v2 (deteksi dan verifikasi), model-agnostic. Spesifikasi: prompts/v2/README.md.
+// Analisis keamanan dengan prompt v2 atau v3 (deteksi dan verifikasi), model-agnostic.
+// Spesifikasi: prompts/v2/README.md; v3 adalah salinan netral perkakas, lihat prompts/v3/README.md.
 // Prompt v1 tetap dijalankan dengan scripts/gemini-scan.js.
 //
 // Pemakaian:
@@ -343,9 +344,23 @@ const runKering = ({ template, kondisi, kode, alert, sonarTeks, skenario = 'B' }
 };
 
 const main = async () => {
-  const prompt = ambilArg('prompt') ?? 'v2';
-  if (prompt === 'v1') throw new Error('Prompt v1 dijalankan dengan: node scripts/gemini-scan.js --runs=N');
-  if (prompt !== 'v2') throw new Error(`Versi prompt tidak dikenal: ${prompt}`);
+  // Versi prompt, bawaan v2: pemanggilan yang tidak menyebutnya memakai folder prompt yang persis
+  // sama dengan sebelum sumbu ini ada. Diturunkan SEKALI di sini dan dipakai sampai bawah.
+  //
+  // Dulu ada dua penurunan: satu di sini yang memaku 'v2', satu lagi di bawah yang memakai
+  // render.VERSI_PROMPT. Yang di atas menang karena berjalan lebih dulu, sehingga --prompt=v3
+  // ditolak dengan "Versi prompt tidak dikenal: v3" di CLI nyata padahal render.dirPrompt('v3')
+  // sudah lama menerimanya. Daftar versi karena itu diambil dari render, satu sumber kebenaran.
+  //
+  // Tetap diperiksa paling awal, sebelum --bekukan-sonar dan sebelum penjaga argumen lain, supaya
+  // versi yang tidak ada tidak sempat menjalankan apa pun.
+  const versiPrompt = (ambilArg('prompt') ?? render.VERSI_PROMPT).toLowerCase();
+  // v1 BUKAN "tidak dikenal": ia ada, hanya dijalankan skrip lain. Pesannya dipisah supaya pemanggil
+  // yang salah skrip diarahkan ke skrip yang benar, bukan disuruh mengganti versi.
+  if (versiPrompt === 'v1') throw new Error('Prompt v1 dijalankan dengan: node scripts/gemini-scan.js --runs=N');
+  if (!render.VERSI_PROMPT_DIDUKUNG.includes(versiPrompt)) {
+    throw new Error(`Versi prompt tidak dikenal: ${versiPrompt}. Yang ada: ${render.VERSI_PROMPT_DIDUKUNG.join(', ')}`);
+  }
   if (process.argv.includes('--bekukan-sonar')) {
     const objek = periksaObjek(ambilArg('objek'));
     process.env.OBJEK_UJI_DIR = objek.dir;
@@ -364,9 +379,7 @@ const main = async () => {
   // sebelumnya, termasuk tidak pernah melewati penggabung alert. Diperiksa setelah kondisi dan
   // skenario sah, supaya pesan galat yang muncul lebih dulu adalah yang paling dekat ke sebabnya.
   const sast = (ambilArg('sast') ?? SAST_BAWAAN).toLowerCase();
-  // Versi prompt, bawaan v2: pemanggilan yang tidak menyebutnya memakai folder prompt yang persis
-  // sama dengan sebelum sumbu ini ada. dirPrompt menolak versi yang tidak dikenal.
-  const versiPrompt = (ambilArg('prompt') ?? render.VERSI_PROMPT).toLowerCase();
+  // versiPrompt sudah diturunkan dan diperiksa di awal main(); di sini tinggal folder promptnya.
   const dirPrompt = render.dirPrompt(versiPrompt);
   periksaKombinasi({ sast, skenario, kondisi, versiPrompt });
   if (!kering && !process.env[KUNCI_API[vendor]]) throw new Error(`${KUNCI_API[vendor]} tidak diset`);
