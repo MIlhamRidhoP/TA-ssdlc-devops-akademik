@@ -244,3 +244,57 @@ test('lencana perkakas hanya muncul kalau run memuat lebih dari satu perkakas', 
   assert.match(APP, /const adaKembar = h\.alerts\.some\(\(a\) => Array\.isArray\(a\.kembar_dengan\)\);/);
   assert.match(APP, /adaKembar \? kartu\('Tumpang tindih'/);
 });
+
+// ---------- 6. Label mengikuti perkakasnya ----------
+
+const kataSast = () => {
+  const src = potong('const kataSast = (alerts) => {', "return p.length === 1 ? namaSast(p[0]) : 'SAST';\n  };");
+  const dasar = potong('const severityAlert = (a) =>', '...ada.filter((k) => !(k in NAMA_SAST)),\n    ];\n  };');
+  return new Function(`${dasar}\n${src}\n  return kataSast;`)();
+};
+
+test('kataSast: data lama tetap Sonar, perkakas lain disebut namanya, campuran disebut SAST', () => {
+  const k = kataSast();
+  const a = (s) => ({ sumber_sast: s });
+  // Data lama: alert tanpa medan sumber_sast, himpunan kosong, atau tanpa alert sama sekali.
+  assert.equal(k([{ id: 'SONAR-01' }, { id: 'SONAR-02' }]), 'Sonar');
+  assert.equal(k([]), 'Sonar', 'himpunan kosong harus tetap Sonar seperti sebelum sumbu sast ada');
+  assert.equal(k(null), 'Sonar');
+  assert.equal(k([a('sonar'), a('sonar')]), 'Sonar');
+  // Satu perkakas selain Sonar disebut namanya; menyebutnya Sonar adalah keterangan yang salah.
+  assert.equal(k([a('codeql'), a('codeql')]), 'CodeQL');
+  // Lebih dari satu: nama kolektif, bukan nama salah satunya.
+  assert.equal(k([a('sonar'), a('codeql')]), 'SAST');
+  assert.equal(k([a('codeql'), a('sonar'), a('codeql')]), 'SAST');
+  // Perkakas yang belum dikenal tidak dikarangkan namanya.
+  assert.equal(k([a('semgrep')]), 'semgrep');
+});
+
+test('judul dan label dasbor tidak lagi memaku kata Sonar pada himpunan alert', () => {
+  // Ditemukan lewat tangkapan layar pengguna: pada run dua perkakas, kartu "Alert Sonar" akan
+  // menghitung 23 alert dan "Keparahan alert Sonar" menampung alert CodeQL, keduanya keterangan salah.
+  for (const lama of ["grup('Keparahan alert Sonar'", "kartu('Alert Sonar'", "'severity apa adanya dari Sonar'",
+    '`${h.alerts.length} alert Sonar`', 'judul: \'Verifikasi alert Sonar\'']) {
+    // judul NAV memang tetap sebagai teks bawaan; yang dilarang adalah dua sisanya yang dirender.
+    if (lama.startsWith('judul:')) continue;
+    assert.equal(APP.includes(lama), false, `masih memaku: ${lama}`);
+  }
+  assert.match(APP, /grup\(`Keparahan alert \$\{kata\}`/);
+  assert.match(APP, /kartu\(`Alert \$\{kata\}`/);
+  assert.match(APP, /\$\('ringkas-alert-h'\)\.textContent = `Status alert \$\{kataSast\(h\.alerts\)\}`/);
+  assert.match(APP, /\$\('alerts-h'\)\.textContent = `Verifikasi alert \$\{kata\}`/);
+});
+
+test('perkiraan biaya tidak memakai jumlah alert Sonar untuk run dua perkakas', () => {
+  // alertTerakhir() adalah jumlah alert SONAR run terakhir. Dipakai untuk "Keduanya" ia memberi angka
+  // yang jauh terlalu rendah dan tampak meyakinkan, jadi renderBiaya harus keluar lebih dulu dengan
+  // pernyataan bahwa angkanya belum ada, bukan mengarang.
+  const i = APP.indexOf('const renderBiaya = () => {');
+  const badan = APP.slice(i, APP.indexOf('const renderBiayaRekomendasi', i));
+  const penjaga = badan.indexOf("sastTerpilih() !== 'sonar'");
+  // Yang dicari pemanggilannya, bukan namanya: komentar penjaga juga menyebut alertTerakhir().
+  const hitung = badan.indexOf('const jumlahAlert = alertTerakhir();');
+  assert.ok(penjaga > 0, 'renderBiaya tidak punya penjaga untuk sast selain sonar');
+  assert.ok(hitung > penjaga, 'penjaga harus berada SEBELUM perkiraan dihitung dari alertTerakhir()');
+  assert.match(badan.slice(penjaga, hitung), /belum bisa diperkirakan/);
+});

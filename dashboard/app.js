@@ -375,6 +375,15 @@
       ...ada.filter((k) => !(k in NAMA_SAST)),
     ];
   };
+  // Kata untuk menyebut himpunan alert di judul dan label. Himpunan kosong atau hanya Sonar tetap
+  // "Sonar", persis seperti sebelum sumbu sast ada, jadi data lama tampil tanpa perubahan. Satu
+  // perkakas selain Sonar disebut namanya, dan lebih dari satu disebut "SAST": kata "Sonar" di atas
+  // 23 alert yang 18 di antaranya dari CodeQL adalah keterangan yang salah.
+  const kataSast = (alerts) => {
+    const p = perkakasDipakai(alerts);
+    if (p.length === 0 || (p.length === 1 && p[0] === 'sonar')) return 'Sonar';
+    return p.length === 1 ? namaSast(p[0]) : 'SAST';
+  };
 
   const bacaStatus = (status, conclusion) => {
     if (status === 'in_progress') return 'run';
@@ -1116,6 +1125,22 @@
     // skenario diganti, sekejap sebelum angka barunya dihitung.
     if (modeTerpilih() !== 'sast-llm' || !daftar.length) {
       teks.textContent = ''; sumber.textContent = ''; angka.textContent = '';
+      $('rekomendasi-biaya').textContent = '';
+      return;
+    }
+
+    // Dengan perkakas kedua, jumlah alert yang akan diverifikasi tidak diketahui dari sini: angka
+    // alertTerakhir() adalah jumlah alert SONAR pada run terakhir, sedangkan alert CodeQL baru
+    // diketahui dari berkas beku di branch tujuan. Memakainya akan menghasilkan perkiraan yang
+    // jauh terlalu rendah dan tampak meyakinkan, jadi yang ditampilkan adalah bahwa angkanya belum
+    // ada. Titik ukur biaya pun hanya ada untuk himpunan alert Sonar, dan dashboard ini menolak
+    // memperkirakan di luar titik yang pernah diukur.
+    if (skenario === 'B' && sastTerpilih() !== 'sonar') {
+      angka.textContent = '—';
+      teks.textContent = 'Biaya untuk dua perkakas belum bisa diperkirakan: jumlah alert CodeQL hanya diketahui dari '
+        + 'berkas beku di branch tujuan, dan belum ada titik ukur biaya untuk himpunan alert sebesar itu. '
+        + 'Biayanya lebih tinggi daripada run SonarCloud saja, karena tiap alert menambah satu panggilan verifikasi.';
+      sumber.textContent = 'Angka akan muncul setelah ada run dua perkakas yang biayanya tercatat.';
       $('rekomendasi-biaya').textContent = '';
       return;
     }
@@ -2117,6 +2142,14 @@
 
     const SEV_DIKENAL = ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
     const sev = (daftar) => h.alerts.filter((a) => daftar.includes(String(severityAlert(a)).toUpperCase())).length;
+    // Kata dan keterangan kartu mengikuti perkakasnya. Lima nama baku di atas milik Sonar, dan CodeQL
+    // memberi angka (misalnya "9.8"), jadi pada himpunan CodeQL atau gabungan seluruh alert CodeQL
+    // jatuh ke kartu "Severity lain"; keterangannya harus menyebut itu, bukan mengaku semuanya Sonar.
+    const kata = kataSast(h.alerts);
+    const asalSev = kata === 'Sonar' ? asalSev : 'severity apa adanya dari perkakasnya';
+    const ketSevLain = kata === 'Sonar'
+      ? 'nama severity di luar lima baku Sonar'
+      : 'di luar lima nama baku Sonar, termasuk angka severity CodeQL';
     // Sonar MQR memakai nama severity lain, dan CodeQL memberi angka (misalnya "9.8") alih-alih
     // nama; tanpa kartu ini alert seperti itu hilang dari hitungan.
     const sevLain = h.alerts.filter((a) => !SEV_DIKENAL.includes(String(severityAlert(a)).toUpperCase())).length;
@@ -2144,19 +2177,19 @@
     // akan berisi nol semua dan terbaca seolah model menilai dan tidak menemukan apa-apa.
     if (skenarioRun(h.run) === 'A') {
       isi($('summary'),
-        grup('Keparahan alert Sonar', `${h.alerts.length} alert`,
-          kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
-          kartu('Critical', sev(['CRITICAL']), 'severity apa adanya dari Sonar', 'high'),
-          kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
-          kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
-          sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
+        grup(`Keparahan alert ${kata}`,`${h.alerts.length} alert`,
+          kartu('Blocker', sev(['BLOCKER']), asalSev, 'crit'),
+          kartu('Critical', sev(['CRITICAL']), asalSev, 'high'),
+          kartu('Major', sev(['MAJOR']), asalSev),
+          kartu('Minor dan info', sev(['MINOR', 'INFO']), asalSev),
+          sevLain ? kartu('Severity lain', sevLain, ketSevLain) : null),
         grupPerkakas(),
         el('section', { class: 'kartu-grup' },
           el('div', { class: 'kartu-kepala' }, el('h3', { text: 'Putusan model atas alert' }),
             el('span', { class: 'kartu-total', text: 'tidak ada' })),
           el('p', { class: 'note', text: 'Skenario A tidak memakai LLM. Seluruh alert di atas belum diverifikasi model mana pun, dan tidak ada temuan deteksi mandiri. Biaya run ini nol.' })),
         grup('Sumber dan tindak lanjut', 'satu himpunan',
-          kartu('Alert Sonar', h.alerts.length, 'belum diverifikasi model'),
+          kartu(`Alert ${kata}`,h.alerts.length, 'belum diverifikasi model'),
           kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
       return;
     }
@@ -2176,12 +2209,12 @@
     }
 
     isi($('summary'),
-      grup('Keparahan alert Sonar', `${h.alerts.length} alert`,
-        kartu('Blocker', sev(['BLOCKER']), 'severity apa adanya dari Sonar', 'crit'),
-        kartu('Critical', sev(['CRITICAL']), 'severity apa adanya dari Sonar', 'high'),
-        kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
-        kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
-        sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
+      grup(`Keparahan alert ${kata}`,`${h.alerts.length} alert`,
+        kartu('Blocker', sev(['BLOCKER']), asalSev, 'crit'),
+        kartu('Critical', sev(['CRITICAL']), asalSev, 'high'),
+        kartu('Major', sev(['MAJOR']), asalSev),
+        kartu('Minor dan info', sev(['MINOR', 'INFO']), asalSev),
+        sevLain ? kartu('Severity lain', sevLain, ketSevLain) : null),
       grupPerkakas(),
       grup('Putusan model atas alert', `${h.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan)).length} dari ${h.alerts.length} berputusan`,
         kartu('Dikonfirmasi model', n('true_positive'), 'alert dinyatakan nyata', 'crit'),
@@ -2190,7 +2223,7 @@
         gabunganRun(h.run) ? kartu('Tidak sepakat', n('tidak_sepakat'), 'tanpa dua suara; dipertahankan', 'high') : null,
         kartu('Tanpa putusan', n(null), 'panggilan atau parse gagal')),
       grup('Sumber dan tindak lanjut', 'dua himpunan terpisah',
-        kartu('Alert Sonar', h.alerts.length, 'diverifikasi model satu per satu'),
+        kartu(`Alert ${kata}`,h.alerts.length, 'diverifikasi model satu per satu'),
         kartu('Temuan LLM', h.findings.length, 'dari panggilan deteksi'),
         kartu('Ditinjau developer', ditinjau('ok') + ditinjau('fp'), 'catatan lokal di browser ini')));
   };
@@ -2228,6 +2261,7 @@
     // tanpa putusan. Label "Tanpa putusan" di situ terbaca seperti verifikasi yang gagal, padahal
     // tidak pernah ada verifikasi yang dicoba. Hanya labelnya yang berubah; angkanya tetap sama.
     const labelTanpaPutusan = skenarioRun(h.run) === 'A' ? 'Belum diverifikasi (skenario A)' : 'Tanpa putusan';
+    $('ringkas-alert-h').textContent = `Status alert ${kataSast(h.alerts)}`;
     isi($('ringkas-alert'), h.alerts.length
       ? el('div', { class: 'ringkas-putusan' },
         [['true_positive', 'Dikonfirmasi model'], ['false_positive', 'False positive'],
@@ -2240,7 +2274,7 @@
           el('span', { text: label }))))
       : el('p', { class: 'note', text: skenarioRun(h.run) === 'C'
         ? 'Skenario C tidak memakai SonarCloud, jadi run ini tidak punya alert untuk diverifikasi.'
-        : 'Tidak ada alert Sonar pada run ini.' }));
+        : `Tidak ada alert ${(h.run?.sast ?? 'sonar') === 'sonar' ? 'Sonar' : 'SAST'} pada run ini.` }));
   };
 
   // Penanda run lama: kalau yang dibuka bukan run terbaru di branch ini, katakan dan sediakan
@@ -2336,8 +2370,10 @@
     if (tujuan === 'eksperimen') renderEksperimen();
     renderNav();
     const info = NAV.find((x) => x.key === tujuan);
+    // Judul halaman Verifikasi menyebut perkakas alertnya; yang lain tetap judul di NAV.
+    const judulHal = tujuan === 'verifikasi' ? `Verifikasi alert ${kataSast(state.hasil?.alerts)}` : info.judul;
     document.title = state.hasil?.run?.nomor
-      ? `${info.judul} · Run #${state.hasil.run.nomor} · Security Dashboard`
+      ? `${judulHal} · Run #${state.hasil.run.nomor} · Security Dashboard`
       : `${info.judul} · Security Dashboard`;
     // Di layar sempit menu adalah panel; membiarkannya terbuka menutupi halaman yang baru dipilih.
     if (railSempit() && document.documentElement.dataset.rail === 'buka') terapkanRail(false);
@@ -2367,7 +2403,7 @@
       if (skenarioRun(h.run) === 'C') {
         return { teks: '–', kelas: 'l-netral', label: 'Tidak berlaku: skenario C tidak memakai SonarCloud' };
       }
-      return { teks: String(h.alerts.length), kelas: 'l-netral', label: `${h.alerts.length} alert Sonar` };
+      return { teks: String(h.alerts.length), kelas: 'l-netral', label: `${h.alerts.length} alert ${kataSast(h.alerts)}` };
     }
     if (key === 'riwayat') {
       if (!state.index) return null;
@@ -2446,6 +2482,13 @@
     // karena itu tampil persis seperti sebelumnya: satu perkakas tidak perlu diberi label.
     const perkakas = perkakasDipakai(alerts);
     const banyakPerkakas = perkakas.length > 1;
+    // Judul dan keterangan halaman ikut perkakasnya. Teks bawaan di HTML adalah teks data lama, jadi
+    // untuk himpunan Sonar saja nilainya persis sama dengan yang sudah ada di sana.
+    const kata = kataSast(alerts);
+    $('alerts-h').textContent = `Verifikasi alert ${kata}`;
+    $('alerts-ket').textContent = kata === 'Sonar'
+      ? 'Setiap alert SonarCloud dikirim ke model dalam panggilan verifikasi tersendiri. Putusan di bawah adalah jawaban model, bukan hasil pencocokan lokasi dan CWE.'
+      : 'Setiap alert dari perkakas SAST dikirim ke model dalam panggilan verifikasi tersendiri. Putusan di bawah adalah jawaban model, bukan hasil pencocokan lokasi dan CWE.';
     $('alerts-box').hidden = false;
 
     // Skenario C tidak memakai SonarCloud sama sekali, jadi halaman ini tidak punya isi dan
