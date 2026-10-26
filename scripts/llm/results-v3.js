@@ -23,6 +23,10 @@ const SAST_BAWAAN = 'sonar';
 const naikkanAlert = (alerts, alertMasukan) => {
   const perkakas = new Map((alertMasukan ?? []).map((a) => [a.id, a.sumber_sast ?? SAST_BAWAAN]));
   const kembar = new Map((alertMasukan ?? []).map((a) => [a.id, a.kembar_dengan]));
+  // Severity CodeQL hidup di medan severity_codeql pada alert masukan, bukan di `severity` yang
+  // dibaca perakit skema 2 dari alert Sonar. Tanpa pembacaan ini setiap alert CodeQL berseverity
+  // null, dan angka security-severity-nya hilang diam-diam dari berkas hasil.
+  const severityCodeql = new Map((alertMasukan ?? []).map((a) => [a.id, a.severity_codeql ?? null]));
   return alerts.map((a) => {
     const { severity_sonar: severitySonar, severity_asal: severitySebelum, ...sisa } = a;
     void severitySebelum;
@@ -30,7 +34,7 @@ const naikkanAlert = (alerts, alertMasukan) => {
     const k = kembar.get(a.id);
     return {
       ...sisa,
-      severity: severitySonar ?? null,
+      severity: severitySonar ?? (sumberSast === 'codeql' ? severityCodeql.get(a.id) ?? null : null),
       severity_asal: sumberSast,
       sumber_sast: sumberSast,
       ...(Array.isArray(k) ? { kembar_dengan: k } : {}),
@@ -38,10 +42,18 @@ const naikkanAlert = (alerts, alertMasukan) => {
   });
 };
 
+// Info berkas beku yang dicatat llm-scan memuat lebih banyak daripada yang dikenal skema (sha256_file
+// dan dibuat, di samping tiga medan skema). Medannya DIPILIH di sini, bukan diteruskan apa adanya,
+// sama seperti perakit skema 2 memperlakukan sonar_beku; yang tidak dikenal skema tetap tersimpan di
+// summary.json. Meneruskan seluruh objek menghasilkan berkas yang tidak sah terhadap skema 3.
+const pilihCodeqlBeku = (b) => (b
+  ? { nama: b.nama ?? null, sha256_isi: b.sha256_isi ?? null, jumlah_alert: b.jumlah_alert ?? null }
+  : null);
+
 // Medan `sast` dan `codeql_beku` ditulis hanya kalau bukan nilai bawaan, mengikuti cara `skenario`
 // dan `mode_model` diperkenalkan di skema 2: berkas yang tidak menyebutkannya berarti satu perkakas.
 const naikkanRun = (run, { sast, codeqlBeku }) => (sast && sast !== SAST_BAWAAN
-  ? { ...run, sast, codeql_beku: codeqlBeku ?? null }
+  ? { ...run, sast, codeql_beku: pilihCodeqlBeku(codeqlBeku) }
   : { ...run });
 
 // Argumen sama dengan susunHasilV2, ditambah:

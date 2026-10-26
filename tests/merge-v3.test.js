@@ -14,6 +14,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const bekuCodeql = require('../scripts/sast/codeql-beku');
 
 const ROOT = path.resolve(__dirname, '..');
 const SKRIP = path.join(ROOT, 'scripts', 'merge-results.js');
@@ -24,7 +25,34 @@ const skemaV3 = require('../docs/design/results-v3.schema.json');
 const jalan = (...argv) => spawnSync(process.execPath, [SKRIP, ...argv], { encoding: 'utf8', cwd: ROOT });
 const bacaJson = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
 
-const CODEQL_BEKU = { nama: 'codeql-beku.json', sha256_isi: 'a'.repeat(64), jumlah_alert: 2 };
+// Berkas beku dibangun dan dibaca lewat MODULNYA SENDIRI, jadi alert dan info yang dipakai tes ini
+// berbentuk persis seperti yang dihasilkan llm-scan, bukan bentuk karangan. Itu bukan kehati-hatian
+// berlebih: fixture yang saya tulis dengan tangan sempat memakai medan `severity` untuk CodeQL dan
+// info beku berisi tiga medan, sementara bentuk aslinya `severity_codeql` dan info lima medan. Tes
+// hijau, sedangkan data nyata menghasilkan severity null dan berkas yang tidak sah terhadap skema 3.
+const TREE_SRC = 'd'.repeat(40);
+const BEKU_NYATA = (() => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'beku-merge-')), 'codeql-beku.json');
+  bekuCodeql.tulisBeku(file, bekuCodeql.buatIsiBeku({
+    alert: [{
+      id: 'CQL-01', rule: 'js/sql-injection', tipe: 'SECURITY', sumber: 'codeql',
+      file: 'src/models/mahasiswaModel.js', baris: 59, cwe: ['CWE-89'],
+      pesan: 'This query depends on a user-provided value.',
+      severity_codeql: '9.8', severity_asal: 'codeql', precision_codeql: 'high',
+      suite: ['code-scanning', 'extended'], hanya_extended: false, entri_sarif_digabung: 2,
+      kolom: [8, 8], tags: ['security', 'external/cwe/cwe-89'],
+    }],
+    sarif: [{ nama: 'hasil-extended.sarif', suite: 'extended', sha256: 'a'.repeat(64), jumlah_result: 1 }],
+    lingkungan: { codeql: 'uji' },
+    treeSrc: TREE_SRC,
+    saringan: null,
+    gerbangSanity: null,
+    dibuat: '2026-10-26T00:00:00.000Z',
+  }));
+  return bekuCodeql.bacaBeku(file, { commit: 'c'.repeat(40), tree_src: TREE_SRC });
+})();
+// Yang dicatat llm-scan ke summary.json: info lengkap, termasuk medan yang TIDAK dikenal skema.
+const CODEQL_BEKU = BEKU_NYATA.info;
 
 // Dua alert dari perkakas berbeda yang menunjuk satu item ground truth: bentuk yang paling mudah
 // salah dirakit, karena di skema 2 keduanya akan tampak berasal dari Sonar.
@@ -34,11 +62,7 @@ const ALERT = [
     file: 'src/models/mahasiswaModel.js', baris: 59, cwe: ['CWE-89'], pesan: 'SQL Injection',
     severity: 'BLOCKER', sumber_sast: 'sonar', kembar_dengan: ['CQL-01'],
   },
-  {
-    id: 'CQL-01', rule: 'js/sql-injection', tipe: 'SECURITY', sumber: 'codeql',
-    file: 'src/models/mahasiswaModel.js', baris: 59, cwe: ['CWE-89'], pesan: 'This query depends on a user-provided value.',
-    severity: '9.8', sumber_sast: 'codeql', kembar_dengan: ['SONAR-01'],
-  },
+  { ...BEKU_NYATA.alert[0], sumber_sast: 'codeql', kembar_dengan: ['SONAR-01'] },
 ];
 
 // Folder keluaran llm-scan: summary.json, run-N.json, sonar-alert.json. `sast` dan `codeql_beku`
@@ -51,7 +75,7 @@ const folderRun = ({ sast = null, alert = ALERT } = {}) => {
     model_diminta: 'gemini-3.1-pro-preview',
     kondisi: 'utama',
     skenario: 'B',
-    objek_uji: { commit: 'c'.repeat(40), branch: 'eksperimen/seeded', tree_src: 'd'.repeat(40) },
+    objek_uji: { commit: 'c'.repeat(40), branch: 'eksperimen/seeded', tree_src: TREE_SRC },
     // Dua perkakas maupun satu, laporan SAST selalu dibaca dari berkas beku di batch eksperimen;
     // skema mewajibkan medan ini, jadi folder uji pun harus memuatnya.
     sumber_sonar: 'beku',
@@ -91,7 +115,9 @@ test('asal tiap alert ikut ke berkas hasil, bukan hilang jadi sonar semua', () =
   assert.equal(perId['SONAR-01'].sumber_sast, 'sonar');
   assert.equal(perId['CQL-01'].sumber_sast, 'codeql');
   assert.equal(perId['CQL-01'].severity_asal, 'codeql', 'severity alert CodeQL tidak boleh diklaim dari Sonar');
-  assert.equal(perId['CQL-01'].severity, '9.8');
+  assert.equal(perId['CQL-01'].severity, '9.8', 'severity CodeQL dibaca dari severity_codeql, bukan hilang jadi null');
+  assert.equal(perId['SONAR-01'].severity, 'BLOCKER');
+  assert.ok(hasil.alerts.every((a) => a.severity !== null), 'tidak boleh ada alert tanpa severity');
   // severity_sonar adalah nama medan skema 2 dan tidak boleh ikut terbawa.
   assert.ok(!('severity_sonar' in perId['CQL-01']), 'skema 3 memakai nama severity');
   // Kembar hanya metadata (keputusan K1): keduanya tetap alert tersendiri, tidak digabung.
@@ -103,7 +129,13 @@ test('asal tiap alert ikut ke berkas hasil, bukan hilang jadi sonar semua', () =
 test('run menyimpan sumbu sast dan rujukan berkas CodeQL beku', () => {
   const { hasil } = merge(folderRun({ sast: 'keduanya' }));
   assert.equal(hasil.run.sast, 'keduanya');
-  assert.deepEqual(hasil.run.codeql_beku, CODEQL_BEKU);
+  // Yang masuk ke berkas hasil hanya medan yang dikenal skema 3, seperti sonar_beku di skema 2.
+  assert.deepEqual(hasil.run.codeql_beku, {
+    nama: CODEQL_BEKU.nama, sha256_isi: CODEQL_BEKU.sha256_isi, jumlah_alert: CODEQL_BEKU.jumlah_alert,
+  });
+  // Bukti bahwa infonya memang lebih lebar daripada skema, dan yang lebih itu tidak bocor.
+  assert.ok('sha256_file' in CODEQL_BEKU && 'dibuat' in CODEQL_BEKU, 'info nyata harus memuat medan di luar skema');
+  assert.ok(!('sha256_file' in hasil.run.codeql_beku) && !('dibuat' in hasil.run.codeql_beku));
   // Rujukan berkas beku harus nama berkas saja, bukan path mesin (AGENTS.md batas keras nomor 10).
   assert.equal(hasil.run.codeql_beku.nama, path.basename(hasil.run.codeql_beku.nama));
 });

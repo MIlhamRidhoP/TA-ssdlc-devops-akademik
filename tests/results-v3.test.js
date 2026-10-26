@@ -179,3 +179,44 @@ test('entriIndexV3 menambah hitungan per perkakas hanya pada run dua perkakas', 
   assert.ok(!('sast' in satu), 'run satu perkakas tidak boleh membawa sast di index');
   assert.ok(!('jumlah_alert_per_sast' in satu));
 });
+
+// ---------- Bentuk masukan nyata dari llm-scan ----------
+
+test('severity alert CodeQL dibaca dari severity_codeql, dan alert Sonar tidak tersentuh', () => {
+  // Alert CodeQL dari berkas beku membawa severity_codeql, bukan severity. Perakit skema 2 hanya
+  // membaca `severity`, jadi tanpa pembacaan ini setiap alert CodeQL berseverity null.
+  const dasar = [
+    { id: 'SONAR-01', severity_sonar: 'BLOCKER', severity_asal: 'sonar' },
+    { id: 'CQL-01', severity_sonar: null, severity_asal: 'sonar' },
+    { id: 'CQL-02', severity_sonar: null, severity_asal: 'sonar' },
+  ];
+  const masukan = [
+    { id: 'SONAR-01', sumber_sast: 'sonar' },
+    { id: 'CQL-01', sumber_sast: 'codeql', severity_codeql: '7.5' },
+    { id: 'CQL-02', sumber_sast: 'codeql' }, // tanpa severity sama sekali: null, bukan undefined
+  ];
+  const hasil = Object.fromEntries(v3.naikkanAlert(dasar, masukan).map((a) => [a.id, a]));
+  assert.equal(hasil['SONAR-01'].severity, 'BLOCKER');
+  assert.equal(hasil['CQL-01'].severity, '7.5');
+  assert.equal(hasil['CQL-02'].severity, null);
+  // Severity CodeQL tidak boleh bocor ke alert Sonar yang kebetulan tidak punya severity.
+  const sonarKosong = v3.naikkanAlert([{ id: 'SONAR-09', severity_sonar: null }],
+    [{ id: 'SONAR-09', sumber_sast: 'sonar', severity_codeql: '9.9' }]);
+  assert.equal(sonarKosong[0].severity, null, 'alert Sonar tidak boleh mengambil severity_codeql');
+});
+
+test('run.codeql_beku hanya memuat medan yang dikenal skema 3', () => {
+  // Info yang dicatat llm-scan memuat lima medan; skema 3 mengenal tiga. Meneruskan seluruh objek
+  // menghasilkan berkas yang tidak sah, seperti sonar_beku di skema 2 yang juga dipilih medannya.
+  const info = {
+    nama: 'codeql-beku.json', sha256_file: 'b'.repeat(64), sha256_isi: 'a'.repeat(64),
+    jumlah_alert: 18, dibuat: '2026-10-26T02:48:55.621Z',
+  };
+  const run = v3.naikkanRun({}, { sast: 'keduanya', codeqlBeku: info });
+  assert.deepEqual(run.codeql_beku, { nama: 'codeql-beku.json', sha256_isi: 'a'.repeat(64), jumlah_alert: 18 });
+  assert.equal(v3.naikkanRun({}, { sast: 'keduanya', codeqlBeku: null }).codeql_beku, null);
+  // Run satu perkakas tetap tidak mendapat medan baru apa pun.
+  assert.deepEqual(v3.naikkanRun({ a: 1 }, { sast: 'sonar', codeqlBeku: info }), { a: 1 });
+  const sah = validasiSkema(skemaV3, { ...hasilV3(), run: { ...hasilV3().run, codeql_beku: run.codeql_beku } });
+  assert.deepEqual(sah, [], 'hasil dengan codeql_beku terpilih harus sah terhadap skema 3');
+});
