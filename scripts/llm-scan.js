@@ -17,6 +17,7 @@
 //   node scripts/llm-scan.js ... --sonar-beku=<file>     alert Sonar dari file beku (wajib untuk data eksperimen)
 //   node scripts/llm-scan.js ... --sast=sonar|codeql|keduanya   perkakas SAST pemasok alert (bawaan sonar)
 //   node scripts/llm-scan.js ... --codeql-beku=<file>    alert CodeQL dari file beku (wajib kalau sast memuat codeql)
+//   node scripts/llm-scan.js ... --prompt=v2|v3          versi folder prompt (bawaan v2)
 //   node scripts/llm-scan.js ... --kering                rakit prompt dan tampilkan hash tanpa memanggil API LLM
 //   node scripts/llm-scan.js ... --runs=3 --jalankan=1   buat folder dengan target 3 run, jalankan run-1 saja
 //   node scripts/llm-scan.js ... --lanjut=<folder>       tambah run berikutnya ke folder itu (bawaan 1 run);
@@ -156,7 +157,7 @@ const biayaPercobaanGagal = (gagal, tarif) => {
 // Yang kurang selama ini penandanya, bukan statusnya, dan mengubah `status` akan menggeser
 // status_panggilan di seluruh data eksperimen yang sudah diambil.
 const metadata = ({ konteks, tugas, run, idAlert, prompt, hasil, parseOk, tanda = [] }) => ({
-  versi_prompt: render.VERSI_PROMPT,
+  versi_prompt: konteks.versiPrompt,
   kondisi: konteks.kondisi,
   tugas,
   run,
@@ -216,7 +217,7 @@ const jalankanSatuRun = async (konteks, n) => {
   mentah.deteksi = hasilDeteksi.percobaan;
   const validDeteksi = hasilDeteksi.status === 'ok' ? validasiDeteksi(hasilDeteksi.teks, kode.file) : { parse_ok: false, temuan: [] };
   const catatan = {
-    versi_prompt: render.VERSI_PROMPT, kondisi, skenario, vendor: konteks.vendor, model_diminta: konteks.model, run: n,
+    versi_prompt: konteks.versiPrompt, kondisi, skenario, vendor: konteks.vendor, model_diminta: konteks.model, run: n,
     commit_objek_uji: konteks.objek.commit, branch_objek_uji: konteks.objek.branch, tree_src_objek_uji: konteks.objek.tree_src,
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     sumber_sonar: konteks.sumberSonar, sonar_beku: konteks.infoBeku,
@@ -363,18 +364,22 @@ const main = async () => {
   // sebelumnya, termasuk tidak pernah melewati penggabung alert. Diperiksa setelah kondisi dan
   // skenario sah, supaya pesan galat yang muncul lebih dulu adalah yang paling dekat ke sebabnya.
   const sast = (ambilArg('sast') ?? SAST_BAWAAN).toLowerCase();
-  periksaKombinasi({ sast, skenario, kondisi });
+  // Versi prompt, bawaan v2: pemanggilan yang tidak menyebutnya memakai folder prompt yang persis
+  // sama dengan sebelum sumbu ini ada. dirPrompt menolak versi yang tidak dikenal.
+  const versiPrompt = (ambilArg('prompt') ?? render.VERSI_PROMPT).toLowerCase();
+  const dirPrompt = render.dirPrompt(versiPrompt);
+  periksaKombinasi({ sast, skenario, kondisi, versiPrompt });
   if (!kering && !process.env[KUNCI_API[vendor]]) throw new Error(`${KUNCI_API[vendor]} tidak diset`);
   const jumlahRun = Number(ambilArg('runs') ?? 1);
   if (!Number.isInteger(jumlahRun) || jumlahRun < 1) throw new Error('--runs harus bilangan bulat >= 1');
 
-  render.cekHashPrompt();
+  render.cekHashPrompt(dirPrompt);
   const objek = periksaObjek(ambilArg('objek'));
   process.env.OBJEK_UJI_DIR = objek.dir;
   periksaBranchKondisi(kondisi, objek.branch);
 
   const kode = render.bentukKodeSumber(objek.dir);
-  const template = render.bacaTemplate();
+  const template = render.bacaTemplate(dirPrompt);
   let alert = [];
   let sonarTeks = null;
   let sonar = null;
@@ -426,8 +431,8 @@ const main = async () => {
   const sdk = versiSdk();
   const hashLaporanSonar = sonarTeks === null ? null : render.sha256(sonarTeks);
   const sidik = bentukSidik({
-    versiPrompt: render.VERSI_PROMPT, vendor, model, kondisi, objek, sumberSonar, infoBeku,
-    hashKodeSumber: render.sha256(kode.teks), hashLaporanSonar, hashPrompt: hashFilePrompt(render.PROMPT_DIR),
+    versiPrompt, vendor, model, kondisi, objek, sumberSonar, infoBeku,
+    hashKodeSumber: render.sha256(kode.teks), hashLaporanSonar, hashPrompt: hashFilePrompt(dirPrompt),
     hashKering: runKering({ template, kondisi, kode, alert, sonarTeks, skenario }), pengaturan, sdk, kodeAlat,
   });
 
@@ -467,7 +472,7 @@ const main = async () => {
     vendor, model, kondisi, skenario, objek, kode, template, alert, sonarTeks, folder, sdk,
     analisisSonar: sonar ? sonar.laporan.analisis.tanggal : null,
     revisiSonar: sonar ? sonar.laporan.analisis.revisi : null,
-    sumberSonar, infoBeku, kodeAlat, sast, infoBekuCodeql,
+    sumberSonar, infoBeku, kodeAlat, sast, infoBekuCodeql, versiPrompt,
   };
   console.log(`Vendor ${vendor} (${model}), skenario ${skenario}, kondisi ${kondisi}, objek ${objek.branch}@${objek.commit.slice(0, 7)}, kode ${kodeAlat.head.slice(0, 7)}, `
     + `${kode.file.length} file, ${alert.length} alert, run ${nomor.join(', ')} dari ${target}${summaryLama ? ' (lanjut)' : ''}`);
@@ -476,7 +481,7 @@ const main = async () => {
   let galat = summaryLama?.galat ?? null;
   const tulisSummary = () => tulisJson(path.join(folder, 'summary.json'), {
     dibuat: summaryLama?.dibuat ?? new Date().toISOString(), diperbarui: new Date().toISOString(),
-    versi_prompt: render.VERSI_PROMPT, vendor, model_diminta: model, kondisi, skenario,
+    versi_prompt: versiPrompt, vendor, model_diminta: model, kondisi, skenario,
     objek_uji: { commit: objek.commit, branch: objek.branch, tree_src: objek.tree_src },
     analisis_sonar: konteks.analisisSonar, revisi_analisis_sonar: konteks.revisiSonar,
     tree_src_analisis_sonar: sonar ? sonar.tree_src_analisis : null,

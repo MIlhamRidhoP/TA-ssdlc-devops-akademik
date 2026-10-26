@@ -22,7 +22,10 @@ const perkakasUntuk = (sast) => ({ sonar: ['sonar'], codeql: ['codeql'], keduany
 //   sonar_di_deteksi   — menyisipkan SELURUH laporan ke prompt deteksi lewat sonar-reference.txt.
 //                        Laporan gabungan dua perkakas belum pernah dirancang bentuknya, jadi
 //                        kombinasi ini DITUNDA, bukan tidak mungkin.
-const periksaKombinasi = ({ sast, skenario, kondisi }) => {
+//   prompt v2          — prompt v2 menyebut SonarCloud, sehingga alert CodeQL akan dikirim dengan
+//                        keterangan asal yang salah. Diperiksa terakhir, karena skenario dan
+//                        kondisi adalah sebab yang lebih dekat ke permintaan pengguna.
+const periksaKombinasi = ({ sast, skenario, kondisi, versiPrompt = 'v2' }) => {
   if (!SAST_DIDUKUNG.includes(sast)) {
     throw new Error(`--sast harus ${SAST_DIDUKUNG.join(', ')}; dapat ${JSON.stringify(sast)}`);
   }
@@ -35,6 +38,18 @@ const periksaKombinasi = ({ sast, skenario, kondisi }) => {
     throw new Error(`Kondisi sonar_di_deteksi dengan --sast=${sast} DITUNDA, bukan tidak mungkin: kondisi itu `
       + 'menyisipkan seluruh laporan ke prompt deteksi, dan bentuk laporan gabungan dua perkakas belum dirancang. '
       + 'Batch pertama hanya skenario A dan B pada kondisi utama.');
+  }
+  // Diperiksa TERAKHIR, dan urutannya disengaja: skenario dan kondisi adalah sebab yang lebih dekat
+  // ke apa yang diminta pengguna, jadi keduanya disebut lebih dulu meski versi promptnya juga salah.
+  //
+  // Prompt v2 menyebut SonarCloud di dua tempat: judul blok referensi dan kalimat pembuka tugas
+  // verifikasi. Mengirim alert CodeQL dengan prompt itu berarti MEMBERI INFORMASI PALSU ke model,
+  // dan satu run seperti itu mencemari eksperimen tanpa meninggalkan tanda apa pun di angkanya.
+  // Karena itu ditolak, bukan diperingatkan. Bawaannya v2 supaya pemanggil yang belum tahu sumbu
+  // ini tidak bisa diam-diam melakukannya.
+  if (versiPrompt === 'v2') {
+    throw new Error(`--sast=${sast} tidak boleh dipakai dengan --prompt=v2: prompt v2 menyebut SonarCloud, `
+      + 'sehingga alert CodeQL akan dikirim dengan keterangan asal yang salah. Pakai --prompt=v3.');
   }
 };
 

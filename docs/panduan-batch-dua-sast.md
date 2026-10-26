@@ -16,6 +16,8 @@ laporan hasil. Satu-satunya tahap yang mengeluarkan uang adalah bagian 5.
 | Laporan CodeQL beku | `scripts/sast/codeql-beku.js`, 18 alert, `sha256_isi` deterministik |
 | Penggabung himpunan alert | `scripts/sast/sumbu-sast.js`, Sonar lebih dulu lalu CodeQL |
 | Penilai skenario A dua perkakas | `scripts/sast/skor-dua-sast.js`, dengan pemetaan K6 |
+| Pemilih versi prompt | `scripts/llm-scan.js --prompt=v2|v3`, bawaan `v2`. Dua perkakas dengan `v2` **ditolak** |
+| Mode verifikasi-saja | **tidak dibangun**; lengan kontrol dijalankan penuh |
 | Skema hasil | `docs/design/results-v3.schema.json` |
 | Penjaga kombinasi di CI | `devsecops.yml` job `rencana` |
 | **Penilai skenario B dua perkakas** | **belum**, menunggu batch dijalankan |
@@ -70,7 +72,7 @@ Jalankan lebih dulu, selalu. `--kering` keluar sebelum satu pun panggilan API
 (`scripts/llm-scan.js:338` dan `:370`).
 
 ```bash
-node scripts/llm-scan.js --vendor=google --kondisi=utama --skenario=B --sast=keduanya \
+node scripts/llm-scan.js --vendor=google --kondisi=utama --skenario=B --sast=keduanya --prompt=v3 \
   --objek=../objek-seeded \
   --sonar-beku=../objek-seeded/hasil-eksperimen/20261019/sonar-beku.json \
   --codeql-beku=../objek-seeded/hasil-eksperimen/20261026-dua-sast/codeql-beku.json \
@@ -86,18 +88,25 @@ Hasil dry-run 26 Okt 2026:
 
 Urutan verifikasi: `SONAR-01..05` lalu `CQL-01..18`. Hash prompt deteksi **`568d6cbaa989f393…`**
 untuk kedua lengan, sama dengan yang tercatat di batch 22 Oktober.
+`--prompt=v3` **wajib** untuk dua perkakas; tanpa itu alat menolak dengan menyebut sebabnya. Prompt
+v2 berbunyi "reported by SonarCloud", jadi 18 alert CodeQL akan dikirim dengan keterangan asal yang
+salah. Terukur: dengan v2, **18 dari 18** prompt verifikasi CQL menyebut SonarCloud; dengan v3,
+**nol**. Bawaannya tetap `v2`, supaya pemanggil yang belum tahu sumbu ini tidak bisa diam-diam
+melakukannya.
 
 ### Biaya, 3 vendor × 3 run
 
 | Pos | Biaya |
 |---|---|
-| Lengan uji, 23 alert | US$10,0346 |
-| Lengan kontrol, **verifikasi saja** 5 alert | US$1,6737 |
-| **Total** | **US$11,71** |
+| Lengan uji, 23 alert, `--sast=keduanya --prompt=v3` | US$10,0346 |
+| Lengan kontrol, **run penuh** 5 alert, `--sast=sonar --prompt=v3` | US$4,0092 |
+| **Total** | **US$14,04** |
 
-Lengan kontrol tidak perlu mengulang deteksi: prompt deteksi v2 dan v3 **identik byte per byte**
-untuk kondisi `utama`, dibuktikan `tests/prompt-v3.test.js`. Karena itu hasil deteksi 22 Oktober sah
-dipakai ulang sebagai sampel v3, dan hanya verifikasinya yang perlu diulang.
+Angka ini **direvisi naik** dari US$11,71. Secara teori lengan kontrol cukup mengulang verifikasinya
+saja, karena prompt deteksi v2 dan v3 identik byte per byte untuk kondisi `utama`
+(`tests/prompt-v3.test.js`). Tetapi **mode verifikasi-saja tidak dibangun**: `llm-scan.js` selalu
+memanggil deteksi lebih dulu. Lengan kontrol karena itu dijalankan penuh, dan selisih US$2,34 adalah
+harga dari keputusan untuk tidak membangun flag itu.
 
 Angka google dihitung dengan rumus dasbor (`dashboard/app.js:1012`, dua titik ukur). Angka anthropic
 dan openai adalah **ekstrapolasi dengan asumsi** porsi deteksi sama dengan google; repo sendiri
@@ -120,6 +129,49 @@ Yang **tidak** boleh dilakukan:
 - Jangan menjalankan skenario C dengan dua perkakas. C tidak memakai alert sama sekali.
 - Jangan menggabungkan pasangan kembar. Keputusan K1: S2 dan S3 masing-masing tetap mendapat
   panggilan verifikasi sendiri, dan `kembar_dengan` murni metadata.
+- Jangan menyalakan lapis 2 (saran perbaikan AI). Ia masih memaku "alert SonarCloud" di
+  `scripts/llm/remediasi.js:66` dan belum punya panduan untuk CWE-22; lihat bagian 7.
+
+### Pilot: 1 vendor, 1 run, kira-kira US$0,33
+
+```bash
+node scripts/llm-scan.js \
+  --vendor=openai --kondisi=utama --skenario=B --sast=keduanya --prompt=v3 \
+  --objek=../objek-seeded \
+  --sonar-beku=../objek-seeded/hasil-eksperimen/20261019/sonar-beku.json \
+  --codeql-beku=../objek-seeded/hasil-eksperimen/20261026-dua-sast/codeql-beku.json \
+  --runs=1
+```
+
+### Batch penuh, dua lengan, KEDUANYA dengan `--prompt=v3`
+
+```bash
+# Lengan uji: dua perkakas, 23 alert, 24 panggilan per run
+for V in google anthropic openai; do
+  node scripts/llm-scan.js \
+    --vendor="$V" --kondisi=utama --skenario=B --sast=keduanya --prompt=v3 \
+    --objek=../objek-seeded \
+    --sonar-beku=../objek-seeded/hasil-eksperimen/20261019/sonar-beku.json \
+    --codeql-beku=../objek-seeded/hasil-eksperimen/20261026-dua-sast/codeql-beku.json \
+    --runs=3
+done
+
+# Lengan kontrol: Sonar saja, 5 alert, 6 panggilan per run, prompt v3 yang SAMA
+for V in google anthropic openai; do
+  node scripts/llm-scan.js \
+    --vendor="$V" --kondisi=utama --skenario=B --sast=sonar --prompt=v3 \
+    --objek=../objek-seeded \
+    --sonar-beku=../objek-seeded/hasil-eksperimen/20261019/sonar-beku.json \
+    --runs=3
+done
+```
+
+Kedua lengan memakai `--prompt=v3` supaya satu-satunya perbedaan di antaranya adalah himpunan
+alertnya. Lengan kontrol dengan `v2` membuat selisihnya bercampur dengan selisih teks prompt.
+
+Kunci API dimuat di dalam proses Node oleh `scripts/llm-scan.js:40` (`require('dotenv').config`),
+jadi tidak ada `source .env`. Variabel yang dibutuhkan: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`. `SONAR_TOKEN` tidak diperlukan karena kedua laporan dibaca dari berkas beku.
 
 ---
 

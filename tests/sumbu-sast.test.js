@@ -339,11 +339,93 @@ test('K7: kondisi sonar_di_deteksi dengan codeql atau keduanya ditunda, dengan s
 });
 
 test('kombinasi yang memang dipakai batch pertama diterima: A dan B pada kondisi utama', () => {
-  for (const sast of sumbu.SAST_DIDUKUNG) {
-    assert.doesNotThrow(() => sumbu.periksaKombinasi({ sast, skenario: 'B', kondisi: 'utama' }));
+  // Dua perkakas sah hanya dengan prompt v3; itu aturan yang ditambahkan setelah tes ini ditulis,
+  // jadi versinya disebut eksplisit di sini. sonar tetap diuji pada bawaan, karena itulah perilaku
+  // yang sudah ada dan tidak boleh bergeser.
+  for (const skenario of ['A', 'B']) {
+    assert.doesNotThrow(() => sumbu.periksaKombinasi({ sast: 'sonar', skenario, kondisi: 'utama' }),
+      `sonar + ${skenario} pada bawaan`);
+    for (const sast of ['codeql', 'keduanya']) {
+      assert.doesNotThrow(
+        () => sumbu.periksaKombinasi({ sast, skenario, kondisi: 'utama', versiPrompt: 'v3' }),
+        `${sast} + ${skenario} + v3`,
+      );
+    }
   }
-  // Skenario A tidak pernah sampai ke alat ini, tetapi gerbangnya tidak boleh menolaknya.
-  for (const sast of sumbu.SAST_DIDUKUNG) {
-    assert.doesNotThrow(() => sumbu.periksaKombinasi({ sast, skenario: 'A', kondisi: 'utama' }));
+});
+
+// ---------- 5. Versi prompt sebagai bagian kombinasi ----------
+
+test('sast codeql atau keduanya DITOLAK dengan prompt v2, diterima dengan v3', () => {
+  // Prompt v2 menyebut SonarCloud di dua tempat. Mengirim alert CodeQL dengan prompt itu berarti
+  // memberi informasi palsu ke model, dan run seperti itu mencemari eksperimen tanpa meninggalkan
+  // tanda di angkanya. Karena itu ditolak, bukan diperingatkan.
+  for (const sast of ['codeql', 'keduanya']) {
+    assert.throws(
+      () => sumbu.periksaKombinasi({ sast, skenario: 'B', kondisi: 'utama', versiPrompt: 'v2' }),
+      /tidak boleh dipakai dengan --prompt=v2/,
+      `${sast} + v2`,
+    );
+    assert.throws(
+      () => sumbu.periksaKombinasi({ sast, skenario: 'B', kondisi: 'utama', versiPrompt: 'v2' }),
+      /Pakai --prompt=v3/,
+      `${sast} + v2: pesan harus menyebut jalan keluarnya`,
+    );
+    assert.doesNotThrow(
+      () => sumbu.periksaKombinasi({ sast, skenario: 'B', kondisi: 'utama', versiPrompt: 'v3' }),
+      `${sast} + v3 harus diterima`,
+    );
   }
+});
+
+test('versiPrompt bawaan adalah v2, sehingga pemanggil lama tetap menolak dua perkakas', () => {
+  // Bawaan dipilih konservatif dengan sengaja: pemanggil yang belum tahu sumbu ini tidak boleh
+  // diam-diam mengirim alert CodeQL dengan prompt yang menyebut SonarCloud.
+  assert.throws(
+    () => sumbu.periksaKombinasi({ sast: 'keduanya', skenario: 'B', kondisi: 'utama' }),
+    /tidak boleh dipakai dengan --prompt=v2/,
+  );
+  // sonar tetap lolos pada bawaan, dan itu perilaku yang sudah ada.
+  assert.doesNotThrow(() => sumbu.periksaKombinasi({ sast: 'sonar', skenario: 'B', kondisi: 'utama' }));
+});
+
+test('urutan penolakan: skenario C diperiksa sebelum versi prompt', () => {
+  // Dua sebab yang berbeda tidak boleh tertukar. C adalah sebab yang lebih dekat ke permintaan
+  // pengguna, jadi ia yang disebut lebih dulu meski versi promptnya juga salah.
+  assert.throws(
+    () => sumbu.periksaKombinasi({ sast: 'codeql', skenario: 'C', kondisi: 'utama', versiPrompt: 'v2' }),
+    /Skenario C tidak memakai alert SAST sama sekali/,
+  );
+});
+
+test('prompt v3: verifikasi alert CQL tidak memuat kata SonarCloud, v2 memuatnya', () => {
+  const alertCql = DUA_CQL[0];
+  const teksAlert = render.formatAlert(alertCql, render.bacaTemplate().alert.teks);
+  const rakit = (versi) => render.rakitPrompt({
+    template: render.bacaTemplate(render.dirPrompt(versi)),
+    kondisi: 'utama',
+    tugas: 'verifikasi',
+    kodeSumber: 'FILE: src/a.js\n1: const x = 1;\n',
+    alertTeks: teksAlert,
+  });
+
+  const v2 = rakit('v2');
+  const v3 = rakit('v3');
+  assert.match(v2.user, /reported by SonarCloud/, 'v2 memang menyebut SonarCloud; itu sebab penolakannya');
+  assert.ok(!/SonarCloud/i.test(v3.user), 'v3 tidak boleh menyebut SonarCloud sama sekali');
+  assert.match(v3.user, /reported by a static analysis tool/);
+  // Id alertnya tetap sampai ke prompt apa adanya pada kedua versi.
+  for (const p of [v2, v3]) assert.match(p.user, /Alert ID: CQL-01/);
+});
+
+test('prompt v3: deteksi kondisi utama identik dengan v2, termasuk hashnya', () => {
+  // Dasar klaim bahwa lengan kontrol tidak perlu mengulang deteksi.
+  const rakit = (versi) => render.rakitPrompt({
+    template: render.bacaTemplate(render.dirPrompt(versi)),
+    kondisi: 'utama',
+    tugas: 'deteksi',
+    kodeSumber: 'FILE: src/a.js\n1: const x = 1;\n',
+  });
+  assert.equal(rakit('v3').hash.prompt_user_kanonik, rakit('v2').hash.prompt_user_kanonik);
+  assert.equal(rakit('v3').user, rakit('v2').user);
 });
