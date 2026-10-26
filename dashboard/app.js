@@ -44,8 +44,9 @@
   const jalurAktif = (live) => live?.jalur
     ?? JALUR_SKENARIO[skenarioAktif(live)]
     // Run lama tanpa field skenario: versi skema masih penanda yang benar, karena waktu itu hanya
-    // jalur v2 yang menghasilkan skema 2.
-    ?? (state.hasil ? (state.hasil.schema_version === 2 ? 'v2' : 'v1') : jalurTerpilih());
+    // jalur v2 yang menghasilkan skema 2. Skema 3 juga jalur v2: sumbu sast mengubah asal alert,
+    // bukan bentuk pipelinenya.
+    ?? (state.hasil ? (state.hasil.schema_version >= 2 ? 'v2' : 'v1') : jalurTerpilih());
   // Id run yang dipakai graf untuk membangun tautan log. Saat ada run yang dipantau, idnya HARUS
   // datang dari run itu dan tidak boleh jatuh ke run lama: rantai cadangan `live?.id ??
   // state.rekaman?.id ?? state.hasil?.run?.id` pernah menghasilkan runs/<id lama>/job/<id baru>,
@@ -316,21 +317,63 @@
   // Path hasil berasal dari index.json; tolak apa pun di luar pola <branch>/<nomor>.json.
   const pathAman = (p) => typeof p === 'string' && /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*\.json$/.test(p) && !p.split('/').includes('..');
 
+  // Satu berkas index per skema, mengikuti aturan di scripts/merge-results.js: index.json milik
+  // skema 2 dan index-v3.json milik skema 3. Riwayat harus membaca keduanya; kalau hanya index.json
+  // yang dibaca, run dua perkakas tidak pernah muncul di dashboard walaupun berkas hasilnya sudah
+  // terbit, dan kekosongannya tidak memberi petunjuk apa pun tentang sebabnya.
+  const BERKAS_INDEX = ['index.json', 'index-v3.json'];
+
+  // Daftar run dari beberapa berkas index disambung menjadi satu, TANPA diurutkan di sini.
+  // Pengurutan sengaja tidak disalin ke tempat ini: urutEntri adalah satu-satunya pengurutan run di
+  // berkas ini (dijaga tests/urutan-run.test.js), dan ketiga pemakai yang peduli urutan sudah
+  // memanggilnya sendiri — entriBranch, branchRunTerbaru, dan alertTerakhir. Pemakai lainnya hanya
+  // memakai .some, yang tidak bergantung urutan.
+  const gabungIndex = (daftar) => ({
+    runs: (daftar ?? []).flatMap((x) => (Array.isArray(x?.runs) ? x.runs : [])),
+  });
+
   const repoPath = (p) => `/repos/${enc(p.owner)}/${enc(p.repo)}`;
   const contentsPath = (p, file) => `${repoPath(p)}/contents/${file.split('/').map(enc).join('/')}?ref=${enc(BRANCH_HASIL)}`;
 
-  // Dashboard membaca dua skema: 1 (jalur Gemini lama) dan 2 (jalur prompt v2, alert diverifikasi model).
+  // Dashboard membaca tiga skema: 1 (jalur Gemini lama), 2 (jalur prompt v2, alert diverifikasi
+  // model), dan 3 (skema 2 ditambah sumbu sast, alert bisa berasal dari lebih dari satu perkakas).
   // schema_version yang dikenali tidak lagi dilempar sebagai galat format; yang tidak dikenali tetap ditolak.
-  const SKEMA_DIDUKUNG = [1, 2];
+  const SKEMA_DIDUKUNG = [1, 2, 3];
+  // Skema 2 dan 3 adalah jalur yang sama dari sisi tampilan: bentuk blok run, findings, dan alerts
+  // identik, dan skema 3 hanya menambah medan. Dipisah sebagai konstanta supaya tidak ada lagi
+  // perbandingan `=== 2` yang tersebar dan diam-diam memperlakukan skema 3 seperti skema 1.
+  const SKEMA_LLM = [2, 3];
+  const skemaLlm = (r) => SKEMA_LLM.includes(r?.schema_version);
   const validasiHasil = (r) => {
     const v = r?.schema_version;
     const salah = (sebab) => {
-      throw new GhError('format', `Format results.json tidak dikenali (${sebab}). Dashboard ini membaca skema versi ${SKEMA_DIDUKUNG.join(' dan ')}.`);
+      throw new GhError('format', `Format results.json tidak dikenali (${sebab}). Dashboard ini membaca skema versi ${SKEMA_DIDUKUNG.join(', ')}.`);
     };
     if (!r || !SKEMA_DIDUKUNG.includes(v) || !r.run) salah(`schema_version ${v ?? 'tidak ada'}`);
     if (v === 1 && (!Array.isArray(r.findings) || !r.sonar_verification)) salah('skema 1 tanpa findings atau sonar_verification');
-    if (v === 2 && (!Array.isArray(r.findings) || !Array.isArray(r.alerts))) salah('skema 2 tanpa findings atau alerts');
+    if (SKEMA_LLM.includes(v) && (!Array.isArray(r.findings) || !Array.isArray(r.alerts))) salah(`skema ${v} tanpa findings atau alerts`);
     return r;
+  };
+
+  // Severity alert: skema 2 menamainya severity_sonar karena sumbernya selalu SonarCloud, skema 3
+  // menamainya severity karena tidak lagi selalu begitu. Dibaca lewat satu fungsi supaya data lama
+  // dan data baru tidak perlu dua cabang di setiap tempat pemakaian.
+  const severityAlert = (a) => a?.severity ?? a?.severity_sonar ?? null;
+  // Perkakas pemasok alert. Alert skema 2 tidak punya medannya dan memang selalu dari Sonar.
+  const perkakasAlert = (a) => a?.sumber_sast ?? 'sonar';
+  const NAMA_SAST = { sonar: 'SonarCloud', codeql: 'CodeQL' };
+  // Nama perkakas yang belum dikenal ditampilkan apa adanya, bukan diganti nama tebakan: lencana
+  // yang mengarang nama perkakas sama buruknya dengan lencana yang mengarang angka.
+  const namaSast = (k) => NAMA_SAST[k] ?? String(k);
+  // Daftar perkakas yang benar-benar ada di satu himpunan alert. Urutannya mengikuti NAMA_SAST,
+  // yaitu Sonar lebih dulu, sama dengan urutan verifikasi di scripts/sast/sumbu-sast.js; perkakas
+  // yang belum dikenal menyusul di belakang menurut urutan kemunculannya.
+  const perkakasDipakai = (alerts) => {
+    const ada = [...new Set((alerts ?? []).map(perkakasAlert))];
+    return [
+      ...Object.keys(NAMA_SAST).filter((k) => ada.includes(k)),
+      ...ada.filter((k) => !(k in NAMA_SAST)),
+    ];
   };
 
   const bacaStatus = (status, conclusion) => {
@@ -449,14 +492,15 @@
         return { akses: true, workflow: null, branch_bawaan: bawaan, err };
       }
     },
-    index: async (p) => {
+    index: async (p) => gabungIndex(await Promise.all(BERKAS_INDEX.map(async (f) => {
       try {
-        return await gh(contentsPath(p, 'index.json'), { raw: true });
+        return await gh(contentsPath(p, f), { raw: true });
       } catch (err) {
+        // index-v3.json belum ada di hampir semua proyek, dan itu keadaan normal, bukan galat.
         if (err.jenis === 'notfound') return { runs: [] };
         throw err;
       }
-    },
+    }))),
     hasil: async (p, entri) => {
       if (!pathAman(entri.path)) throw new GhError('format', 'Path hasil di index.json tidak valid.');
       return validasiHasil(await gh(contentsPath(p, entri.path), { raw: true }));
@@ -484,7 +528,12 @@
       workflow: !p.demo_tanpa_workflow,
       branch_bawaan: typeof p.default_branch === 'string' ? p.default_branch : null,
     }),
-    index: async (p) => (p.demo_tanpa_workflow ? { runs: [] } : jsonLokal(`${basisDemo()}/index.json`)),
+    // Fixture skema 3 opsional: kalau berkasnya belum ada, mode demo tetap menampilkan run skema 2
+    // seperti sebelumnya. Hanya kegagalan membaca berkas kedua yang ditelan, bukan yang pertama.
+    index: async (p) => (p.demo_tanpa_workflow ? { runs: [] } : gabungIndex([
+      await jsonLokal(`${basisDemo()}/index.json`),
+      await jsonLokal(`${basisDemo()}/index-v3.json`).catch(() => ({ runs: [] })),
+    ])),
     hasil: async (p, entri) => {
       if (!pathAman(entri.path)) throw new GhError('format', 'Path hasil di index.json tidak valid.');
       return validasiHasil(await jsonLokal(`${basisDemo()}/${entri.path}`));
@@ -2036,10 +2085,29 @@
       el('div', { class: 'kartu-baris' }, kartuAnak.flat()));
 
     const SEV_DIKENAL = ['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
-    const sev = (daftar) => h.alerts.filter((a) => daftar.includes(String(a.severity_sonar).toUpperCase())).length;
-    // Sonar MQR memakai nama severity lain; tanpa kartu ini alert seperti itu hilang dari hitungan.
-    const sevLain = h.alerts.filter((a) => !SEV_DIKENAL.includes(String(a.severity_sonar).toUpperCase())).length;
+    const sev = (daftar) => h.alerts.filter((a) => daftar.includes(String(severityAlert(a)).toUpperCase())).length;
+    // Sonar MQR memakai nama severity lain, dan CodeQL memberi angka (misalnya "9.8") alih-alih
+    // nama; tanpa kartu ini alert seperti itu hilang dari hitungan.
+    const sevLain = h.alerts.filter((a) => !SEV_DIKENAL.includes(String(severityAlert(a)).toUpperCase())).length;
     const ditinjau = (v) => h.findings.filter((t) => state.keputusan[t.fingerprint]?.v === v).length;
+
+    // Kelompok kartu "Perkakas SAST". Hanya muncul kalau run ini memuat lebih dari satu perkakas,
+    // jadi data lama tampil persis seperti sebelumnya: satu perkakas tidak perlu dirinci.
+    //
+    // Kartu tumpang tindih hanya ditampilkan kalau medan kembar_dengan memang ada di datanya. Medan
+    // itu diisi penilai, bukan pemindai, sehingga hasil yang belum dinilai tidak memilikinya; kartu
+    // berisi 0 di keadaan itu akan terbaca sebagai "tidak ada yang tumpang tindih", padahal yang
+    // benar adalah "belum dihitung".
+    const grupPerkakas = () => {
+      const dipakai = perkakasDipakai(h.alerts);
+      if (dipakai.length < 2) return null;
+      const adaKembar = h.alerts.some((a) => Array.isArray(a.kembar_dengan));
+      const kembar = h.alerts.filter((a) => (a.kembar_dengan ?? []).length > 0).length;
+      return grup('Perkakas SAST', `${dipakai.length} perkakas`,
+        ...dipakai.map((k) => kartu(namaSast(k), h.alerts.filter((a) => perkakasAlert(a) === k).length,
+          'alert dari perkakas ini')),
+        adaKembar ? kartu('Tumpang tindih', kembar, 'alert yang berpasangan dengan perkakas lain') : null);
+    };
 
     // Skenario A menjalankan SonarCloud tetapi tidak satu pun model, jadi kelompok "putusan model"
     // akan berisi nol semua dan terbaca seolah model menilai dan tidak menemukan apa-apa.
@@ -2051,6 +2119,7 @@
           kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
           kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
           sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
+        grupPerkakas(),
         el('section', { class: 'kartu-grup' },
           el('div', { class: 'kartu-kepala' }, el('h3', { text: 'Putusan model atas alert' }),
             el('span', { class: 'kartu-total', text: 'tidak ada' })),
@@ -2082,6 +2151,7 @@
         kartu('Major', sev(['MAJOR']), 'severity apa adanya dari Sonar'),
         kartu('Minor dan info', sev(['MINOR', 'INFO']), 'severity apa adanya dari Sonar'),
         sevLain ? kartu('Severity lain', sevLain, 'nama severity di luar lima baku Sonar') : null),
+      grupPerkakas(),
       grup('Putusan model atas alert', `${h.alerts.filter((a) => (a.putusan_gabungan ?? a.putusan)).length} dari ${h.alerts.length} berputusan`,
         kartu('Dikonfirmasi model', n('true_positive'), 'alert dinyatakan nyata', 'crit'),
         kartu('False positive', n('false_positive'), 'alert ditolak model', 'ok'),
@@ -2277,9 +2347,9 @@
   };
 
   const renderNav = () => {
-    const v2 = state.hasil?.schema_version === 2;
-    $('railnav-box').hidden = !v2;
-    if (!v2) return;
+    const llm = skemaLlm(state.hasil);
+    $('railnav-box').hidden = !llm;
+    if (!llm) return;
     const adaEks = tampilanTersedia('eksperimen');
     isi($('railnav'), NAV.filter((x) => x.key !== 'eksperimen' || adaEks).map((x) => {
       const l = lencanaNav(x.key);
@@ -2341,6 +2411,10 @@
   const renderAlertV2 = () => {
     const alerts = state.hasil.alerts;
     const sk = skenarioRun(state.hasil.run);
+    // Lencana perkakas hanya muncul kalau run ini memang memuat lebih dari satu perkakas. Data lama
+    // karena itu tampil persis seperti sebelumnya: satu perkakas tidak perlu diberi label.
+    const perkakas = perkakasDipakai(alerts);
+    const banyakPerkakas = perkakas.length > 1;
     $('alerts-box').hidden = false;
 
     // Skenario C tidak memakai SonarCloud sama sekali, jadi halaman ini tidak punya isi dan
@@ -2391,7 +2465,7 @@
               el('b', { text: 'Alasan dan analisis model' }),
               el('span', { class: 'alasan-model', text: labelModelId(r.model_menjawab ?? r.model_diminta) })),
             el('p', { class: 'alasan', text: a.alasan ?? (sk === 'A'
-              ? 'Skenario A tidak memakai LLM, jadi alert ini belum dinilai model mana pun. Severity di atas datang apa adanya dari SonarCloud.'
+              ? `Skenario A tidak memakai LLM, jadi alert ini belum dinilai model mana pun. Severity di atas datang apa adanya dari ${namaSast(a.severity_asal ?? perkakasAlert(a))}.`
               : 'Model tidak memberi alasan untuk alert ini.') })),
           el('div', { class: 'afakta' },
             a.rule ? el('span', { class: 'chip chip-rule', text: a.rule }) : null,
@@ -2414,14 +2488,25 @@
         el('span', { class: 'aisi' },
           el('span', { class: 'ameta' },
             el('span', { class: `putusan p-${inf.kelas}`, text: inf.label }),
-            el('span', { class: 'chip chip-sev', title: 'Severity apa adanya dari SonarCloud, tidak diterjemahkan' },
-              el('span', { text: a.severity_sonar ?? '—' }), el('small', { text: 'dari Sonar' })),
+            el('span', { class: 'chip chip-sev', title: `Severity apa adanya dari ${namaSast(a.severity_asal ?? perkakasAlert(a))}, tidak diterjemahkan` },
+              el('span', { text: severityAlert(a) ?? '—' }),
+              el('small', { text: `dari ${namaSast(a.severity_asal ?? perkakasAlert(a))}` })),
+            banyakPerkakas
+              ? el('span', { class: 'chip chip-rule', title: 'Perkakas analisis statis yang melaporkan alert ini', text: namaSast(perkakasAlert(a)) })
+              : null,
             el('span', { class: 'akey', text: a.keyakinan ? `keyakinan ${a.keyakinan}` : '—' })),
           el('span', { class: 'ftitle' }, a.file ? teksLokasi(a.file, a.baris) : (a.rule ?? '—'))),
         el('span', { class: 'buka' }, labelBuka, ikon(IKON.panah)));
         return el('li', {}, tombol, detail);
       }))
-      : el('div', { class: 'state' }, el('p', { text: 'Tidak ada alert Sonar pada run ini.' })));
+      // Kalimat kosongnya mengikuti sumbu sast yang dicatat run, bukan menyebut Sonar pada run yang
+      // perkakasnya bukan Sonar. Himpunan alert yang kosong tidak bisa memberi tahu perkakasnya,
+      // jadi keterangannya diambil dari run, satu-satunya tempat yang tahu.
+      : el('div', { class: 'state' }, el('p', {
+        text: (state.hasil.run?.sast ?? 'sonar') === 'sonar'
+          ? 'Tidak ada alert Sonar pada run ini.'
+          : 'Tidak ada alert SAST pada run ini.',
+      })));
   };
 
   // Keputusan developer v2 disimpan per project dan dikunci sidik jari temuan, bukan per run id.
@@ -2852,10 +2937,27 @@
           `${n3(mp.precision)} / ${n3(mp.recall)} / ${n3(mp.f1)}`]);
       }
     }
+    // Alert mana yang labelnya divariasikan analisis sensitivitas DITURUNKAN dari data: id yang
+    // labelnya berbeda antara varian utama dan varian sensitivitas. Sebelumnya id "SONAR-03" dipaku
+    // di sini. Itu kebetulan benar untuk batch 19 dan 22 Oktober, dan salah untuk batch mana pun
+    // yang memvariasikan alert lain — termasuk lengan dua perkakas, yang id alertnya CQL-xx.
+    //
+    // Tanpa varian sensitivitas, keterangannya kosong, bukan "SONAR-03 = —": tanda hubung di situ
+    // terbaca seolah alert itu ada dan labelnya tidak diketahui.
+    const idLabelBeda = () => {
+      const u = eks.label_alert ?? {};
+      const s = eks.label_alert_sensitivitas;
+      if (!s) return [];
+      return Object.keys(s).filter((id) => (s[id]?.label ?? null) !== (u[id]?.label ?? null)).sort();
+    };
+    const ketLabel = (peta) => {
+      const ids = idLabelBeda();
+      return ids.length ? ` (${ids.map((id) => `${id} = ${peta?.[id]?.label ?? '—'}`).join(', ')})` : '';
+    };
     const pilih = el('div', { class: 'eks-pilih' },
       el('span', { class: 'note', text: 'Label alert:' }),
-      ...[['utama', `Utama (SONAR-03 = ${eks.label_alert?.['SONAR-03']?.label ?? '—'})`],
-        ['sensitivitas', `Sensitivitas (SONAR-03 = ${eks.label_alert_sensitivitas?.['SONAR-03']?.label ?? '—'})`]]
+      ...[['utama', `Utama${ketLabel(eks.label_alert)}`],
+        ['sensitivitas', `Sensitivitas${ketLabel(eks.label_alert_sensitivitas)}`]]
         .map(([k, label]) => el('button', {
           class: 'btn btn-sm', type: 'button', 'aria-pressed': (state.eksLabel ?? 'utama') === k ? 'true' : 'false',
           disabled: k === 'sensitivitas' && !eks.label_alert_sensitivitas,
@@ -3007,7 +3109,7 @@
   };
 
   const renderSemua = () => {
-    if (state.hasil?.schema_version === 2) return renderSemuaV2();
+    if (skemaLlm(state.hasil)) return renderSemuaV2();
     renderArsipV1();
   };
 
