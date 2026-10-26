@@ -1196,6 +1196,15 @@
   const modeModelTerpilih = () => (skenarioTerpilih() === 'B'
     && document.querySelector('input[name="mode_model"]:checked')?.value === 'gabungan'
     ? 'gabungan' : 'tunggal');
+  // Sumbu sast hanya berarti di skenario B, dan alasannya berbeda untuk dua skenario lain:
+  //   A  memakai jalur v1 (JALUR_SKENARIO), yang tidak memanggil scripts/llm-scan.js sama sekali,
+  //      sehingga --sast maupun --codeql-beku tidak akan pernah dibaca siapa pun.
+  //   C  tidak memakai alert SAST sama sekali, jadi perkakas pemasoknya tidak punya arti.
+  // Dibaca lewat fungsi ini, bukan langsung dari radio, supaya pilihan yang tertinggal dari
+  // pembukaan drawer sebelumnya tidak pernah ikut terkirim diam-diam.
+  const sastTerpilih = () => (skenarioTerpilih() === 'B'
+    ? (document.querySelector('input[name="sast"]:checked')?.value ?? 'sonar')
+    : 'sonar');
 
   // Branch hanya bisa dipicu kalau workflow di branch itu memuat jalur yang dipilih. Kemampuan v2
   // tidak bisa ditanyakan ke API tanpa izin membaca isi berkas workflow, jadi dicatat per branch
@@ -1266,8 +1275,21 @@
     if (!llm && $('f-rekomendasi').checked) $('f-rekomendasi').checked = false;
     if (!llm && $('f-konfirmasi-v2').checked) $('f-konfirmasi-v2').checked = false;
 
-    // Gabungan hanya sah untuk B. Pilihannya disembunyikan di C, dan radionya dikembalikan ke
-    // tunggal supaya keadaan form tidak pernah berbeda dari apa yang terlihat.
+    // Sumbu sast hanya sah untuk B; di A dan C pilihannya disembunyikan dan radionya dikembalikan
+    // ke sonar, supaya keadaan form tidak pernah berbeda dari apa yang terlihat.
+    $('sast-field').hidden = skenario !== 'B';
+    if (skenario !== 'B') {
+      const s = document.querySelector('input[name="sast"][value="sonar"]');
+      if (s) s.checked = true;
+    }
+    // Keterangan menyebut akibat yang bisa dirasakan, bukan jumlah alert: jumlahnya bergantung pada
+    // laporan SonarCloud saat run berjalan dan pada berkas beku di branch tujuan, jadi angka tetap
+    // di sini akan menjadi angka yang dikarang.
+    $('sast-hint').textContent = sastTerpilih() === 'sonar'
+      ? ''
+      : 'CodeQL tidak dijalankan di CI: alertnya dibaca dari laporan beku yang di-commit di branch tujuan, '
+        + 'dan run ditolak kalau hash tree src/ di berkas itu berbeda dari commit yang dianalisis. '
+        + 'Alert tambahan berarti panggilan verifikasi tambahan, jadi biaya run ini naik.';
     $('mode-model-seg').hidden = skenario !== 'B';
     if (skenario !== 'B') {
       const t = document.querySelector('input[name="mode_model"][value="tunggal"]');
@@ -3226,7 +3248,7 @@
   // memang tidak ada di daftar v1.
   const susunInputDispatch = ({
     mode, jalur, skenario, label, model, vendor, gabungan,
-    rekomendasiAi, vendorRekomendasi, sonarBranch,
+    rekomendasiAi, vendorRekomendasi, sonarBranch, sast = 'sonar',
   }) => {
     const inputs = { mode, label, jalur, skenario };
     if (jalur !== 'v2') {
@@ -3245,6 +3267,10 @@
     // Mengirimnya hanya saat berarti membuat body dispatch bisa dibaca sebagai catatan apa yang
     // sebenarnya diminta, bukan sebagai daftar input yang sebagian tidak berpengaruh.
     if (gabungan && inputs.rekomendasi_ai) inputs.vendor_rekomendasi = vendorRekomendasi;
+    // Dikirim HANYA kalau bukan nilai bawaan, mengikuti cara vendor_rekomendasi diperlakukan di atas:
+    // dispatch yang tidak menyebut sumbu ini berperilaku persis seperti sebelum sumbu itu ada, dan
+    // catatan dispatch-nya terbaca sebagai apa yang benar-benar diminta.
+    if (sast && sast !== 'sonar') inputs.sast = sast;
     return inputs;
   };
 
@@ -3289,6 +3315,7 @@
       rekomendasiAi: $('f-rekomendasi').checked,
       vendorRekomendasi: vendorRekomendasiTerpilih()?.vendor ?? 'google',
       sonarBranch: sonarBranchV2(branch),
+      sast: sastTerpilih(),
     });
     await gh(`${repoPath(p)}/actions/workflows/${enc(p.workflow)}/dispatches`, { method: 'POST', body: { ref: branch, inputs } });
     perbaruiTombolJalankan('Permintaan diterima. Menunggu GitHub membuat run…');
@@ -3458,7 +3485,7 @@
       state.branchJalan = b;
       renderDrawer();
     });
-    document.querySelectorAll('input[name="skenario"], input[name="mode_model"]').forEach((r) => r.addEventListener('change', () => {
+    document.querySelectorAll('input[name="skenario"], input[name="mode_model"], input[name="sast"]').forEach((r) => r.addEventListener('change', () => {
       renderDrawer();
       if (!state.sibuk && !state.hasil) renderPipeline();
     }));

@@ -195,12 +195,48 @@ test('input sast ada di workflow dengan opsi dan bawaan yang benar', () => {
   assert.equal(INPUT.sast.bawaan, 'sonar', 'bawaan input sast harus sonar');
 });
 
-test('dashboard tidak pernah mengirim input sast, jadi bawaan sonar selalu berlaku', () => {
-  // dashboard/ sengaja belum menyentuh sumbu ini. Selama itu, setiap dispatch memakai bawaan, dan
-  // tidak ada satu pun kombinasi yang bisa diam-diam menjadi dua perkakas.
+test('dispatch yang tidak menyebut sast tidak pernah mengirimnya', () => {
+  // Drawer sekarang punya pemilih sast, tetapi sifat yang dijaga di sini tidak berubah: pemanggil
+  // yang tidak menyebut sumbu ini memakai bawaan, dan tidak ada satu pun kombinasi yang bisa
+  // diam-diam menjadi dua perkakas.
   for (const k of KOMBINASI) {
     assert.ok(!('sast' in lengkap(k.arg)), `${k.nama}: mengirim input sast`);
+    assert.ok(!('sast' in lengkap({ ...k.arg, sast: 'sonar' })), `${k.nama}: sonar eksplisit pun tidak dikirim`);
   }
+});
+
+test('sast dikirim hanya kalau bukan sonar, dan hanya di jalur v2', () => {
+  const v2 = { mode: 'sast-llm', jalur: 'v2', skenario: 'B', model: modelV2[0].id, vendor: modelV2[0].vendor };
+  for (const sast of ['codeql', 'keduanya']) {
+    assert.equal(lengkap({ ...v2, sast }).sast, sast, `jalur v2 harus membawa sast=${sast}`);
+  }
+  // Jalur v1 keluar lebih dulu dan hanya membawa model: --sast adalah argumen scripts/llm-scan.js,
+  // dan jalur v1 memakai scripts/gemini-scan.js yang tidak mengenalnya.
+  const v1 = lengkap({ mode: 'sast', jalur: 'v1', skenario: 'A', model: modelV1Bawaan, sast: 'keduanya' });
+  assert.ok(!('sast' in v1), 'jalur v1 tidak boleh membawa sast');
+});
+
+test('perubahan pilihan sast memicu render ulang drawer', () => {
+  // Ditemukan saat review diri: tanpa listener, keterangan biaya dan keadaan form tidak pernah
+  // berubah saat pengguna memilih CodeQL — pilihannya tetap terkirim, tetapi penjelasannya diam.
+  const baris = app.split('\n').find((b) => b.includes('input[name="skenario"]') && b.includes('addEventListener'));
+  assert.ok(baris, 'listener radio drawer tidak ditemukan');
+  assert.match(baris, /input\[name="sast"\]/, 'radio sast harus ikut memicu renderDrawer');
+});
+
+test('drawer punya pemilih sast, dan nomor bagiannya berurut', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'dashboard', 'index.html'), 'utf8');
+  assert.match(html, /id="sast-field"/, 'fieldset pemilih sast tidak ada di drawer');
+  for (const v of ['sonar', 'codeql', 'keduanya']) {
+    assert.match(html, new RegExp(`name="sast" value="${v}"`), `pilihan ${v} tidak ada`);
+  }
+  // Hanya sonar yang tercentang di markup: keadaan awal drawer tidak boleh berbiaya lebih.
+  assert.match(html, /name="sast" value="sonar" checked/);
+  assert.equal(/name="sast" value="(codeql|keduanya)" checked/.test(html), false, 'bawaan drawer harus sonar');
+  // Penomoran bagian drawer gampang bergeser saat bagian baru disisipkan, dan nomor yang lompat
+  // terbaca sebagai ada bagian yang hilang.
+  const nomor = [...html.matchAll(/class="bagian-no">(\d+)</g)].map((m) => Number(m[1]));
+  assert.deepEqual(nomor, nomor.map((_, i) => i + 1), `nomor bagian harus 1..n berurut, dapat ${nomor.join(', ')}`);
 });
 
 const skripRencana = (() => {
@@ -257,17 +293,57 @@ test('penjaga rencana K8: skenario C dengan codeql atau keduanya ditolak dengan 
   }
 });
 
-test('penjaga rencana: codeql dan keduanya di skenario B ditolak karena belum didukung CI', () => {
-  // Penjaga kedua, dan sebabnya BERBEDA dari penjaga K8 di atas. Keduanya harus terjangkau: input
-  // yang diterima lalu diam-diam tidak berpengaruh lebih menyesatkan daripada yang ditolak terbuka.
-  for (const skenario of ['A', 'B']) {
-    for (const sast of ['codeql', 'keduanya']) {
-      const mode = skenario === 'A' ? 'sast' : 'sast-llm';
-      const h = jalankanRencana({ MODE_INPUT: mode, SKENARIO_INPUT: skenario, SAST_INPUT: sast });
-      assert.notEqual(h.kode, 0, `${skenario} + ${sast} harus ditolak`);
-      assert.match(h.galat, /belum didukung di CI/, `${skenario} + ${sast}: sebab penolakan`);
-      assert.match(h.galat, /Tidak ada CodeQL yang dijalankan di CI/, `${skenario} + ${sast}: menegaskan CI tidak menjalankan CodeQL`);
-    }
+test('penjaga rencana: codeql dan keduanya di skenario B diterima', () => {
+  // Sebelumnya penjaga di sini menolak keduanya dengan "belum didukung di CI". Penolakan itu
+  // DICABUT ketika jalur dua perkakas dibuka ke CI; yang dijaga sekarang adalah bahwa kombinasinya
+  // benar-benar lolos DAN membawa sumbu sast beserta versi promptnya ke job analisis.
+  for (const sast of ['codeql', 'keduanya']) {
+    const h = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B', SAST_INPUT: sast });
+    assert.equal(h.kode, 0, `B + ${sast} harus lolos, galat: ${h.galat}`);
+    assert.match(h.out, new RegExp(`sast=${sast}`), `B + ${sast}: sumbu sast harus jadi output`);
+  }
+});
+
+test('penjaga rencana: skenario A dengan dua perkakas ditolak, karena A memakai jalur v1', () => {
+  // Ditemukan saat review diri. Skenario A mengirim jalur v1 (JALUR_SKENARIO di dashboard/app.js),
+  // dan jalur v1 memakai scripts/gemini-scan.js yang tidak mengenal --sast maupun --codeql-beku.
+  // Menerimanya berarti input yang diam-diam tidak berpengaruh — persis yang ingin dihindari.
+  for (const sast of ['codeql', 'keduanya']) {
+    const h = jalankanRencana({ MODE_INPUT: 'sast', SKENARIO_INPUT: 'A', SAST_INPUT: sast, JALUR: 'v1' });
+    assert.notEqual(h.kode, 0, `A + ${sast} harus ditolak`);
+    assert.match(h.galat, /hanya tersedia di jalur v2/, `A + ${sast}: sebab penolakan`);
+  }
+});
+
+test('penjaga rencana: versi prompt diturunkan dari sumbu sast, bukan diminta terpisah', () => {
+  // Prompt v2 menyebut SonarCloud, jadi alert CodeQL yang dikirim dengannya membawa keterangan asal
+  // yang salah. Menurunkannya di sini membuat kombinasi itu tidak pernah terbentuk lewat dispatch;
+  // scripts/sast/sumbu-sast.js tetap menolaknya bagi pemanggil CLI.
+  const sonar = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B', SAST_INPUT: 'sonar' });
+  assert.equal(sonar.kode, 0, sonar.galat);
+  assert.match(sonar.out, /versi_prompt=v2/, 'sonar harus tetap memakai prompt v2, seperti sebelumnya');
+
+  for (const sast of ['codeql', 'keduanya']) {
+    const h = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B', SAST_INPUT: sast });
+    assert.equal(h.kode, 0, h.galat);
+    assert.match(h.out, /versi_prompt=v3/, `${sast} harus memakai prompt v3`);
+  }
+
+  // Dispatch lama yang tidak mengenal input ini sama sekali tetap jatuh ke v2.
+  const lama = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B', SAST_INPUT: '' });
+  assert.equal(lama.kode, 0, lama.galat);
+  assert.match(lama.out, /versi_prompt=v2/);
+  assert.match(lama.out, /sast=sonar/);
+});
+
+test('penjaga rencana: dua perkakas di jalur v1 ditolak dengan sebabnya', () => {
+  // --prompt dan --codeql-beku adalah argumen scripts/llm-scan.js; jalur v1 memakai gemini-scan.js
+  // yang tidak mengenalnya, jadi input yang diterima di situ tidak akan berpengaruh sama sekali.
+  for (const sast of ['codeql', 'keduanya']) {
+    const h = jalankanRencana({ MODE_INPUT: 'sast-llm', SKENARIO_INPUT: 'B', SAST_INPUT: sast, JALUR: 'v1' });
+    assert.notEqual(h.kode, 0, `${sast} di jalur v1 harus ditolak`);
+    assert.match(h.galat, /hanya tersedia di jalur v2/, `${sast}: sebab penolakan`);
+    assert.match(h.galat, new RegExp(`sast=${sast}`), `${sast}: pesan menyebut nilainya`);
   }
 });
 

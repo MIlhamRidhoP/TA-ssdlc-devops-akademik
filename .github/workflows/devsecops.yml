@@ -49,12 +49,20 @@ on:
       sast:
         description: >-
           Perkakas analisis statis pemasok alert. Sumbu TERPISAH dari skenario; tidak ada skenario D.
-          codeql dan keduanya hanya berarti untuk skenario A dan B, dan untuk sekarang hanya didukung
-          lewat CLI: CI menolaknya. Tidak ada CodeQL yang dijalankan di CI; alertnya dibaca dari
-          berkas beku yang di-commit.
+          codeql dan keduanya hanya berarti untuk skenario yang MEMAKAI alert, jadi skenario C
+          ditolak. Tidak ada CodeQL yang dijalankan di CI: alertnya dibaca dari berkas beku yang
+          di-commit, sehingga versi query tidak bisa bergeser antar-run. Memilih selain sonar
+          menambah alert, dan tiap alert berarti satu panggilan verifikasi berbayar lagi.
         type: choice
         options: [sonar, codeql, keduanya]
         default: sonar
+      codeql_beku:
+        description: >-
+          Path berkas CodeQL beku di dalam branch ini, dipakai hanya kalau sast bukan sonar.
+          Berkasnya harus ada di branch yang dipicu, dan hash tree src/ di dalamnya harus sama
+          dengan commit yang dianalisis; kalau tidak, run ditolak sebelum ada panggilan berbayar.
+        type: string
+        default: hasil-eksperimen/20261026-dua-sast/codeql-beku.json
       konfirmasi_v2:
         description: 'Ketik JALANKAN untuk menyetujui biaya panggilan berbayar jalur v2'
         type: string
@@ -170,6 +178,8 @@ jobs:
       skenario: ${{ steps.mode.outputs.skenario }}
       gabungan: ${{ steps.mode.outputs.gabungan }}
       vendors: ${{ steps.mode.outputs.vendors }}
+      sast: ${{ steps.mode.outputs.sast }}
+      versi_prompt: ${{ steps.mode.outputs.versi_prompt }}
     steps:
       - name: Tentukan mode dan skenario
         id: mode
@@ -223,12 +233,19 @@ jobs:
             echo "::error::Skenario C tidak memakai alert SAST sama sekali, jadi sast=$sast tidak punya arti di situ. Pakai sast=sonar, atau pilih skenario A atau B." >&2
             exit 1
           fi
-          # Sisanya ditolak karena belum diteruskan ke job analisis. Input yang diterima lalu
-          # diam-diam tidak berpengaruh lebih menyesatkan daripada input yang ditolak terang-terangan.
-          if [ "$sast" != "sonar" ]; then
-            echo "::error::sast=$sast belum didukung di CI; jalankan lewat CLI scripts/llm-scan.js --sast=$sast dengan --codeql-beku. Tidak ada CodeQL yang dijalankan di CI." >&2
+          # Perkakas kedua hanya hidup di jalur v2: --prompt dan --codeql-beku adalah argumen
+          # scripts/llm-scan.js, dan jalur v1 memakai scripts/gemini-scan.js yang tidak mengenalnya.
+          if [ "$sast" != "sonar" ] && [ "$JALUR" != "v2" ]; then
+            echo "::error::sast=$sast hanya tersedia di jalur v2; jalur yang diminta $JALUR." >&2
             exit 1
           fi
+
+          # Versi prompt diturunkan dari sumbu sast, bukan diminta terpisah, supaya kombinasi yang
+          # tidak sah tidak bisa dibentuk lewat dispatch sama sekali. Prompt v2 menyebut SonarCloud,
+          # jadi mengirim alert CodeQL dengannya berarti memberi keterangan asal yang salah;
+          # scripts/sast/sumbu-sast.js menolaknya, dan di sini kombinasi itu tidak pernah terbentuk.
+          versi_prompt=v2
+          if [ "$sast" != "sonar" ]; then versi_prompt=v3; fi
           if [ "$skenario" = "A" ] && [ "$mode" = "sast-llm" ]; then
             echo "::error::Skenario A tidak memakai LLM, tetapi mode yang diminta sast-llm. Pilih salah satu." >&2
             exit 1
@@ -256,8 +273,10 @@ jobs:
             echo "skenario=$skenario"
             echo "gabungan=$gabungan"
             echo "vendors=$vendors"
+            echo "sast=$sast"
+            echo "versi_prompt=$versi_prompt"
           } >> "$GITHUB_OUTPUT"
-          echo "Mode analisis: $mode, skenario: $skenario, gabungan: $gabungan"
+          echo "Mode analisis: $mode, skenario: $skenario, gabungan: $gabungan, sast: $sast, prompt: $versi_prompt"
 
   sonarcloud:
     name: Analisis SonarCloud
@@ -615,7 +634,25 @@ jobs:
           SONAR_BRANCH: ${{ needs.sonarcloud.outputs.sonar_branch }}
           VENDOR: ${{ matrix.vendor }}
           SKENARIO: ${{ needs.rencana.outputs.skenario }}
-        run: node scripts/llm-scan.js --vendor="$VENDOR" --kondisi=utama --runs=1 --objek=. --skenario="$SKENARIO"
+          SAST: ${{ needs.rencana.outputs.sast }}
+          VERSI_PROMPT: ${{ needs.rencana.outputs.versi_prompt }}
+          CODEQL_BEKU: ${{ inputs.codeql_beku }}
+        run: |
+          set -euo pipefail
+          # Argumen disusun sebagai array, bukan string yang disambung: path berkas beku datang dari
+          # input dispatch dan tidak boleh terpecah di spasi.
+          args=(--vendor="$VENDOR" --kondisi=utama --runs=1 --objek=. --skenario="$SKENARIO" --prompt="$VERSI_PROMPT")
+          if [ "$SAST" != "sonar" ]; then
+            # Diperiksa di sini, bukan dibiarkan gagal di dalam skrip: berkas beku harus ada DI BRANCH
+            # YANG DIPICU. Branch yang kodenya sudah diperbaiki tidak memuatnya, dan pesan "file tidak
+            # ditemukan" dari skrip tidak menerangkan sebab sebenarnya.
+            if [ ! -f "$CODEQL_BEKU" ]; then
+              echo "::error::sast=$SAST butuh berkas CodeQL beku, tetapi $CODEQL_BEKU tidak ada di branch ini. Picu dari branch yang memuat berkas itu dan yang hash tree src/-nya sama." >&2
+              exit 1
+            fi
+            args+=(--sast="$SAST" --codeql-beku="$CODEQL_BEKU")
+          fi
+          node scripts/llm-scan.js "${args[@]}"
 
       # --nomor memakai nomor run GitHub, bukan indeks berkas run-N.json. Tanpa itu setiap run v2
       # diterbitkan sebagai "run 1" ke <branch>/1.json dan saling menimpa.

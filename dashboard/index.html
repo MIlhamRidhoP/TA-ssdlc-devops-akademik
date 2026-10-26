@@ -264,9 +264,18 @@
               <p class="go-hint" id="skenario-hint"></p>
               <p class="go-hint go-hint-kecil">DAST di luar batasan TA.</p>
             </fieldset>
+            <fieldset class="field bagian" id="sast-field">
+              <div class="bagian-kepala"><legend><span class="bagian-no">2</span>Perkakas SAST</legend></div>
+              <div class="seg seg-kartu">
+                <label><input type="radio" name="sast" value="sonar" checked><b class="seg-kode" aria-hidden="true">S</b><span>SonarCloud</span><small>Alert diambil langsung dari SonarCloud</small></label>
+                <label><input type="radio" name="sast" value="codeql"><b class="seg-kode" aria-hidden="true">Q</b><span>CodeQL</span><small>Alert dibaca dari laporan beku di branch ini</small></label>
+                <label><input type="radio" name="sast" value="keduanya"><b class="seg-kode" aria-hidden="true">SQ</b><span>Keduanya</span><small>Digabung, alert Sonar lebih dulu lalu CodeQL</small></label>
+              </div>
+              <p class="go-hint" id="sast-hint"></p>
+            </fieldset>
             <div class="field bagian">
               <div class="bagian-kepala">
-                <label for="f-branch"><span class="bagian-no">2</span>Branch tujuan run</label>
+                <label for="f-branch"><span class="bagian-no">3</span>Branch tujuan run</label>
                 <span class="bagian-meta" id="branch-meta"></span>
               </div>
               <select class="select" id="f-branch"></select>
@@ -274,7 +283,7 @@
             </div>
             <fieldset class="field bagian" id="model-field">
               <div class="bagian-kepala">
-                <legend><span class="bagian-no">3</span>Model</legend>
+                <legend><span class="bagian-no">4</span>Model</legend>
                 <span class="bagian-meta">jalur v2</span>
               </div>
               <div class="seg seg-2" id="mode-model-seg">
