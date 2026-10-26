@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "temuan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string", "description": "Path exactly as in the FILE header" },
+          "baris": { "type": "integer", "description": "Line number from the listing, 0 if not applicable" },
+          "fungsi": { "type": "string", "description": "Enclosing function name, 'METHOD /path' for a route, or empty string" },
+          "jenis": { "type": "string", "description": "Short issue type name" },
+          "cwe": { "type": "string", "description": "Single CWE identifier such as CWE-89" },
+          "kategori_owasp": {
+            "type": "string",
+            "enum": ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10", "Other"]
+          },
+          "penjelasan": { "type": "string", "description": "Two to four sentences in Bahasa Indonesia" },
+          "sifat": { "type": "string", "enum": ["vulnerability", "hardening"] },
+          "keyakinan": { "type": "string", "enum": ["high", "medium", "low"] }
+        },
+        "required": ["file", "baris", "fungsi", "jenis", "cwe", "kategori_owasp", "penjelasan", "sifat", "keyakinan"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["temuan"],
+  "additionalProperties": false
+}

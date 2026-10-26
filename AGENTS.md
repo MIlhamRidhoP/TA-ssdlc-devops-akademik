@@ -26,11 +26,12 @@ Langgar satu pun dan data eksperimen TA ini rusak atau uangnya terbakar.
 4. **Jangan menulis ulang riwayat git.** Tanpa `rebase`, `--force`, `reset --hard`, atau `--amend`,
    kecuali diminta eksplisit.
 5. **Jangan menyentuh berkas ini:**
-   - `prompts/v2/**` dan `prompts/remediasi-v1/**` — dikunci HASHES.txt masing-masing. Aturannya
-     dua arah: `sha256sum -c` harus OK, **dan** folder itu hanya boleh berisi berkas yang tercantum
-     di HASHES.txt. `sha256sum -c` tidak pernah mengeluh soal berkas yang TIDAK tercantum, jadi
-     menambah satu varian prompt baru di situ lolos 8/8 OK. `tests/kunci-prompt.test.js` menutup
-     arah kedua itu; pengecualiannya hanya HASHES.txt sendiri dan README.md.
+   - `prompts/v2/**`, `prompts/v3/**`, dan `prompts/remediasi-v1/**` — dikunci HASHES.txt
+     masing-masing. Aturannya dua arah: `sha256sum -c` harus OK, **dan** folder itu hanya boleh
+     berisi berkas yang tercantum di HASHES.txt. `sha256sum -c` tidak pernah mengeluh soal berkas
+     yang TIDAK tercantum, jadi menambah satu varian prompt baru di situ lolos 8/8 OK.
+     `tests/kunci-prompt.test.js` menutup arah kedua itu; pengecualiannya hanya HASHES.txt sendiri
+     dan README.md.
    - `src/**` dan `SEEDED.md` — objek uji beserta ground truth kerentanan tertanam
    - `hasil-eksperimen/**` — folder batch yang sudah ada tidak boleh diubah; folder batch baru
      boleh ditambahkan
@@ -90,6 +91,7 @@ Di dalam repo:
 npm test                                   # node --test
 node --check dashboard/app.js
 cd prompts/v2 && sha256sum -c HASHES.txt            # harus 8/8 OK
+cd prompts/v3 && sha256sum -c HASHES.txt            # harus 8/8 OK
 cd prompts/remediasi-v1 && sha256sum -c HASHES.txt  # harus 3/3 OK
 node --test tests/results-v2.test.js       # fixture v2 terhadap skema v2, fixture v1 terhadap skema v1
 ```
@@ -192,6 +194,7 @@ docker compose down
 | `.github/workflows/devsecops.yml` | Pipeline: rencana (turunkan skenario, tolak kombinasi tidak sah), build-test, sonarcloud, analisis (v1), analisis-v2 (matriks vendor, tidak menerbitkan), terbit-v2 (gabung tiga vendor lalu terbit; satu-satunya penerbit jalur v2), hasil (penerbit jalur v1) |
 | `scripts/llm/` | Mesin analisis v2: deteksi, verifikasi, penyusun `results.json` skema 2, penggabung tiga vendor (`gabung.js`), penilaian |
 | `prompts/v2/` | Prompt jalur v2: deteksi dan verifikasi. **Terkunci hash** |
+| `prompts/v3/` | Salinan v2 yang netral terhadap perkakas SAST, tiga baris berbeda. **Terkunci hash** |
 | `prompts/remediasi-v1/` | Prompt rekomendasi lapis 2. **Terkunci hash** |
 | `src/` | Aplikasi SIA, objek uji. **Jangan diubah** |
 | `tests/` | `node --test`. Yang berhubungan dengan dashboard tidak butuh server; `npm run test:tanpa-server` menjalankan yang tanpa server saja |

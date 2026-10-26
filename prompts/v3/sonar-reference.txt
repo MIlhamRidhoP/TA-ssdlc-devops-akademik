@@ -1,0 +1,5 @@
+STATIC ANALYSIS REPORT
+
+The following alerts were reported by static analysis tools for this code. They are provided for reference.
+
+{{SONAR_REPORT}}

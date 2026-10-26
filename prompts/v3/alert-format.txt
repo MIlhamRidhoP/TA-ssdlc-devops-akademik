@@ -1,0 +1,6 @@
+Alert ID: {{ID}}
+Rule: {{RULE_KEY}}
+Type: {{TYPE}}
+Location: {{FILE}}:{{LINE}}
+Message: {{MESSAGE}}
+Mapped CWE: {{CWE_LIST}}

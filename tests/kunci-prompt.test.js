@@ -17,7 +17,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const BUKAN_PROMPT = ['HASHES.txt', 'README.md'];
-const FOLDER = ['prompts/v2', 'prompts/remediasi-v1'];
+const FOLDER = ['prompts/v2', 'prompts/v3', 'prompts/remediasi-v1'];
 
 const bacaDaftar = (dir) => fs.readFileSync(path.join(dir, 'HASHES.txt'), 'utf8')
   .trim().split('\n').filter((b) => b.trim())

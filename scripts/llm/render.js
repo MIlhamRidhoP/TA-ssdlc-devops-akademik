@@ -1,12 +1,25 @@
-// Perakit prompt v2 sesuai prompts/v2/README.md bagian 3, 4, 5, dan hash bagian 9.
+// Perakit prompt sesuai prompts/v2/README.md bagian 3, 4, 5, dan hash bagian 9. Melayani v2
+// (bawaan, terkunci) maupun v3 (netral perkakas SAST); folder dipilih lewat dirPrompt().
 // Modul ini murni: tidak memanggil API dan tidak menulis file.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const PROMPT_DIR = path.join(ROOT, 'prompts', 'v2');
+// Versi prompt yang tersedia. v2 terkunci dan TETAP bawaan, supaya setiap pemanggil lama
+// berperilaku persis seperti sebelumnya dan hash prompt di hasil eksperimen yang sudah terbit
+// tetap dapat direproduksi. v3 identik dengan v2 kecuali tiga baris yang membuang nama SonarCloud;
+// rinciannya di prompts/v3/README.md. Versi di luar daftar ini ditolak dengan pesan yang
+// menyebutkan pilihannya, bukan dibiarkan gagal sebagai ENOENT yang tidak menjelaskan apa pun.
+const VERSI_PROMPT_DIDUKUNG = ['v2', 'v3'];
 const VERSI_PROMPT = 'v2';
+const dirPrompt = (versi = VERSI_PROMPT) => {
+  if (!VERSI_PROMPT_DIDUKUNG.includes(versi)) {
+    throw new Error(`Versi prompt tidak dikenal: ${versi}. Yang ada: ${VERSI_PROMPT_DIDUKUNG.join(', ')}`);
+  }
+  return path.join(ROOT, 'prompts', versi);
+};
+const PROMPT_DIR = dirPrompt();
 
 const sha256 = (teks) => crypto.createHash('sha256').update(teks, 'utf8').digest('hex');
 const sha256Buffer = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -168,6 +181,7 @@ const rakitPrompt = ({ template, kondisi, tugas, kodeSumber, sonarTeks = null, a
 };
 
 module.exports = {
-  VERSI_PROMPT, PROMPT_DIR, KONDISI, sha256, cekHashPrompt, isiTemplate, bandingString, barisKode,
+  VERSI_PROMPT, VERSI_PROMPT_DIDUKUNG, dirPrompt, PROMPT_DIR, KONDISI, sha256, cekHashPrompt,
+  isiTemplate, bandingString, barisKode,
   bentukKodeSumber, pilihAlert, formatAlert, laporanSonar, bacaTemplate, rakitPrompt,
 };

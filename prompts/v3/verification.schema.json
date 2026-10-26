@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "id_alert": { "type": "string", "description": "Alert ID copied exactly" },
+    "alasan": { "type": "string", "description": "Two to four sentences in Bahasa Indonesia" },
+    "putusan": { "type": "string", "enum": ["true_positive", "false_positive", "uncertain"] },
+    "keyakinan": { "type": "string", "enum": ["high", "medium", "low"] }
+  },
+  "required": ["id_alert", "alasan", "putusan", "keyakinan"],
+  "additionalProperties": false
+}
