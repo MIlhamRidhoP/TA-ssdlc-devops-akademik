@@ -1,0 +1,85 @@
+[
+  {
+    "id": "SONAR-01",
+    "sumber": "issue",
+    "rule": "javascript:S5122",
+    "severity": "MAJOR",
+    "tipe": "VULNERABILITY",
+    "file": "src/app.js",
+    "baris": 10,
+    "pesan": "Make sure that enabling CORS is safe here.",
+    "cwe": [
+      "CWE-346",
+      "CWE-942"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-01\nRule: javascript:S5122\nType: VULNERABILITY\nLocation: src/app.js:10\nMessage: Make sure that enabling CORS is safe here.\nMapped CWE: CWE-346, CWE-942",
+    "hash": "ad3f8603a3acda6f1930096920074f7de5bd54204c772ba143787e7bb07ce374"
+  },
+  {
+    "id": "SONAR-02",
+    "sumber": "issue",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/controllers/nilaiController.js",
+    "baris": 160,
+    "pesan": "Reflected XSS via unsanitized user input",
+    "cwe": [
+      "CWE-79"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-02\nRule: jssecurity:S5131\nType: VULNERABILITY\nLocation: src/controllers/nilaiController.js:160\nMessage: Reflected XSS via unsanitized user input\nMapped CWE: CWE-79",
+    "hash": "c08e2bd18f84b5bf3db9e3284b4d35ecc052429cb14f66f3b8de31a353f304fc"
+  },
+  {
+    "id": "SONAR-03",
+    "sumber": "issue",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/controllers/nilaiController.js",
+    "baris": 170,
+    "pesan": "Reflected XSS via unsanitized user input",
+    "cwe": [
+      "CWE-79"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-03\nRule: jssecurity:S5131\nType: VULNERABILITY\nLocation: src/controllers/nilaiController.js:170\nMessage: Reflected XSS via unsanitized user input\nMapped CWE: CWE-79",
+    "hash": "f54d86eee67a2fa18a62fc1c6bc263183422ae5092a055e61e8fb6a883dd148e"
+  },
+  {
+    "id": "SONAR-04",
+    "sumber": "issue",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/models/cutiModel.js",
+    "baris": 93,
+    "pesan": "SQL Injection via unsanitized user input",
+    "cwe": [
+      "CWE-20",
+      "CWE-89"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-04\nRule: jssecurity:S3649\nType: VULNERABILITY\nLocation: src/models/cutiModel.js:93\nMessage: SQL Injection via unsanitized user input\nMapped CWE: CWE-20, CWE-89",
+    "hash": "be3cb4b590ef85a00d6bbc883477d28165f503a95fa37cf67fc13b47125c0a4b"
+  },
+  {
+    "id": "SONAR-05",
+    "sumber": "issue",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/models/nilaiModel.js",
+    "baris": 124,
+    "pesan": "SQL Injection via unsanitized user input",
+    "cwe": [
+      "CWE-20",
+      "CWE-89"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-05\nRule: jssecurity:S3649\nType: VULNERABILITY\nLocation: src/models/nilaiModel.js:124\nMessage: SQL Injection via unsanitized user input\nMapped CWE: CWE-20, CWE-89",
+    "hash": "835735a4f8810d20c2ad04705ef19946e314d852d48e6c572d2517e4205e3391"
+  }
+]

@@ -1,0 +1,712 @@
+{
+  "versi_prompt": "v3",
+  "kondisi": "utama",
+  "skenario": "B",
+  "vendor": "openai",
+  "model_diminta": "gpt-6.1-sol",
+  "run": 2,
+  "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+  "branch_objek_uji": "eksperimen/seeded",
+  "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+  "analisis_sonar": "2026-10-10T10:58:15+0000",
+  "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+  "sumber_sonar": "beku",
+  "sonar_beku": {
+    "path": "hasil-eksperimen/20261019/sonar-beku.json",
+    "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+    "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+    "dibuat": "2026-10-19T11:58:38.644Z"
+  },
+  "commit_kode": {
+    "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+    "bersih": true
+  },
+  "parse_ok": true,
+  "temuan": [
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 145,
+      "fungsi": "exports.updateByUserId",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Nama properti JSON dari PUT /api/mahasiswa/me diteruskan oleh updateMe dan disisipkan langsung sebagai sintaks kolom dalam klausa SET. Mahasiswa dapat membuat nama properti yang memuat ekspresi atau subquery SQL, termasuk membaca data users ke kolom profil yang kemudian dikembalikan dalam respons. Placeholder hanya melindungi nilai properti, bukan sintaks SQL yang dibangun dari namanya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/nilaiModel.js",
+      "baris": 133,
+      "fungsi": "exports.publishedBySemester",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter query semester dari GET /api/nilai/me/khs hanya diperiksa sebagai string tidak kosong sebelum diinterpolasi langsung ke SQL. Penyerang dapat menyisipkan tanda petik dan operator SQL untuk mengubah kondisi WHERE, termasuk melewati pembatasan mahasiswa_id dan status published. Parameterisasi mahasiswaId tidak melindungi bagian semester yang dibangun melalui interpolasi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 55,
+      "fungsi": "listFrom",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter q dari GET /api/mahasiswa diubah menjadi pola pencarian lalu diinterpolasi langsung ke kondisi SQL oleh listFrom. Escape pada listQuery hanya menangani karakter khusus LIKE dan tidak mengamankan tanda petik SQL. Walaupun endpoint dibatasi untuk admin, pemanggil dapat menyisipkan SQL di luar operasi pencarian sesuai hak akun database.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "fungsi": "PUT /:id/status",
+      "jenis": "Missing Authorization",
+      "cwe": "CWE-862",
+      "kategori_owasp": "A01",
+      "penjelasan": "Route PUT /api/cuti/:id/status hanya mewarisi authenticate dan tidak menjalankan authorize('admin'). Pengguna mahasiswa dapat mengirim keputusan disetujui atau ditolak untuk pengajuan mana pun yang ID-nya diketahui karena controller juga tidak memeriksa peran atau kepemilikan. Respons keberhasilan turut mengembalikan detail pribadi pengajuan tersebut.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 96,
+      "fungsi": "exports.updateMe",
+      "jenis": "Mass Assignment",
+      "cwe": "CWE-915",
+      "kategori_owasp": "A01",
+      "penjelasan": "Body PUT /api/mahasiswa/me disalin seluruhnya, kecuali rekening, lalu diteruskan ke updateByUserId yang menjadikan setiap nama properti sebagai kolom UPDATE. Mahasiswa dapat mengubah field administratif seperti nim, nisn, dan alamat_asal, serta relasi user_id, tanpa allowlist maupun validasi RULES. Pembatasan baris menggunakan req.user.id tidak membatasi atribut yang boleh diubah.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/cutiController.js",
+      "baris": 50,
+      "fungsi": "exports.create",
+      "jenis": "Mass Assignment pada Status Cuti",
+      "cwe": "CWE-915",
+      "kategori_owasp": "A01",
+      "penjelasan": "Status dari body POST /api/cuti/me disalin ke data dan diteruskan ke model.create. Query INSERT menggunakan status tersebut apabila tersedia, sehingga mahasiswa dapat membuat pengajuan langsung berstatus disetujui tanpa keputusan admin. Tidak ada pembatasan yang memaksa status awal menjadi diajukan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 53,
+      "fungsi": "exports.findOwned",
+      "jenis": "IDOR",
+      "cwe": "CWE-639",
+      "kategori_owasp": "A01",
+      "penjelasan": "ID pengajuan dari GET /api/cuti/me/:id mencapai findOwned, tetapi query hanya memfilter c.id dan mengabaikan argumen mahasiswaId. Mahasiswa yang lolos middleware dapat membaca pengajuan mahasiswa lain dengan mengganti ID pada URL. Respons memuat alasan cuti, alamat, nomor telepon yang didekripsi, dan catatan admin tanpa pemeriksaan kepemilikan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/profilModel.js",
+      "baris": 38,
+      "fungsi": "exports.removeEmail",
+      "jenis": "IDOR",
+      "cwe": "CWE-639",
+      "kategori_owasp": "A01",
+      "penjelasan": "ID email dari DELETE /api/mahasiswa/me/email/:id digunakan untuk menghapus baris hanya berdasarkan id. Walaupun controller meneruskan mahasiswaId milik pemanggil, model mengabaikannya sehingga mahasiswa dapat menghapus email tambahan milik mahasiswa lain jika mengetahui ID-nya. Validasi UUID tidak menggantikan pemeriksaan kepemilikan pada DELETE.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 120,
+      "fungsi": "halamanKhs",
+      "jenis": "Stored HTML Injection",
+      "cwe": "CWE-79",
+      "kategori_owasp": "A05",
+      "penjelasan": "Nama mata kuliah dari endpoint pembuatan atau perubahan mata kuliah dapat memuat markup karena validasinya hanya membatasi tipe, kekosongan, dan panjang. halamanKhs menyisipkan i.nama tanpa escapeHtml ke respons text/html, sehingga markup tersimpan ditafsirkan browser saat mahasiswa membuka KHS. CSP dari helmet() membatasi eksekusi skrip, tetapi tidak mencegah pemalsuan tampilan dokumen atau penyisipan tautan phishing melalui HTML tersebut.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/krsModel.js",
+      "baris": 46,
+      "fungsi": "exports.addItem",
+      "jenis": "TOCTOU pada Penambahan KRS",
+      "cwe": "CWE-367",
+      "kategori_owasp": "A06",
+      "penjelasan": "mata_kuliah_id dari POST /api/krs/me/items digunakan untuk INSERT setelah controller membaca status draft melalui query terpisah. INSERT tidak mengunci header atau memeriksa status secara atomik, sehingga permintaan paralel dengan submit dapat menambahkan item setelah pemeriksaan kuota atau setelah status menjadi submitted. Mahasiswa dapat melewati batas SKS dan mengubah KRS yang seharusnya tidak lagi dapat diedit.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/krsModel.js",
+      "baris": 65,
+      "fungsi": "exports.removeItem",
+      "jenis": "TOCTOU pada Penghapusan KRS",
+      "cwe": "CWE-367",
+      "kategori_owasp": "A06",
+      "penjelasan": "itemId dari DELETE /api/krs/me/items/:itemId sudah diperiksa kepemilikannya, tetapi status draft hanya diperiksa sebelum DELETE yang terpisah. Permintaan submit paralel dapat mengubah status menjadi submitted di antara pemeriksaan dan penghapusan karena tidak ada penguncian atau pemeriksaan status atomik pada operasi penghapusan. Akibatnya, mahasiswa masih dapat menghapus item, termasuk membuat KRS yang sudah diajukan menjadi kosong.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Tidak Ada Pembatasan Percobaan Login",
+      "cwe": "CWE-307",
+      "kategori_owasp": "A07",
+      "penjelasan": "POST /api/auth/login menerima percobaan kredensial tanpa pembatasan laju, penundaan progresif, atau pembatasan setelah kegagalan berulang. Setiap permintaan dengan kredensial kembali mencapai bcrypt.compare, sehingga tidak ada kontrol aplikasi yang membatasi frekuensi tebakan password atau credential stuffing. Hash bcrypt dan pesan kesalahan generik tidak menggantikan pembatasan percobaan autentikasi.",
+      "sifat": "hardening",
+      "keyakinan": "high",
+      "tanda": []
+    }
+  ],
+  "deteksi": {
+    "versi_prompt": "v3",
+    "kondisi": "utama",
+    "tugas": "deteksi",
+    "run": 2,
+    "id_alert": null,
+    "vendor": "openai",
+    "model_diminta": "gpt-6.1-sol",
+    "model_menjawab": "gpt-6.1-sol",
+    "cara_akses": "api",
+    "waktu_mulai": "2026-10-26T12:27:35.267Z",
+    "waktu_selesai": "2026-10-26T12:32:49.083Z",
+    "pengaturan": {
+      "sampling": "bawaan",
+      "tingkat_thinking": "high",
+      "batas_output": 64000,
+      "tools": "none",
+      "fallback": "none",
+      "parameter_vendor": {
+        "thinking": "reasoning.effort",
+        "format": "text.format",
+        "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+        "transport": "responses.stream"
+      },
+      "koneksi": {
+        "timeout_sdk_ms": 1200000,
+        "headers_timeout_ms": 1200000,
+        "body_timeout_ms": 1200000,
+        "connect_timeout_ms": 30000,
+        "fetch": "undici 7.30.1"
+      }
+    },
+    "hash": {
+      "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+      "template_tugas": "b61eccd776f58d14692c53c96b4b3ab779c46cd7188945d4e147d643aa2c29dc",
+      "skema": "8181da09da098db355a3e33615bc9d9bb397c6a1c496e1280161a4dfb4bec45a",
+      "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+      "laporan_sonar": null,
+      "alert": null,
+      "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "prompt_user_kanonik": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+    "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+    "analisis_sonar": "2026-10-10T10:58:15+0000",
+    "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+    "sumber_sonar": "beku",
+    "sonar_beku": {
+      "path": "hasil-eksperimen/20261019/sonar-beku.json",
+      "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+      "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+      "dibuat": "2026-10-19T11:58:38.644Z"
+    },
+    "commit_kode": {
+      "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "bersih": true
+    },
+    "status": "ok",
+    "detail_status": "status completed",
+    "parse_ok": true,
+    "tanda": [],
+    "percobaan": 1,
+    "percobaan_gagal": [],
+    "durasi_ms": 313816,
+    "durasi_percobaan_terakhir_ms": 313816,
+    "usage": {
+      "input": 31316,
+      "input_dari_cache": 31313,
+      "input_tulis_cache": 0,
+      "output": 2097,
+      "thinking": 10833
+    },
+    "biaya_usd": 0.132437,
+    "biaya_percobaan_gagal_usd": 0,
+    "sdk": {
+      "node": "v25.2.1",
+      "@anthropic-ai/sdk": "0.135.0",
+      "openai": "7.39.0",
+      "undici": "7.30.1",
+      "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+    }
+  },
+  "verifikasi": [
+    {
+      "id_alert": "SONAR-01",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "cors() di src/app.js:10 memang mengizinkan semua origin, tetapi endpoint data pribadi dilindungi authenticate yang mewajibkan token Bearer pada header Authorization. Kode tidak menggunakan autentikasi cookie maupun mengaktifkan credentials: true, sehingga situs asing tidak otomatis mendapatkan kredensial pengguna untuk membaca data tersebut. Tanpa mengetahui token atau kredensial login pengguna, konfigurasi CORS ini sendiri tidak memberikan akses tanpa otorisasi sebagaimana kelemahan yang dilaporkan.",
+      "id_alert_model": "SONAR-01",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-01",
+        "vendor": "openai",
+        "model_diminta": "gpt-6.1-sol",
+        "model_menjawab": "gpt-6.1-sol",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T12:32:49.084Z",
+        "waktu_selesai": "2026-10-26T12:33:09.426Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "reasoning.effort",
+            "format": "text.format",
+            "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+            "transport": "responses.stream"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "ad3f8603a3acda6f1930096920074f7de5bd54204c772ba143787e7bb07ce374",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "6a33d36ca7e73149f335461bc9659e250bd4c2bc48e9af5bd22e995234067c37"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "status completed",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 20342,
+        "durasi_percobaan_terakhir_ms": 20342,
+        "usage": {
+          "input": 30917,
+          "input_dari_cache": 30914,
+          "input_tulis_cache": 0,
+          "output": 133,
+          "thinking": 516
+        },
+        "biaya_usd": 0.009587,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-02",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Dalam fungsi khs di src/controllers/nilaiController.js, cabang if (!semester) pada baris 159–160 hanya tercapai ketika semester bernilai string kosong, sehingga interpolasi tersebut tidak dapat menyisipkan payload XSS. Nilai semester yang berupa string nonkosong diteruskan ke halamanKhs dan di-escape menggunakan escapeHtml sebelum ditampilkan. Dengan demikian, reflected XSS yang dilaporkan pada lokasi ini tidak terjadi.",
+      "id_alert_model": "SONAR-02",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-02",
+        "vendor": "openai",
+        "model_diminta": "gpt-6.1-sol",
+        "model_menjawab": "gpt-6.1-sol",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T12:33:09.427Z",
+        "waktu_selesai": "2026-10-26T12:33:40.145Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "reasoning.effort",
+            "format": "text.format",
+            "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+            "transport": "responses.stream"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "c08e2bd18f84b5bf3db9e3284b4d35ecc052429cb14f66f3b8de31a353f304fc",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "65a566656d59706e6b46bce45817b3ffc669199544890c104408a704d677fa70"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "status completed",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 30718,
+        "durasi_percobaan_terakhir_ms": 30718,
+        "usage": {
+          "input": 30918,
+          "input_dari_cache": 30915,
+          "input_tulis_cache": 0,
+          "output": 124,
+          "thinking": 152
+        },
+        "biaya_usd": 0.005857,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-03",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Parameter req.query.semester dari fungsi khs diteruskan ke halamanKhs, tetapi penyisipannya pada judul dan paragraf HTML selalu menggunakan escapeHtml. Dengan demikian, pengiriman HTML pada src/controllers/nilaiController.js:170 tidak merefleksikan parameter tersebut sebagai markup aktif, sehingga Reflected XSS (CWE-79) yang dilaporkan tidak terbukti.",
+      "id_alert_model": "SONAR-03",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-03",
+        "vendor": "openai",
+        "model_diminta": "gpt-6.1-sol",
+        "model_menjawab": "gpt-6.1-sol",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T12:33:40.146Z",
+        "waktu_selesai": "2026-10-26T12:34:23.916Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "reasoning.effort",
+            "format": "text.format",
+            "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+            "transport": "responses.stream"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "f54d86eee67a2fa18a62fc1c6bc263183422ae5092a055e61e8fb6a883dd148e",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "88c11a5dd2880060695ec16de28f9d2209ed729c5659a04f8eab5b0a03518622"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "status completed",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 43770,
+        "durasi_percobaan_terakhir_ms": 43770,
+        "usage": {
+          "input": 30918,
+          "input_dari_cache": 30915,
+          "input_tulis_cache": 0,
+          "output": 111,
+          "thinking": 1295
+        },
+        "biaya_usd": 0.017157,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-04",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Dalam src/controllers/cutiController.js, listAdmin menjalankan listQuery sebelum memanggil model.listAdmin; fungsi ini memvalidasi sort terhadap model.SORT dan membatasi order hanya ke asc atau desc. Walaupun sort dan order kemudian diinterpolasi ke ORDER BY di src/models/cutiModel.js, keduanya sudah dibatasi sehingga tidak dapat membawa fragmen SQL bebas. Nilai pola, limit, dan offset juga dikirim sebagai parameter query, sehingga aliran input yang dilaporkan tidak memungkinkan SQL Injection.",
+      "id_alert_model": "SONAR-04",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-04",
+        "vendor": "openai",
+        "model_diminta": "gpt-6.1-sol",
+        "model_menjawab": "gpt-6.1-sol",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T12:34:23.917Z",
+        "waktu_selesai": "2026-10-26T12:34:36.797Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "reasoning.effort",
+            "format": "text.format",
+            "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+            "transport": "responses.stream"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "be3cb4b590ef85a00d6bbc883477d28165f503a95fa37cf67fc13b47125c0a4b",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "be53464ffb7cebe908eafcc88d4f7d11f7174f6db0eb32e4a0c6e82c34315c0a"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "status completed",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 12880,
+        "durasi_percobaan_terakhir_ms": 12880,
+        "usage": {
+          "input": 30920,
+          "input_dari_cache": 30917,
+          "input_tulis_cache": 0,
+          "output": 138,
+          "thinking": 284
+        },
+        "biaya_usd": 0.007318,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-05",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Fungsi khs di src/controllers/nilaiController.js hanya memeriksa bahwa req.query.semester berupa string tidak kosong, lalu meneruskannya ke publishedBySemester. Di src/models/nilaiModel.js, semester diinterpolasikan langsung ke SQL pada kondisi ks.semester = '${semester}', sedangkan parameterisasi hanya melindungi mahasiswaId. Mahasiswa terautentikasi yang lolos requireConsent dapat menyisipkan sintaks SQL untuk mengubah kondisi kueri, sehingga CWE-89 benar-benar dapat dicapai.",
+      "id_alert_model": "SONAR-05",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-05",
+        "vendor": "openai",
+        "model_diminta": "gpt-6.1-sol",
+        "model_menjawab": "gpt-6.1-sol",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T12:34:36.798Z",
+        "waktu_selesai": "2026-10-26T12:34:55.466Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "reasoning.effort",
+            "format": "text.format",
+            "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+            "transport": "responses.stream"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "835735a4f8810d20c2ad04705ef19946e314d852d48e6c572d2517e4205e3391",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "b9cac72a3af7d67e518271bf21313fee3cfa4d2af8f565f0817eec58ccd5b0d4"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "status completed",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 18668,
+        "durasi_percobaan_terakhir_ms": 18668,
+        "usage": {
+          "input": 30920,
+          "input_dari_cache": 30917,
+          "input_tulis_cache": 0,
+          "output": 140,
+          "thinking": 132
+        },
+        "biaya_usd": 0.005818,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,2332 @@
+{
+  "versi_prompt": "v3",
+  "kondisi": "utama",
+  "skenario": "B",
+  "vendor": "anthropic",
+  "model_diminta": "claude-sonnet-5-5",
+  "run": 1,
+  "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+  "branch_objek_uji": "eksperimen/seeded",
+  "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+  "analisis_sonar": "2026-10-10T10:58:15+0000",
+  "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+  "sumber_sonar": "beku",
+  "sonar_beku": {
+    "path": "hasil-eksperimen/20261019/sonar-beku.json",
+    "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+    "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+    "dibuat": "2026-10-19T11:58:38.644Z"
+  },
+  "sast": "keduanya",
+  "codeql_beku": {
+    "nama": "codeql-beku.json",
+    "sha256_file": "5bb18c54eb1661e5eecb64292eb6e5236d29e120a42b3d1d1bdeae0c31de0eaa",
+    "sha256_isi": "2ca6fb8d94de97068ffabb3d39470a4db4b4c4298bec0ee0ce8bb1bce68534c8",
+    "jumlah_alert": 18,
+    "dibuat": "2026-10-26T02:48:55.621Z"
+  },
+  "commit_kode": {
+    "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+    "bersih": true
+  },
+  "parse_ok": true,
+  "temuan": [
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 54,
+      "fungsi": "listFrom",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter q dari query string diubah menjadi `pola` oleh listQuery. Fungsi listFrom lalu menyisipkannya langsung ke string SQL dengan interpolasi '${pola}'. listQuery hanya meng-escape \\, % dan _, bukan tanda petik tunggal, sehingga admin dapat menyuntikkan SQL lewat GET /api/mahasiswa. Seharusnya memakai parameter terikat.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/nilaiModel.js",
+      "baris": 133,
+      "fungsi": "publishedBySemester",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter req.query.semester pada endpoint GET /api/nilai/me/khs hanya diperiksa bahwa ia string tidak kosong, tanpa validasi SEMESTER_RE. Nilainya disisipkan langsung ke SQL lewat '${semester}', sehingga mahasiswa dapat menyuntikkan SQL dan membaca data lain.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "fungsi": "khs",
+      "jenis": "Reflected Cross-Site Scripting",
+      "cwe": "CWE-79",
+      "kategori_owasp": "A05",
+      "penjelasan": "Nilai query semester dimasukkan mentah ke respons HTML tanpa escapeHtml pada cabang error. Pada endpoint ini cabang tersebut hanya tercapai saat semester kosong, sehingga eksploitasinya terbatas. Pola ini tetap berbahaya jika kondisinya berubah.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 120,
+      "fungsi": "halamanKhs",
+      "jenis": "Stored Cross-Site Scripting",
+      "cwe": "CWE-79",
+      "kategori_owasp": "A05",
+      "penjelasan": "Kolom i.nama (nama mata kuliah) dimasukkan ke HTML KHS tanpa escapeHtml, padahal kolom lain di-escape. Admin dapat membuat mata kuliah dengan nama berisi skrip, yang kemudian dieksekusi di browser mahasiswa yang membuka KHS.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "fungsi": "PUT /:id/status",
+      "jenis": "Missing Authorization",
+      "cwe": "CWE-862",
+      "kategori_owasp": "A01",
+      "penjelasan": "Route PUT /:id/status hanya dilindungi authenticate tanpa authorize('admin'). Mahasiswa mana pun yang login dapat menyetujui atau menolak pengajuan cuti siapa pun yang berstatus diajukan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/cutiController.js",
+      "baris": 50,
+      "fungsi": "create",
+      "jenis": "Mass Assignment",
+      "cwe": "CWE-915",
+      "kategori_owasp": "A01",
+      "penjelasan": "Nilai req.body.status diteruskan ke model.create dan dipakai lewat COALESCE($9, 'diajukan'). Mahasiswa dapat membuat pengajuan cuti langsung berstatus disetujui, melewati proses persetujuan admin. Komentar di atasnya menyatakan status selalu dimulai dari diajukan, tetapi kodenya tidak demikian.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 51,
+      "fungsi": "findOwned",
+      "jenis": "Insecure Direct Object Reference",
+      "cwe": "CWE-639",
+      "kategori_owasp": "A01",
+      "penjelasan": "findOwned menerima mahasiswaId tetapi query hanya memfilter `c.id = $2` dan tidak membatasi kepemilikan. Mahasiswa dapat membaca detail pengajuan cuti milik orang lain, termasuk alamat dan nomor telepon yang didekripsi, lewat GET /api/cuti/me/:id. Controller getMe dan batal mengandalkan fungsi ini untuk pemeriksaan kepemilikan.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/profilModel.js",
+      "baris": 38,
+      "fungsi": "removeEmail",
+      "jenis": "Insecure Direct Object Reference",
+      "cwe": "CWE-639",
+      "kategori_owasp": "A01",
+      "penjelasan": "DELETE email_mahasiswa hanya memakai `WHERE id = $1` dan mengabaikan parameter mahasiswaId. Mahasiswa dapat menghapus email tambahan milik mahasiswa lain lewat DELETE /api/mahasiswa/me/email/:id jika mengetahui UUID-nya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 143,
+      "fungsi": "updateByUserId",
+      "jenis": "Mass Assignment / SQL Injection via nama kolom",
+      "cwe": "CWE-915",
+      "kategori_owasp": "A01",
+      "penjelasan": "updateMe menyalin seluruh req.body (kecuali rekening) sebagai data, dan updateByUserId memakai nama kunci body langsung sebagai nama kolom SQL tanpa whitelist atau validasi. Mahasiswa dapat mengubah kolom yang tidak boleh (nim, nik, field admin, user_id, kolom terenkripsi) dan menyuntikkan SQL lewat nama kunci. Nilai juga tidak divalidasi atau dienkripsi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 96,
+      "fungsi": "updateMe",
+      "jenis": "Mass Assignment",
+      "cwe": "CWE-915",
+      "kategori_owasp": "A01",
+      "penjelasan": "Body request disalin utuh ke data tanpa pick/validasi per field, padahal RULES dan ADMIN_FIELDS sudah tersedia. Rekening juga diteruskan tanpa validasi (BANK, format nomor_rekening). Mahasiswa dapat menimpa field yang seharusnya hanya boleh diisi admin atau disimpan dalam bentuk terenkripsi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/app.js",
+      "baris": 10,
+      "fungsi": "",
+      "jenis": "Permissive CORS Configuration",
+      "cwe": "CWE-942",
+      "kategori_owasp": "A02",
+      "penjelasan": "cors() dipasang tanpa opsi sehingga mengizinkan semua origin untuk API yang memuat data pribadi mahasiswa. Autentikasi memakai header Bearer sehingga risikonya terbatas, tetapi whitelist origin tetap dianjurkan.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "tanda": []
+    },
+    {
+      "file": "src/routes/authRoutes.js",
+      "baris": 5,
+      "fungsi": "POST /login",
+      "jenis": "Missing Rate Limiting",
+      "cwe": "CWE-307",
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint login dan register tidak memiliki pembatasan percobaan atau lockout. Penyerang dapat melakukan brute force password atau credential stuffing tanpa hambatan.",
+      "sifat": "hardening",
+      "keyakinan": "medium",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/authController.js",
+      "baris": 36,
+      "fungsi": "register",
+      "jenis": "Account Enumeration",
+      "cwe": "CWE-204",
+      "kategori_owasp": "A07",
+      "penjelasan": "Register terbuka dan duplikasi email menghasilkan 409 'Data sudah terdaftar' lewat errorHandler, sehingga keberadaan email dapat dienumerasi. Tidak ada verifikasi kepemilikan email.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "tanda": []
+    }
+  ],
+  "deteksi": {
+    "versi_prompt": "v3",
+    "kondisi": "utama",
+    "tugas": "deteksi",
+    "run": 1,
+    "id_alert": null,
+    "vendor": "anthropic",
+    "model_diminta": "claude-sonnet-5-5",
+    "model_menjawab": "claude-sonnet-5-5",
+    "cara_akses": "api",
+    "waktu_mulai": "2026-10-26T09:59:57.167Z",
+    "waktu_selesai": "2026-10-26T10:00:18.430Z",
+    "pengaturan": {
+      "sampling": "bawaan",
+      "tingkat_thinking": "high",
+      "batas_output": 64000,
+      "tools": "none",
+      "fallback": "none",
+      "parameter_vendor": {
+        "thinking": "output_config.effort",
+        "format": "output_config.format"
+      },
+      "koneksi": {
+        "timeout_sdk_ms": 1200000,
+        "headers_timeout_ms": 1200000,
+        "body_timeout_ms": 1200000,
+        "connect_timeout_ms": 30000,
+        "fetch": "undici 7.30.1"
+      }
+    },
+    "hash": {
+      "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+      "template_tugas": "b61eccd776f58d14692c53c96b4b3ab779c46cd7188945d4e147d643aa2c29dc",
+      "skema": "8181da09da098db355a3e33615bc9d9bb397c6a1c496e1280161a4dfb4bec45a",
+      "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+      "laporan_sonar": null,
+      "alert": null,
+      "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "prompt_user_kanonik": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+    "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+    "analisis_sonar": "2026-10-10T10:58:15+0000",
+    "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+    "sumber_sonar": "beku",
+    "sonar_beku": {
+      "path": "hasil-eksperimen/20261019/sonar-beku.json",
+      "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+      "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+      "dibuat": "2026-10-19T11:58:38.644Z"
+    },
+    "commit_kode": {
+      "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "bersih": true
+    },
+    "status": "ok",
+    "detail_status": "stop_reason end_turn",
+    "parse_ok": true,
+    "tanda": [],
+    "percobaan": 1,
+    "percobaan_gagal": [],
+    "durasi_ms": 21263,
+    "durasi_percobaan_terakhir_ms": 21263,
+    "usage": {
+      "input": 51994,
+      "input_dari_cache": 0,
+      "input_tulis_cache": 50956,
+      "output": 2890,
+      "thinking": null
+    },
+    "biaya_usd": 0.158366,
+    "biaya_percobaan_gagal_usd": 0,
+    "sdk": {
+      "node": "v25.2.1",
+      "@anthropic-ai/sdk": "0.135.0",
+      "openai": "7.39.0",
+      "undici": "7.30.1",
+      "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+    }
+  },
+  "verifikasi": [
+    {
+      "id_alert": "SONAR-01",
+      "putusan": "false_positive",
+      "keyakinan": "medium",
+      "alasan": "app.use(cors()) di src/app.js memakai konfigurasi bawaan, yaitu Access-Control-Allow-Origin: * tanpa credentials. Autentikasi di middleware/auth.js (authenticate) hanya membaca header Authorization Bearer dan tidak memakai cookie atau sesi otomatis, sehingga situs asing tidak bisa membuat browser korban mengirim kredensial dan tidak bisa membaca data berotorisasi tanpa token. Tidak ada endpoint yang bergantung pada pembatasan origin, jadi CORS terbuka di sini tidak menimbulkan celah CWE-346/CWE-942 yang dapat dieksploitasi. Ini sekadar hotspot yang perlu ditinjau, bukan kerentanan nyata.",
+      "id_alert_model": "SONAR-01",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "SONAR-01",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:00:18.432Z",
+        "waktu_selesai": "2026-10-26T10:00:29.659Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "ad3f8603a3acda6f1930096920074f7de5bd54204c772ba143787e7bb07ce374",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "6a33d36ca7e73149f335461bc9659e250bd4c2bc48e9af5bd22e995234067c37"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 11227,
+        "durasi_percobaan_terakhir_ms": 11227,
+        "usage": {
+          "input": 51267,
+          "input_dari_cache": 0,
+          "input_tulis_cache": 50584,
+          "output": 813,
+          "thinking": null
+        },
+        "biaya_usd": 0.135956,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-02",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Di nilaiController.js baris 158-160, cabang yang mencapai `res.status(400).type('html').send(...)` hanya berjalan ketika `!semester` benar. Karena `semester` bertipe string, kondisi itu hanya terpenuhi untuk string kosong. Nilai yang diinterpolasikan ke `<p>Semester \"${semester}\" ...</p>` selalu string kosong, sehingga input pengguna tidak pernah masuk ke respons HTML dan tidak ada Reflected XSS (CWE-79) di lokasi ini.",
+      "id_alert_model": "SONAR-02",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "SONAR-02",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:00:29.660Z",
+        "waktu_selesai": "2026-10-26T10:00:35.218Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "c08e2bd18f84b5bf3db9e3284b4d35ecc052429cb14f66f3b8de31a353f304fc",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "65a566656d59706e6b46bce45817b3ffc669199544890c104408a704d677fa70"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 5558,
+        "durasi_percobaan_terakhir_ms": 5558,
+        "usage": {
+          "input": 51270,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 425,
+          "thinking": null
+        },
+        "biaya_usd": 0.015739,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-03",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Di halamanKhs (nilaiController.js), kolom `<td>${i.nama}</td>` ditulis tanpa escapeHtml, padahal nilai lain di template sudah di-escape, lalu dikirim lewat res.type('html').send pada baris 170. Query semester di nilaiModel.publishedBySemester disusun dengan interpolasi string `'${semester}'` dan khs tidak memvalidasinya dengan SEMESTER_RE. Akibatnya input query semester bisa memasukkan baris UNION dengan nilai nama berisi HTML/skrip yang dirender tanpa escape (CWE-79). Data nama mata kuliah dari admin juga mengalir ke sink yang sama tanpa escape. Eksploitasi lewat tautan murni sulit karena butuh header Bearer, jadi tingkat keyakinan sedang.",
+      "id_alert_model": "SONAR-03",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "SONAR-03",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:00:35.219Z",
+        "waktu_selesai": "2026-10-26T10:00:45.145Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "f54d86eee67a2fa18a62fc1c6bc263183422ae5092a055e61e8fb6a883dd148e",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "88c11a5dd2880060695ec16de28f9d2209ed729c5659a04f8eab5b0a03518622"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 9926,
+        "durasi_percobaan_terakhir_ms": 9926,
+        "usage": {
+          "input": 51270,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 1087,
+          "thinking": null
+        },
+        "biaya_usd": 0.022359,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-04",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Bagian yang diinterpolasi ke SQL di cutiModel.listAdmin hanya `${sort}` dan `${order}`, sedangkan `pola`, `limit`, `offset`, dan `KEY` dikirim sebagai parameter. Di cutiController.listAdmin, `listQuery` dipanggil lebih dulu dan melempar AppError 400 kalau `req.query.sort` bukan string atau bukan key milik `model.SORT` (dicek dengan `Object.hasOwn`), atau kalau `req.query.order` bukan persis 'asc' atau 'desc'. Karena itu nilai `sort` dan `order` yang sampai ke model hanya berasal dari kumpulan literal tetap (created_at, semester, status, kategori, nim, nama dan asc/desc), sehingga tidak ada jalur SQL injection (CWE-89). Alert ini keliru karena tidak melihat validasi allowlist di `listQuery`.",
+      "id_alert_model": "SONAR-04",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "SONAR-04",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:00:45.146Z",
+        "waktu_selesai": "2026-10-26T10:00:55.981Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "be3cb4b590ef85a00d6bbc883477d28165f503a95fa37cf67fc13b47125c0a4b",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "be53464ffb7cebe908eafcc88d4f7d11f7174f6db0eb32e4a0c6e82c34315c0a"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 10835,
+        "durasi_percobaan_terakhir_ms": 10835,
+        "usage": {
+          "input": 51273,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 995,
+          "thinking": null
+        },
+        "biaya_usd": 0.021445,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-05",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/models/nilaiModel.js, publishedBySemester menyisipkan `semester` langsung ke SQL lewat template string (`ks.semester = '${semester}'`), bukan placeholder berparameter. Di nilaiController.khs, `semester` diambil dari req.query.semester hanya dengan pengecekan bertipe string dan tidak kosong, tanpa validasi SEMESTER_RE, sehingga payload seperti `' OR '1'='1` atau UNION SELECT dapat lolos. Endpoint /api/nilai/me/khs dapat diakses mahasiswa terautentikasi, sehingga CWE-89 nyata dan dapat dieksploitasi.",
+      "id_alert_model": "SONAR-05",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "SONAR-05",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:00:55.982Z",
+        "waktu_selesai": "2026-10-26T10:00:59.238Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "835735a4f8810d20c2ad04705ef19946e314d852d48e6c572d2517e4205e3391",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "b9cac72a3af7d67e518271bf21313fee3cfa4d2af8f565f0817eec58ccd5b0d4"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3256,
+        "durasi_percobaan_terakhir_ms": 3256,
+        "usage": {
+          "input": 51274,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 280,
+          "thinking": null
+        },
+        "biaya_usd": 0.014297,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-01",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/controllers/authController.js baris 20, `EMAIL_RE.test(email)` dijalankan lebih dulu sebelum `email.length > 255`, jadi pengecekan panjang tidak melindungi regex. Pola `/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/` bisa backtracking kuadratik pada input seperti `!@!.!.!.…` yang diakhiri `@` (trim() tidak menghapusnya). Endpoint `/api/auth/register` tidak butuh autentikasi, dan `express.json()` default menerima body sampai sekitar 100 KB, cukup untuk memblokir event loop beberapa detik per request (CWE-1333).",
+      "id_alert_model": "CQL-01",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-01",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:00:59.239Z",
+        "waktu_selesai": "2026-10-26T10:01:07.199Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "c6e4bd7ff6bdb4cf06a9785a9c0b583406e62c2e470d997b51bdac0a11b6fdbb",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "01a503ca30c7ae4222ec3e5842132a1c9462728d2a54fbdbaa4c9650e0b4e5a7"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 7960,
+        "durasi_percobaan_terakhir_ms": 7960,
+        "usage": {
+          "input": 51313,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 833,
+          "thinking": null
+        },
+        "biaya_usd": 0.019905,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-02",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Path pada `hapusFile` (upload.js:34) adalah `file.path` yang dibuat multer `diskStorage` dari `UPLOAD_DIR` ditambah `filename`. Nama itu berasal dari `crypto.randomUUID()` dan ekstensi tetap `TIPE_FILE[file.mimetype].simpanSebagai`, sehingga `originalname` tidak ikut membentuk path. `fileFilter` (`tipeCocok`) hanya meloloskan MIME yang ada di `TIPE_FILE`, jadi pengguna tidak bisa mengarahkan `fs.unlink` ke file lain (CWE-22/73 tidak terjadi).",
+      "id_alert_model": "CQL-02",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-02",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:07.200Z",
+        "waktu_selesai": "2026-10-26T10:01:13.441Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "a5dc84802a3460c2da9724efe864d1bf38749346109cced19317283fd157bd39",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "45bf2c80ed7f641dd0eacfd71d11bfebbb3aa3f15ea6237a6155dc119f2e95e2"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 6241,
+        "durasi_percobaan_terakhir_ms": 6241,
+        "usage": {
+          "input": 51314,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 637,
+          "thinking": null
+        },
+        "biaya_usd": 0.017947,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-03",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/middleware/upload.js baris 39, `fs.open(file.path, 'r')` memakai `file.path` yang dibentuk oleh multer.diskStorage dari `UPLOAD_DIR` dan `filename`. Nama file di disk dibuat server lewat `crypto.randomUUID()` ditambah `simpanSebagai` dari tabel `TIPE_FILE`, dan `originalname` dari user tidak ikut membentuk path. Jadi tidak ada path traversal. `fileFilter` juga hanya meloloskan MIME yang ada di `TIPE_FILE`, sehingga lookup di `filename` selalu valid. Alert ini false positive karena CodeQL menganggap `file.path` tercemar oleh input user padahal path-nya dibangun penuh oleh server.",
+      "id_alert_model": "CQL-03",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-03",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:13.442Z",
+        "waktu_selesai": "2026-10-26T10:01:18.650Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "078b134ac4263181bd1c836bdedc59571ae2f8afb18b24f64a15355c5cf5fd5d",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "371daaa6bb609fe01fa4859c62ca0ff0be20a90af7283ae40cede0dbeb8e886f"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 5208,
+        "durasi_percobaan_terakhir_ms": 5208,
+        "usage": {
+          "input": 51284,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 319,
+          "thinking": null
+        },
+        "biaya_usd": 0.014707,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-04",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Nilai `sort` dan `order` di `listAdmin` (cutiModel.js) memang disisipkan langsung ke `ORDER BY`, tetapi di `cutiController.listAdmin` keduanya sudah divalidasi oleh `listQuery`. `sort` harus berupa string dan salah satu kunci `model.SORT` (dicek dengan `Object.hasOwn`), sedangkan `order` harus persis 'asc' atau 'desc'. Nilai `||` default yang dipakai ('created_at' dan 'asc') juga konstanta, jadi `req.query` tidak bisa menyuntikkan SQL. Parameter `pola`, `limit`, `offset`, dan `KEY` dikirim lewat placeholder terparameter.",
+      "id_alert_model": "CQL-04",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-04",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:18.652Z",
+        "waktu_selesai": "2026-10-26T10:01:28.652Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "82341540cf620296292731e21ac4174b4e1334b57a5fb344b7f45857ae3341d4",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "370afaeb4a5e5a54b6af6f81866491536e7bea247333dcbb13d85052bfd22378"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 10000,
+        "durasi_percobaan_terakhir_ms": 10000,
+        "usage": {
+          "input": 51291,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 825,
+          "thinking": null
+        },
+        "biaya_usd": 0.019781,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-05",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/models/mahasiswaModel.js, `listFrom(pola)` menyisipkan `pola` langsung ke string SQL lewat template literal (`'${pola}'`), bukan sebagai parameter terikat, lalu dipakai di query count pada baris 59 dan query list. `pola` berasal dari parameter `q` di `listQuery`, yang hanya membatasi panjang (maks 100) dan meng-escape `\\`, `%`, `_`, tetapi tidak meng-escape tanda kutip tunggal. Karena itu `q` berisi `'` dapat keluar dari literal string dan menyuntikkan SQL (CWE-89) lewat endpoint GET /api/mahasiswa yang bisa diakses admin.",
+      "id_alert_model": "CQL-05",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-05",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:28.653Z",
+        "waktu_selesai": "2026-10-26T10:01:33.119Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "8c21a3548c7bf15deb0fbfdef647764c097a6bd092de5d4417e358315740a60f",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "f0d46b64a5d11bba22a198da81f6ae9d98d02bcedc72bd66b167c53379628295"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 4466,
+        "durasi_percobaan_terakhir_ms": 4466,
+        "usage": {
+          "input": 51278,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 297,
+          "thinking": null
+        },
+        "biaya_usd": 0.014475,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-06",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/models/mahasiswaModel.js, `listFrom(pola)` menyisipkan `pola` langsung ke string SQL lewat `'${pola}'`, bukan parameter terikat, lalu hasilnya dipakai di query pada `exports.list` (baris 59 dan 60-64). `pola` berasal dari parameter `q` di `listQuery`, yang hanya meng-escape `\\`, `%`, dan `_`, tanpa meng-escape tanda kutip tunggal. Input seperti `q=x' OR '1'='1` karena itu bisa keluar dari literal string dan mengubah query (CWE-89). Endpoint GET /api/mahasiswa hanya untuk admin, tetapi celah injeksinya tetap nyata bagi pemanggil yang terautentikasi sebagai admin.",
+      "id_alert_model": "CQL-06",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-06",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:33.120Z",
+        "waktu_selesai": "2026-10-26T10:01:47.415Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "0cf3d5f2e5dbe8ac6898ff422ca72524c15840e506dc9063adecf350ea6342e4",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "7a6389e484a377435b7d753ce68979fcbaa98721a9d8b62b0974ea337f7dc553"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 14295,
+        "durasi_percobaan_terakhir_ms": 14295,
+        "usage": {
+          "input": 51278,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 730,
+          "thinking": null
+        },
+        "biaya_usd": 0.018805,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-07",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di `publishedBySemester` (src/models/nilaiModel.js), nilai `semester` disisipkan langsung ke query lewat `ks.semester = '${semester}'`, bukan sebagai parameter. Di `khs` (nilaiController.js), `semester` berasal dari `req.query.semester` dan hanya dicek bertipe string serta tidak kosong. Tidak ada validasi `SEMESTER_RE` dan tidak ada escaping, sehingga mahasiswa terautentikasi bisa menyuntikkan SQL (misalnya UNION atau kondisi boolean) lewat GET /api/nilai/me/khs (CWE-89).",
+      "id_alert_model": "CQL-07",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-07",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:47.416Z",
+        "waktu_selesai": "2026-10-26T10:01:52.512Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "4fa670f6125ae1db173c95fca6d9b1cad27d11450c230a84efd0736fae68c75a",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "e92719900ca79b714c9d7f424e0dc0a1837d76df6afd3003b3d0e95428a9e6bf"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 5096,
+        "durasi_percobaan_terakhir_ms": 5096,
+        "usage": {
+          "input": 51276,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 541,
+          "thinking": null
+        },
+        "biaya_usd": 0.016911,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-08",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/routes/authRoutes.js baris 4, route POST /register hanya memanggil auth.register tanpa middleware rate limiting. Di src/app.js juga tidak ada rate limiter global (hanya helmet, cors, express.json), dan tidak ada dependensi seperti express-rate-limit. Akibatnya register melakukan akses database (pool.query INSERT) dan bcrypt.hash yang mahal secara CPU tanpa batas, sehingga bisa dipakai untuk spam akun dan penyalahgunaan sumber daya (CWE-770, CWE-400).",
+      "id_alert_model": "CQL-08",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-08",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:52.513Z",
+        "waktu_selesai": "2026-10-26T10:01:56.340Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "5a1a2f1552e4e70e806d6e8cb30f8982f63e9f1216136b35ba96811b64e7233d",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "35c9ab01866e918db8049a088629ac1631084ea19092f5380acf0c132d3fff45"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3827,
+        "durasi_percobaan_terakhir_ms": 3827,
+        "usage": {
+          "input": 51286,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 244,
+          "thinking": null
+        },
+        "biaya_usd": 0.013961,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-09",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Route POST /api/auth/login di src/routes/authRoutes.js:5 mengarah ke auth.login yang melakukan query database dan bcrypt.compare, tetapi tidak ada middleware rate limiting di app.js, authRoutes.js, maupun middleware lain (hanya helmet, cors, express.json). Tidak ada pembatasan percobaan login atau lockout, sehingga brute force password (CWE-307) dan penyalahgunaan sumber daya lewat bcrypt serta query DB (CWE-770/CWE-400) dapat dilakukan oleh siapa pun tanpa autentikasi. Riwayat login hanya mencatat, tidak memblokir.",
+      "id_alert_model": "CQL-09",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-09",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:01:56.341Z",
+        "waktu_selesai": "2026-10-26T10:02:01.314Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "458d744f6ff30c9604290c60f4420dfc09724c64100e0bf446fbc826ce9b2f4a",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "2960d018242db67f853558b72a0d2c572f253e5934cb69b27570ad95265d8672"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 4973,
+        "durasi_percobaan_terakhir_ms": 4973,
+        "usage": {
+          "input": 51286,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 277,
+          "thinking": null
+        },
+        "biaya_usd": 0.014291,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-10",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Alert ini valid. src/routes/cutiRoutes.js memasang authenticate (baris 8) dan authorize, tetapi tidak ada middleware pembatas laju di route ini, di src/app.js, maupun di rute lain (tidak ada express-rate-limit atau sejenisnya). Setiap endpoint cuti, termasuk create yang menulis ke database dan listAdmin yang menjalankan pgp_sym_decrypt, dapat dipanggil berulang tanpa batas oleh pengguna yang berwenang atau penyerang yang mencoba token. Ini sesuai dengan CWE-770 dan CWE-400, walaupun dampaknya sedang.",
+      "id_alert_model": "CQL-10",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-10",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:01.315Z",
+        "waktu_selesai": "2026-10-26T10:02:04.692Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "96897a1a6b6edcdd9eefe29e66203f606c96dfb84feb3aabe74ca0d946ca3b41",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "b979a5ad27e6e199940565b9771fd913de4b0f8752c42adfdaad998ed561b2a0"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3377,
+        "durasi_percobaan_terakhir_ms": 3377,
+        "usage": {
+          "input": 51288,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 275,
+          "thinking": null
+        },
+        "biaya_usd": 0.014275,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-11",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Di src/app.js tidak ada middleware pembatas laju (rate limiter) yang dipasang secara global, dan src/routes/konsenRoutes.js:5 hanya memakai authenticate dan authorize('admin'). Jadi route konsen (list, create, updateStatus) yang menjalankan query ke database memang tidak dibatasi jumlah requestnya. Dampaknya terbatas karena handler hanya bisa dijalankan admin dan permintaan tanpa token ditolak murah di authenticate, tetapi kelemahan yang dilaporkan (CWE-770/CWE-400) nyata ada di kode saat ini.",
+      "id_alert_model": "CQL-11",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-11",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:04.692Z",
+        "waktu_selesai": "2026-10-26T10:02:30.620Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "9aeea2d39551b874f8307d2600ef3496b9a6dd71d8d1f2d83029514e6594adf9",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "5cd9d204401cc964f48f8a9e9cd5a486272c4944a329bec31d7f0a87143af841"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 2,
+        "percobaan_gagal": [
+          {
+            "ke": 1,
+            "waktu_mulai": "2026-10-26T10:02:04.692Z",
+            "waktu_selesai": "2026-10-26T10:02:07.527Z",
+            "http_status": null,
+            "status": "error",
+            "detail_status": "stream terputus: terminated (sebab ECONNRESET; 12 event, terakhir content_block_delta)",
+            "usage": "tidak_tercatat"
+          }
+        ],
+        "durasi_ms": 25928,
+        "durasi_percobaan_terakhir_ms": 8092,
+        "usage": {
+          "input": 51288,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 809,
+          "thinking": null
+        },
+        "biaya_usd": 0.019615,
+        "biaya_percobaan_gagal_usd": "tidak_tercatat",
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-12",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Tidak ada rate limiting di aplikasi: app.js hanya memakai helmet, cors, dan express.json, dan tidak ada middleware pembatas laju di src/middleware maupun di krsRoutes.js. Router KRS memakai authenticate (verifikasi JWT HS256) lalu authorize, dan handler seperti c.listAdmin menjalankan query agregasi (JOIN, GROUP BY, SUM, count) tanpa batasan frekuensi. Karena itu, pengguna terautentikasi bisa mengirim permintaan berulang tanpa batas, sehingga temuan js/missing-rate-limiting (CWE-770/400) benar-benar ada di kode saat ini.",
+      "id_alert_model": "CQL-12",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-12",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:30.621Z",
+        "waktu_selesai": "2026-10-26T10:02:34.015Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "7515598446314b113a13a5955417cc58f2f29cd6b01da2133336b3b028bfae89",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "1206b6fa23625330f68444e6872aa4a88b68b5e9effb89db9da0bc5ac01e1161"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3394,
+        "durasi_percobaan_terakhir_ms": 3394,
+        "usage": {
+          "input": 51287,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 284,
+          "thinking": null
+        },
+        "biaya_usd": 0.014363,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-13",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/routes/mahasiswaRoutes.js:8, `router.use(authenticate)` dan seluruh handler di router ini (termasuk `dokumen.upload` dengan pemrosesan file, `c.list`, `profil.ekspor` yang menjalankan banyak query dan dekripsi) tidak memiliki rate limiting. src/app.js hanya memakai helmet, cors, dan express.json, tanpa express-rate-limit atau middleware pembatas lain di level aplikasi maupun router. Karena itu, pengguna terautentikasi dapat memanggil endpoint mahal ini berulang kali tanpa batas (CWE-770/CWE-400), sehingga alert ini valid.",
+      "id_alert_model": "CQL-13",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-13",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:34.016Z",
+        "waktu_selesai": "2026-10-26T10:02:37.814Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "132c432af8bfddf5eadc8f634f02ae6df18d956bf3e93762ddfde0eb96327a3e",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "4f589d24494e07d015d1e75a9dd7f81c1047ab1c0cbfd43915e7e3867b5bcb29"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3798,
+        "durasi_percobaan_terakhir_ms": 3798,
+        "usage": {
+          "input": 51291,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 284,
+          "thinking": null
+        },
+        "biaya_usd": 0.014371,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-14",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Route GET /me/dokumen/:id di src/routes/mahasiswaRoutes.js:19 menjalankan dokumen.downloadMe, yang memanggil kirimFile dan res.sendFile (akses file system) tanpa pembatasan laju. Di src/app.js tidak ada middleware rate limiting (hanya helmet, cors, express.json), dan router hanya memakai authenticate serta authorize('mahasiswa'), sehingga mahasiswa terautentikasi bisa memanggil endpoint ini berulang kali tanpa batas (CWE-770/CWE-400). Alert ini sesuai dengan kode apa adanya karena tidak ada mekanisme pembatas yang terlihat.",
+      "id_alert_model": "CQL-14",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-14",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:37.815Z",
+        "waktu_selesai": "2026-10-26T10:02:41.374Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "bd255f347c3504f4b4eb10f33896435d80ac0478c1ab9dc793ed26e329ecd38f",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "7faabf3ce136560f6ec6ba779497fe16ec3b2072d77969c6d58d03df2d75be78"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3559,
+        "durasi_percobaan_terakhir_ms": 3559,
+        "usage": {
+          "input": 51292,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 288,
+          "thinking": null
+        },
+        "biaya_usd": 0.014413,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-15",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Route `router.delete('/:id', authorize('admin'), c.remove)` di src/routes/mahasiswaRoutes.js:27 memang tidak punya rate limiting: app.js hanya memakai helmet, cors, dan express.json, dan tidak ada middleware pembatas laju di file mana pun. Handler `remove` di mahasiswaController.js memanggil `fs.unlink` untuk file dokumen, jadi ada akses file system tanpa pembatasan, sesuai deskripsi alert (CWE-770/CWE-400). Route ini hanya bisa dipanggil admin lewat `authenticate` dan `authorize('admin')`, dan ID harus UUID valid yang ada di database, sehingga dampak penyalahgunaannya kecil. Meski begitu, kelemahan yang dilaporkan (tidak ada rate limiting pada handler dengan akses file) memang ada di kode saat ini.",
+      "id_alert_model": "CQL-15",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-15",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:41.375Z",
+        "waktu_selesai": "2026-10-26T10:02:53.593Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "5e0a364c1e7647a3dbf8f27381e467f076f252d9c9088bd5d252f32c9da38f1d",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "33a481a676de83b326de543096c763f5521920b3ce26ecb17f04ec8319aa2c73"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 12218,
+        "durasi_percobaan_terakhir_ms": 12218,
+        "usage": {
+          "input": 51292,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 359,
+          "thinking": null
+        },
+        "biaya_usd": 0.015123,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-16",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Route GET /:id/dokumen/:dokumenId di src/routes/mahasiswaRoutes.js:29 memanggil dokumen.downloadAdmin yang melakukan res.sendFile (akses file system), dan di src/app.js maupun router tidak ada middleware rate limiting (tidak ada express-rate-limit atau sejenisnya). Endpoint ini memang dapat dipanggil berulang tanpa batas oleh admin terautentikasi, sehingga kondisi 'tidak dibatasi laju' benar-benar ada (CWE-770/CWE-400). Dampaknya terbatas karena route hanya untuk admin dengan authenticate dan authorize('admin'), ID divalidasi UUID, dan path file berasal dari database. Namun tuntutan alert adalah ketiadaan rate limiting pada route yang mengakses file system, dan itu terpenuhi.",
+      "id_alert_model": "CQL-16",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-16",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:53.594Z",
+        "waktu_selesai": "2026-10-26T10:02:57.821Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "4fe6e6ad8507e6d44eea7e3e55cbafdf0d63ca4d7da7e3d36d8b98744509c283",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "da68d0b02d48431f684875c253b68e77ea919f05c1ea724b825e6d5af413bd98"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 4227,
+        "durasi_percobaan_terakhir_ms": 4227,
+        "usage": {
+          "input": 51292,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 350,
+          "thinking": null
+        },
+        "biaya_usd": 0.015033,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-17",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Tidak ada rate limiting di mana pun: src/app.js hanya memakai helmet, cors, dan express.json, dan tidak ada middleware pembatas laju di mataKuliahRoutes.js. Semua route di sana (termasuk GET / dengan pencarian ILIKE ke database dan operasi tulis admin) melewati authenticate lalu authorize tanpa pembatasan permintaan, jadi pemanggil terautentikasi bisa membanjiri server dan database (CWE-770/CWE-400). Dampaknya terbatas karena authenticate hanya memverifikasi JWT, bukan kredensial yang bisa ditebak (CWE-307). Kemungkinan ada pembatas di reverse proxy di luar kode yang ditampilkan.",
+      "id_alert_model": "CQL-17",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-17",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:02:57.822Z",
+        "waktu_selesai": "2026-10-26T10:03:05.798Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "803c9dfec270fa930d3c03458d90ae2b8f3461183417bf9c71cda848e433b4f8",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "ea531a4cb0efd5391b17275a85841a21cbea91fb4de5838851f4e5d298d22128"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 7976,
+        "durasi_percobaan_terakhir_ms": 7976,
+        "usage": {
+          "input": 51291,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 650,
+          "thinking": null
+        },
+        "biaya_usd": 0.018031,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "CQL-18",
+      "putusan": "true_positive",
+      "keyakinan": "medium",
+      "alasan": "Tidak ada middleware pembatas laju (rate limiting) di src/app.js, yang hanya memakai helmet, cors, dan express.json, maupun di src/routes/nilaiRoutes.js. Semua endpoint di router ini, termasuk c.listAdmin dengan query join berat dan c.khs, dapat dipanggil berulang tanpa batas oleh pengguna terautentikasi (CWE-770, CWE-400). Alert ini sesuai dengan kode: kelemahannya ada dan dapat dicapai, meski dampaknya terbatas pada penyalahgunaan sumber daya oleh pengguna yang sudah login.",
+      "id_alert_model": "CQL-18",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 1,
+        "id_alert": "CQL-18",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:03:05.799Z",
+        "waktu_selesai": "2026-10-26T10:03:12.362Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "c994b15eb6e5cff383deb00dc757387b36f989ccfd22e0e8a4d1b8b7b277d031",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "919ce5789689d0b700b021c25d5e5ed58d5d6d33bce988672e4c1e05849f2c79"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 6563,
+        "durasi_percobaan_terakhir_ms": 6563,
+        "usage": {
+          "input": 51289,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 626,
+          "thinking": null
+        },
+        "biaya_usd": 0.017787,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    }
+  ]
+}

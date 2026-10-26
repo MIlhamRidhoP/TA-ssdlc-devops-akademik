@@ -1,0 +1,746 @@
+[
+  {
+    "id": "SONAR-01",
+    "sumber": "issue",
+    "rule": "javascript:S5122",
+    "severity": "MAJOR",
+    "tipe": "VULNERABILITY",
+    "file": "src/app.js",
+    "baris": 10,
+    "pesan": "Make sure that enabling CORS is safe here.",
+    "cwe": [
+      "CWE-346",
+      "CWE-942"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-01\nRule: javascript:S5122\nType: VULNERABILITY\nLocation: src/app.js:10\nMessage: Make sure that enabling CORS is safe here.\nMapped CWE: CWE-346, CWE-942",
+    "sumber_sast": "sonar",
+    "hash": "ad3f8603a3acda6f1930096920074f7de5bd54204c772ba143787e7bb07ce374"
+  },
+  {
+    "id": "SONAR-02",
+    "sumber": "issue",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/controllers/nilaiController.js",
+    "baris": 160,
+    "pesan": "Reflected XSS via unsanitized user input",
+    "cwe": [
+      "CWE-79"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-02\nRule: jssecurity:S5131\nType: VULNERABILITY\nLocation: src/controllers/nilaiController.js:160\nMessage: Reflected XSS via unsanitized user input\nMapped CWE: CWE-79",
+    "sumber_sast": "sonar",
+    "hash": "c08e2bd18f84b5bf3db9e3284b4d35ecc052429cb14f66f3b8de31a353f304fc"
+  },
+  {
+    "id": "SONAR-03",
+    "sumber": "issue",
+    "rule": "jssecurity:S5131",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/controllers/nilaiController.js",
+    "baris": 170,
+    "pesan": "Reflected XSS via unsanitized user input",
+    "cwe": [
+      "CWE-79"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-03\nRule: jssecurity:S5131\nType: VULNERABILITY\nLocation: src/controllers/nilaiController.js:170\nMessage: Reflected XSS via unsanitized user input\nMapped CWE: CWE-79",
+    "sumber_sast": "sonar",
+    "hash": "f54d86eee67a2fa18a62fc1c6bc263183422ae5092a055e61e8fb6a883dd148e"
+  },
+  {
+    "id": "SONAR-04",
+    "sumber": "issue",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/models/cutiModel.js",
+    "baris": 93,
+    "pesan": "SQL Injection via unsanitized user input",
+    "cwe": [
+      "CWE-20",
+      "CWE-89"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-04\nRule: jssecurity:S3649\nType: VULNERABILITY\nLocation: src/models/cutiModel.js:93\nMessage: SQL Injection via unsanitized user input\nMapped CWE: CWE-20, CWE-89",
+    "sumber_sast": "sonar",
+    "hash": "be3cb4b590ef85a00d6bbc883477d28165f503a95fa37cf67fc13b47125c0a4b"
+  },
+  {
+    "id": "SONAR-05",
+    "sumber": "issue",
+    "rule": "jssecurity:S3649",
+    "severity": "BLOCKER",
+    "tipe": "VULNERABILITY",
+    "file": "src/models/nilaiModel.js",
+    "baris": 124,
+    "pesan": "SQL Injection via unsanitized user input",
+    "cwe": [
+      "CWE-20",
+      "CWE-89"
+    ],
+    "keamanan": true,
+    "teks": "Alert ID: SONAR-05\nRule: jssecurity:S3649\nType: VULNERABILITY\nLocation: src/models/nilaiModel.js:124\nMessage: SQL Injection via unsanitized user input\nMapped CWE: CWE-20, CWE-89",
+    "sumber_sast": "sonar",
+    "hash": "835735a4f8810d20c2ad04705ef19946e314d852d48e6c572d2517e4205e3391"
+  },
+  {
+    "id": "CQL-01",
+    "rule": "js/polynomial-redos",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/controllers/authController.js",
+    "baris": 20,
+    "cwe": [
+      "CWE-1333",
+      "CWE-730",
+      "CWE-400"
+    ],
+    "pesan": "This [regular expression](1) that depends on [a user-provided value](2) may run slow on strings starting with '!@!.' and with many repetitions of '!.'.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      8,
+      8
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-1333",
+      "external/cwe/cwe-730",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-01\nRule: js/polynomial-redos\nType: SECURITY\nLocation: src/controllers/authController.js:20\nMessage: This [regular expression](1) that depends on [a user-provided value](2) may run slow on strings starting with '!@!.' and with many repetitions of '!.'.\nMapped CWE: CWE-1333, CWE-730, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "c6e4bd7ff6bdb4cf06a9785a9c0b583406e62c2e470d997b51bdac0a11b6fdbb"
+  },
+  {
+    "id": "CQL-02",
+    "rule": "js/path-injection",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/middleware/upload.js",
+    "baris": 34,
+    "cwe": [
+      "CWE-22",
+      "CWE-23",
+      "CWE-36",
+      "CWE-73",
+      "CWE-99"
+    ],
+    "pesan": "This path depends on a [user-provided value](1).\nThis path depends on a [user-provided value](2).\nThis path depends on a [user-provided value](3).",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      47,
+      47
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-022",
+      "external/cwe/cwe-023",
+      "external/cwe/cwe-036",
+      "external/cwe/cwe-073",
+      "external/cwe/cwe-099"
+    ],
+    "teks": "Alert ID: CQL-02\nRule: js/path-injection\nType: SECURITY\nLocation: src/middleware/upload.js:34\nMessage: This path depends on a [user-provided value](1). This path depends on a [user-provided value](2). This path depends on a [user-provided value](3).\nMapped CWE: CWE-22, CWE-23, CWE-36, CWE-73, CWE-99",
+    "sumber_sast": "codeql",
+    "hash": "a5dc84802a3460c2da9724efe864d1bf38749346109cced19317283fd157bd39"
+  },
+  {
+    "id": "CQL-03",
+    "rule": "js/path-injection",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/middleware/upload.js",
+    "baris": 39,
+    "cwe": [
+      "CWE-22",
+      "CWE-23",
+      "CWE-36",
+      "CWE-73",
+      "CWE-99"
+    ],
+    "pesan": "This path depends on a [user-provided value](1).",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      32,
+      32
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-022",
+      "external/cwe/cwe-023",
+      "external/cwe/cwe-036",
+      "external/cwe/cwe-073",
+      "external/cwe/cwe-099"
+    ],
+    "teks": "Alert ID: CQL-03\nRule: js/path-injection\nType: SECURITY\nLocation: src/middleware/upload.js:39\nMessage: This path depends on a [user-provided value](1).\nMapped CWE: CWE-22, CWE-23, CWE-36, CWE-73, CWE-99",
+    "sumber_sast": "codeql",
+    "hash": "078b134ac4263181bd1c836bdedc59571ae2f8afb18b24f64a15355c5cf5fd5d"
+  },
+  {
+    "id": "CQL-04",
+    "rule": "js/sql-injection",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/models/cutiModel.js",
+    "baris": 94,
+    "cwe": [
+      "CWE-89",
+      "CWE-90",
+      "CWE-943"
+    ],
+    "pesan": "This query string depends on a [user-provided value](1).\nThis query string depends on a [user-provided value](2).",
+    "severity_codeql": "8.8",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      7,
+      7
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-089",
+      "external/cwe/cwe-090",
+      "external/cwe/cwe-943"
+    ],
+    "teks": "Alert ID: CQL-04\nRule: js/sql-injection\nType: SECURITY\nLocation: src/models/cutiModel.js:94\nMessage: This query string depends on a [user-provided value](1). This query string depends on a [user-provided value](2).\nMapped CWE: CWE-89, CWE-90, CWE-943",
+    "sumber_sast": "codeql",
+    "hash": "82341540cf620296292731e21ac4174b4e1334b57a5fb344b7f45857ae3341d4"
+  },
+  {
+    "id": "CQL-05",
+    "rule": "js/sql-injection",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/models/mahasiswaModel.js",
+    "baris": 59,
+    "cwe": [
+      "CWE-89",
+      "CWE-90",
+      "CWE-943"
+    ],
+    "pesan": "This query string depends on a [user-provided value](1).",
+    "severity_codeql": "8.8",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      34,
+      34
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-089",
+      "external/cwe/cwe-090",
+      "external/cwe/cwe-943"
+    ],
+    "teks": "Alert ID: CQL-05\nRule: js/sql-injection\nType: SECURITY\nLocation: src/models/mahasiswaModel.js:59\nMessage: This query string depends on a [user-provided value](1).\nMapped CWE: CWE-89, CWE-90, CWE-943",
+    "sumber_sast": "codeql",
+    "hash": "8c21a3548c7bf15deb0fbfdef647764c097a6bd092de5d4417e358315740a60f"
+  },
+  {
+    "id": "CQL-06",
+    "rule": "js/sql-injection",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/models/mahasiswaModel.js",
+    "baris": 61,
+    "cwe": [
+      "CWE-89",
+      "CWE-90",
+      "CWE-943"
+    ],
+    "pesan": "This query string depends on a [user-provided value](1).",
+    "severity_codeql": "8.8",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      5,
+      5
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-089",
+      "external/cwe/cwe-090",
+      "external/cwe/cwe-943"
+    ],
+    "teks": "Alert ID: CQL-06\nRule: js/sql-injection\nType: SECURITY\nLocation: src/models/mahasiswaModel.js:61\nMessage: This query string depends on a [user-provided value](1).\nMapped CWE: CWE-89, CWE-90, CWE-943",
+    "sumber_sast": "codeql",
+    "hash": "0cf3d5f2e5dbe8ac6898ff422ca72524c15840e506dc9063adecf350ea6342e4"
+  },
+  {
+    "id": "CQL-07",
+    "rule": "js/sql-injection",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/models/nilaiModel.js",
+    "baris": 125,
+    "cwe": [
+      "CWE-89",
+      "CWE-90",
+      "CWE-943"
+    ],
+    "pesan": "This query string depends on a [user-provided value](1).",
+    "severity_codeql": "8.8",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      5,
+      5
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-089",
+      "external/cwe/cwe-090",
+      "external/cwe/cwe-943"
+    ],
+    "teks": "Alert ID: CQL-07\nRule: js/sql-injection\nType: SECURITY\nLocation: src/models/nilaiModel.js:125\nMessage: This query string depends on a [user-provided value](1).\nMapped CWE: CWE-89, CWE-90, CWE-943",
+    "sumber_sast": "codeql",
+    "hash": "4fa670f6125ae1db173c95fca6d9b1cad27d11450c230a84efd0736fae68c75a"
+  },
+  {
+    "id": "CQL-08",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/authRoutes.js",
+    "baris": 4,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [a database access](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      26,
+      26
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-08\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/authRoutes.js:4\nMessage: This route handler performs [a database access](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "5a1a2f1552e4e70e806d6e8cb30f8982f63e9f1216136b35ba96811b64e7233d"
+  },
+  {
+    "id": "CQL-09",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/authRoutes.js",
+    "baris": 5,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [a database access](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      23,
+      23
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-09\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/authRoutes.js:5\nMessage: This route handler performs [a database access](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "458d744f6ff30c9604290c60f4420dfc09724c64100e0bf446fbc826ce9b2f4a"
+  },
+  {
+    "id": "CQL-10",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/cutiRoutes.js",
+    "baris": 8,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      12,
+      12
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-10\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/cutiRoutes.js:8\nMessage: This route handler performs [authorization](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "96897a1a6b6edcdd9eefe29e66203f606c96dfb84feb3aabe74ca0d946ca3b41"
+  },
+  {
+    "id": "CQL-11",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/konsenRoutes.js",
+    "baris": 5,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      12,
+      12
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-11\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/konsenRoutes.js:5\nMessage: This route handler performs [authorization](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "9aeea2d39551b874f8307d2600ef3496b9a6dd71d8d1f2d83029514e6594adf9"
+  },
+  {
+    "id": "CQL-12",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/krsRoutes.js",
+    "baris": 8,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      12,
+      12
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-12\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/krsRoutes.js:8\nMessage: This route handler performs [authorization](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "7515598446314b113a13a5955417cc58f2f29cd6b01da2133336b3b028bfae89"
+  },
+  {
+    "id": "CQL-13",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/mahasiswaRoutes.js",
+    "baris": 8,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      12,
+      12
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-13\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/mahasiswaRoutes.js:8\nMessage: This route handler performs [authorization](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "132c432af8bfddf5eadc8f634f02ae6df18d956bf3e93762ddfde0eb96327a3e"
+  },
+  {
+    "id": "CQL-14",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/mahasiswaRoutes.js",
+    "baris": 19,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [a file system access](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      55,
+      55
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-14\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/mahasiswaRoutes.js:19\nMessage: This route handler performs [a file system access](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "bd255f347c3504f4b4eb10f33896435d80ac0478c1ab9dc793ed26e329ecd38f"
+  },
+  {
+    "id": "CQL-15",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/mahasiswaRoutes.js",
+    "baris": 27,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [a file system access](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      43,
+      43
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-15\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/mahasiswaRoutes.js:27\nMessage: This route handler performs [a file system access](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "5e0a364c1e7647a3dbf8f27381e467f076f252d9c9088bd5d252f32c9da38f1d"
+  },
+  {
+    "id": "CQL-16",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/mahasiswaRoutes.js",
+    "baris": 29,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [a file system access](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      59,
+      59
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-16\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/mahasiswaRoutes.js:29\nMessage: This route handler performs [a file system access](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "4fe6e6ad8507e6d44eea7e3e55cbafdf0d63ca4d7da7e3d36d8b98744509c283"
+  },
+  {
+    "id": "CQL-17",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/mataKuliahRoutes.js",
+    "baris": 5,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      12,
+      12
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-17\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/mataKuliahRoutes.js:5\nMessage: This route handler performs [authorization](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "803c9dfec270fa930d3c03458d90ae2b8f3461183417bf9c71cda848e433b4f8"
+  },
+  {
+    "id": "CQL-18",
+    "rule": "js/missing-rate-limiting",
+    "tipe": "SECURITY",
+    "sumber": "codeql",
+    "file": "src/routes/nilaiRoutes.js",
+    "baris": 6,
+    "cwe": [
+      "CWE-770",
+      "CWE-307",
+      "CWE-400"
+    ],
+    "pesan": "This route handler performs [authorization](1), but is not rate-limited.",
+    "severity_codeql": "7.5",
+    "severity_asal": "codeql",
+    "precision_codeql": "high",
+    "suite": [
+      "code-scanning",
+      "extended"
+    ],
+    "hanya_extended": false,
+    "entri_sarif_digabung": 2,
+    "kolom": [
+      12,
+      12
+    ],
+    "tags": [
+      "security",
+      "external/cwe/cwe-770",
+      "external/cwe/cwe-307",
+      "external/cwe/cwe-400"
+    ],
+    "teks": "Alert ID: CQL-18\nRule: js/missing-rate-limiting\nType: SECURITY\nLocation: src/routes/nilaiRoutes.js:6\nMessage: This route handler performs [authorization](1), but is not rate-limited.\nMapped CWE: CWE-770, CWE-307, CWE-400",
+    "sumber_sast": "codeql",
+    "hash": "c994b15eb6e5cff383deb00dc757387b36f989ccfd22e0e8a4d1b8b7b277d031"
+  }
+]

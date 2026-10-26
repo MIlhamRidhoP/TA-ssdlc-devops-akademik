@@ -1,0 +1,724 @@
+{
+  "versi_prompt": "v3",
+  "kondisi": "utama",
+  "skenario": "B",
+  "vendor": "anthropic",
+  "model_diminta": "claude-sonnet-5-5",
+  "run": 2,
+  "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+  "branch_objek_uji": "eksperimen/seeded",
+  "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+  "analisis_sonar": "2026-10-10T10:58:15+0000",
+  "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+  "sumber_sonar": "beku",
+  "sonar_beku": {
+    "path": "hasil-eksperimen/20261019/sonar-beku.json",
+    "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+    "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+    "dibuat": "2026-10-19T11:58:38.644Z"
+  },
+  "commit_kode": {
+    "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+    "bersih": true
+  },
+  "parse_ok": true,
+  "temuan": [
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 54,
+      "fungsi": "listFrom",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter q dari query string diubah menjadi `pola` oleh listQuery, lalu disisipkan langsung ke string SQL lewat template literal. Listquery hanya meng-escape `\\`, `%`, dan `_`, tetapi tidak meng-escape tanda kutip tunggal. Admin atau token admin yang dicuri bisa menyuntikkan SQL lewat GET /api/mahasiswa?q=. Selain itu, ketika pola null, nilai `'null'` menjadi string literal.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/nilaiModel.js",
+      "baris": 133,
+      "fungsi": "publishedBySemester",
+      "jenis": "SQL Injection",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter query `semester` dari GET /api/nilai/me/khs hanya diperiksa tidak kosong dan bertipe string, tanpa validasi SEMESTER_RE. Nilainya disisipkan langsung ke query SQL lewat `'${semester}'`. Mahasiswa dapat menyuntikkan SQL, misalnya UNION atau subquery, untuk membaca data mahasiswa lain.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 160,
+      "fungsi": "khs",
+      "jenis": "Reflected Cross-Site Scripting",
+      "cwe": "CWE-79",
+      "kategori_owasp": "A05",
+      "penjelasan": "Parameter query `semester` dipantulkan ke respons HTML tanpa escapeHtml. Karena nilainya hanya diperiksa tidak kosong, sebagian besar input diterima dan cabang ini hanya terpicu pada string kosong. Pada kondisi saat ini isi `semester` selalu kosong sehingga eksploitasinya terbatas, tetapi pola penulisannya tidak aman.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/nilaiController.js",
+      "baris": 120,
+      "fungsi": "halamanKhs",
+      "jenis": "Stored Cross-Site Scripting",
+      "cwe": "CWE-79",
+      "kategori_owasp": "A05",
+      "penjelasan": "Nama mata kuliah `i.nama` dimasukkan ke HTML KHS tanpa escapeHtml, padahal kolom lain di-escape. Admin dapat membuat mata kuliah dengan nama berisi HTML atau script, lalu skrip berjalan di browser mahasiswa yang membuka KHS.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/mahasiswaController.js",
+      "baris": 96,
+      "fungsi": "updateMe",
+      "jenis": "Mass Assignment / SQL Injection lewat nama kolom",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Seluruh req.body disalin ke `data` tanpa whitelist atau validasi, lalu model.updateByUserId membangun klausa SET dari kunci objek tersebut. Nama kolom dari kunci body disisipkan langsung ke SQL sehingga memungkinkan injeksi SQL lewat nama kunci. Mahasiswa juga dapat mengubah kolom yang tidak seharusnya, seperti nim, user_id, atau kolom terenkripsi tanpa enkripsi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/mahasiswaModel.js",
+      "baris": 143,
+      "fungsi": "updateByUserId",
+      "jenis": "SQL Injection (nama kolom dinamis)",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "Klausa SET dibangun dari `Object.keys(d)` yang berasal dari body request tanpa daftar kolom yang diizinkan. Kunci JSON arbitrer masuk ke teks SQL sebagai identifier. Nilai tetap diparameterisasi, tetapi nama kolom bisa dimanipulasi.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/routes/cutiRoutes.js",
+      "baris": 17,
+      "fungsi": "PUT /:id/status",
+      "jenis": "Missing Authorization",
+      "cwe": "CWE-862",
+      "kategori_owasp": "A01",
+      "penjelasan": "Route PUT /:id/status hanya dilindungi authenticate tanpa authorize('admin'). Mahasiswa yang login dapat menyetujui atau menolak pengajuan cuti siapa pun, termasuk miliknya sendiri.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 51,
+      "fungsi": "findOwned",
+      "jenis": "IDOR",
+      "cwe": "CWE-639",
+      "kategori_owasp": "A01",
+      "penjelasan": "findOwned menerima mahasiswaId tetapi query hanya memfilter `c.id`, sehingga kepemilikan tidak dicek. Mahasiswa dapat membaca detail pengajuan cuti mahasiswa lain, termasuk alamat dan nomor telepon yang didekripsi, lewat GET /api/cuti/me/:id.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/profilModel.js",
+      "baris": 38,
+      "fungsi": "removeEmail",
+      "jenis": "IDOR",
+      "cwe": "CWE-639",
+      "kategori_owasp": "A01",
+      "penjelasan": "Query DELETE hanya memakai `id` dan mengabaikan parameter mahasiswaId. Mahasiswa dapat menghapus email tambahan milik mahasiswa lain dengan menebak atau mengetahui UUID-nya.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/cutiController.js",
+      "baris": 50,
+      "fungsi": "create",
+      "jenis": "Mass Assignment",
+      "cwe": "CWE-915",
+      "kategori_owasp": "A01",
+      "penjelasan": "Meski komentar menyatakan status selalu diajukan, `req.body.status` diteruskan ke model.create dan dipakai lewat COALESCE. Mahasiswa dapat membuat pengajuan cuti langsung berstatus disetujui, melewati persetujuan admin.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/cutiController.js",
+      "baris": 84,
+      "fungsi": "listAdmin",
+      "jenis": "Parameter sort/order tidak dipakai dari hasil validasi (SQL Injection)",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "listAdmin memvalidasi lewat listQuery, tetapi menimpa `sort` dan `order` dengan `req.query.sort` dan `req.query.order` mentah. Model menyisipkan keduanya langsung ke `ORDER BY ${sort} ${order}`. Admin dapat menyuntikkan SQL lewat parameter sort atau order.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/models/cutiModel.js",
+      "baris": 98,
+      "fungsi": "listAdmin",
+      "jenis": "SQL Injection (ORDER BY)",
+      "cwe": "CWE-89",
+      "kategori_owasp": "A05",
+      "penjelasan": "`sort` dan `order` disisipkan ke klausa ORDER BY tanpa mapping ke daftar putih, dan controller meneruskan nilai mentah dari query string. Ini membuka injeksi SQL pada endpoint GET /api/cuti.",
+      "sifat": "vulnerability",
+      "keyakinan": "high",
+      "tanda": []
+    },
+    {
+      "file": "src/app.js",
+      "baris": 10,
+      "fungsi": "",
+      "jenis": "CORS terlalu permisif",
+      "cwe": "CWE-942",
+      "kategori_owasp": "A02",
+      "penjelasan": "cors() dipanggil tanpa opsi sehingga mengizinkan semua origin. Autentikasi memakai header Bearer sehingga risikonya terbatas, tetapi API data pribadi mahasiswa sebaiknya membatasi origin yang diizinkan.",
+      "sifat": "hardening",
+      "keyakinan": "low",
+      "tanda": []
+    },
+    {
+      "file": "src/controllers/authController.js",
+      "baris": 46,
+      "fungsi": "login",
+      "jenis": "Tidak ada pembatasan percobaan login",
+      "cwe": "CWE-307",
+      "kategori_owasp": "A07",
+      "penjelasan": "Endpoint login dan register tidak memiliki rate limiting atau penguncian akun. Penyerang dapat melakukan brute force password tanpa hambatan.",
+      "sifat": "hardening",
+      "keyakinan": "medium",
+      "tanda": []
+    }
+  ],
+  "deteksi": {
+    "versi_prompt": "v3",
+    "kondisi": "utama",
+    "tugas": "deteksi",
+    "run": 2,
+    "id_alert": null,
+    "vendor": "anthropic",
+    "model_diminta": "claude-sonnet-5-5",
+    "model_menjawab": "claude-sonnet-5-5",
+    "cara_akses": "api",
+    "waktu_mulai": "2026-10-26T10:07:56.443Z",
+    "waktu_selesai": "2026-10-26T10:08:16.633Z",
+    "pengaturan": {
+      "sampling": "bawaan",
+      "tingkat_thinking": "high",
+      "batas_output": 64000,
+      "tools": "none",
+      "fallback": "none",
+      "parameter_vendor": {
+        "thinking": "output_config.effort",
+        "format": "output_config.format"
+      },
+      "koneksi": {
+        "timeout_sdk_ms": 1200000,
+        "headers_timeout_ms": 1200000,
+        "body_timeout_ms": 1200000,
+        "connect_timeout_ms": 30000,
+        "fetch": "undici 7.30.1"
+      }
+    },
+    "hash": {
+      "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+      "template_tugas": "b61eccd776f58d14692c53c96b4b3ab779c46cd7188945d4e147d643aa2c29dc",
+      "skema": "8181da09da098db355a3e33615bc9d9bb397c6a1c496e1280161a4dfb4bec45a",
+      "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+      "laporan_sonar": null,
+      "alert": null,
+      "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "prompt_user_kanonik": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+    "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+    "analisis_sonar": "2026-10-10T10:58:15+0000",
+    "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+    "sumber_sonar": "beku",
+    "sonar_beku": {
+      "path": "hasil-eksperimen/20261019/sonar-beku.json",
+      "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+      "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+      "dibuat": "2026-10-19T11:58:38.644Z"
+    },
+    "commit_kode": {
+      "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "bersih": true
+    },
+    "status": "ok",
+    "detail_status": "stop_reason end_turn",
+    "parse_ok": true,
+    "tanda": [],
+    "percobaan": 1,
+    "percobaan_gagal": [],
+    "durasi_ms": 20190,
+    "durasi_percobaan_terakhir_ms": 20190,
+    "usage": {
+      "input": 51994,
+      "input_dari_cache": 50956,
+      "input_tulis_cache": 0,
+      "output": 3081,
+      "thinking": null
+    },
+    "biaya_usd": 0.043077,
+    "biaya_percobaan_gagal_usd": 0,
+    "sdk": {
+      "node": "v25.2.1",
+      "@anthropic-ai/sdk": "0.135.0",
+      "openai": "7.39.0",
+      "undici": "7.30.1",
+      "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+    }
+  },
+  "verifikasi": [
+    {
+      "id_alert": "SONAR-01",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "`app.use(cors())` di src/app.js:10 memang memakai konfigurasi bawaan (Access-Control-Allow-Origin: *) tanpa opsi `credentials`. Namun `authenticate` di src/middleware/auth.js hanya membaca token dari header `Authorization: Bearer`, dan tidak ada cookie atau sesi di kode. Situs origin lain tidak bisa membawa kredensial korban secara otomatis, sehingga tidak bisa membaca data pribadi mahasiswa tanpa token. Wildcard CORS di sini tidak menimbulkan kerentanan CWE-346/CWE-942 yang dapat dieksploitasi.",
+      "id_alert_model": "SONAR-01",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-01",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:08:16.634Z",
+        "waktu_selesai": "2026-10-26T10:08:23.595Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "ad3f8603a3acda6f1930096920074f7de5bd54204c772ba143787e7bb07ce374",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "6a33d36ca7e73149f335461bc9659e250bd4c2bc48e9af5bd22e995234067c37"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 6961,
+        "durasi_percobaan_terakhir_ms": 6961,
+        "usage": {
+          "input": 51267,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 655,
+          "thinking": null
+        },
+        "biaya_usd": 0.018033,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-02",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Di nilaiController.js baris 160, `khs` memasukkan `req.query.semester` mentah-mentah ke template HTML `<p>Semester \"${semester}\" tidak dikenali</p>` tanpa `escapeHtml`. Respons dikirim dengan `.type('html')`, sehingga payload seperti `<script>` atau `<img onerror>` di query string dieksekusi browser (CWE-79). Percabangan ini hanya dicapai bila `semester` string kosong, sehingga nilai yang direfleksikan selalu berupa string kosong. Karena itu `semester` di baris 160 tidak dapat berisi payload apa pun, dan tidak ada reflected XSS yang bisa dieksploitasi di lokasi tersebut.",
+      "id_alert_model": "SONAR-02",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-02",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:08:23.596Z",
+        "waktu_selesai": "2026-10-26T10:08:27.106Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "c08e2bd18f84b5bf3db9e3284b4d35ecc052429cb14f66f3b8de31a353f304fc",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "65a566656d59706e6b46bce45817b3ffc669199544890c104408a704d677fa70"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3510,
+        "durasi_percobaan_terakhir_ms": 3510,
+        "usage": {
+          "input": 51270,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 303,
+          "thinking": null
+        },
+        "biaya_usd": 0.014519,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-03",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Pada halamanKhs di src/controllers/nilaiController.js, sel mata kuliah memakai `<td>${i.nama}</td>` tanpa escapeHtml, padahal kolom lain sudah di-escape. Hasilnya dikirim lewat res.type('html').send(...) di baris 170. Nilai nama berasal dari mata_kuliah.nama, yang hanya divalidasi panjangnya di mataKuliahController, sehingga markup HTML bisa tersimpan dan tereksekusi saat mahasiswa membuka KHS. Query publishedBySemester juga menyisipkan `semester` langsung ke SQL, jadi parameter query bisa membuat baris palsu dengan nama berisi HTML (reflected). Celah CWE-79 ini ada dan bisa dijangkau, walaupun jalurnya lebih tepat disebut stored/injeksi, bukan murni reflected.",
+      "id_alert_model": "SONAR-03",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-03",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:08:27.107Z",
+        "waktu_selesai": "2026-10-26T10:08:35.712Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "f54d86eee67a2fa18a62fc1c6bc263183422ae5092a055e61e8fb6a883dd148e",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "88c11a5dd2880060695ec16de28f9d2209ed729c5659a04f8eab5b0a03518622"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 8605,
+        "durasi_percobaan_terakhir_ms": 8605,
+        "usage": {
+          "input": 51270,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 930,
+          "thinking": null
+        },
+        "biaya_usd": 0.020789,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-04",
+      "putusan": "false_positive",
+      "keyakinan": "high",
+      "alasan": "Interpolasi `${sort} ${order}` di `cutiModel.listAdmin` memang memakai nilai mentah dari `req.query` yang diteruskan `cutiController.listAdmin`. Namun `listQuery` dipanggil lebih dulu dan melempar AppError 400 kecuali `sort` bertipe string dan merupakan kunci `model.SORT` (cek `Object.hasOwn`), serta `order` persis 'asc' atau 'desc'. Nilai kosong, array, atau string lain ditolak sebelum query dijalankan, sehingga kolom yang sampai ke SQL hanya salah satu dari kunci tetap tersebut. Nilai lain (`pola`, `limit`, `offset`, `KEY`) memakai parameter terikat, jadi tidak ada jalur SQL injection (CWE-89).",
+      "id_alert_model": "SONAR-04",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-04",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:08:35.714Z",
+        "waktu_selesai": "2026-10-26T10:08:57.810Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "be3cb4b590ef85a00d6bbc883477d28165f503a95fa37cf67fc13b47125c0a4b",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "be53464ffb7cebe908eafcc88d4f7d11f7174f6db0eb32e4a0c6e82c34315c0a"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 22096,
+        "durasi_percobaan_terakhir_ms": 22096,
+        "usage": {
+          "input": 51273,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 954,
+          "thinking": null
+        },
+        "biaya_usd": 0.021035,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    },
+    {
+      "id_alert": "SONAR-05",
+      "putusan": "true_positive",
+      "keyakinan": "high",
+      "alasan": "Di src/models/nilaiModel.js, fungsi publishedBySemester menyisipkan `semester` langsung ke SQL lewat template string (`ks.semester = '${semester}'`), bukan lewat parameter. Di nilaiController.khs, `semester` berasal dari req.query.semester dan hanya dicek bertipe string serta tidak kosong, tanpa SEMESTER_RE atau allowlist, sehingga payload seperti `' OR '1'='1` atau UNION SELECT lolos. Endpoint /api/nilai/me/khs bisa diakses user mahasiswa yang terautentikasi (CWE-89), jadi alert ini nyata dan dapat dieksploitasi. Dampaknya termasuk pembacaan data lain, misalnya data mahasiswa lain, lewat SQL injection.",
+      "id_alert_model": "SONAR-05",
+      "tanda": [],
+      "metadata": {
+        "versi_prompt": "v3",
+        "kondisi": "utama",
+        "tugas": "verifikasi",
+        "run": 2,
+        "id_alert": "SONAR-05",
+        "vendor": "anthropic",
+        "model_diminta": "claude-sonnet-5-5",
+        "model_menjawab": "claude-sonnet-5-5",
+        "cara_akses": "api",
+        "waktu_mulai": "2026-10-26T10:08:57.810Z",
+        "waktu_selesai": "2026-10-26T10:09:01.666Z",
+        "pengaturan": {
+          "sampling": "bawaan",
+          "tingkat_thinking": "high",
+          "batas_output": 64000,
+          "tools": "none",
+          "fallback": "none",
+          "parameter_vendor": {
+            "thinking": "output_config.effort",
+            "format": "output_config.format"
+          },
+          "koneksi": {
+            "timeout_sdk_ms": 1200000,
+            "headers_timeout_ms": 1200000,
+            "body_timeout_ms": 1200000,
+            "connect_timeout_ms": 30000,
+            "fetch": "undici 7.30.1"
+          }
+        },
+        "hash": {
+          "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+          "template_tugas": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+          "skema": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a",
+          "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+          "laporan_sonar": null,
+          "alert": "835735a4f8810d20c2ad04705ef19946e314d852d48e6c572d2517e4205e3391",
+          "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+          "prompt_user_kanonik": "b9cac72a3af7d67e518271bf21313fee3cfa4d2af8f565f0817eec58ccd5b0d4"
+        },
+        "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+        "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+        "analisis_sonar": "2026-10-10T10:58:15+0000",
+        "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+        "sumber_sonar": "beku",
+        "sonar_beku": {
+          "path": "hasil-eksperimen/20261019/sonar-beku.json",
+          "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+          "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+          "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+          "dibuat": "2026-10-19T11:58:38.644Z"
+        },
+        "commit_kode": {
+          "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+          "bersih": true
+        },
+        "status": "ok",
+        "detail_status": "stop_reason end_turn",
+        "parse_ok": true,
+        "tanda": [],
+        "percobaan": 1,
+        "percobaan_gagal": [],
+        "durasi_ms": 3856,
+        "durasi_percobaan_terakhir_ms": 3856,
+        "usage": {
+          "input": 51274,
+          "input_dari_cache": 50584,
+          "input_tulis_cache": 0,
+          "output": 327,
+          "thinking": null
+        },
+        "biaya_usd": 0.014767,
+        "biaya_percobaan_gagal_usd": 0,
+        "sdk": {
+          "node": "v25.2.1",
+          "@anthropic-ai/sdk": "0.135.0",
+          "openai": "7.39.0",
+          "undici": "7.30.1",
+          "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,323 @@
+{
+  "dibuat": "2026-10-26T11:19:32.458Z",
+  "diperbarui": "2026-10-26T11:19:32.458Z",
+  "versi_prompt": "v3",
+  "vendor": "google",
+  "model_diminta": "gemini-3.1-pro-preview",
+  "kondisi": "utama",
+  "skenario": "B",
+  "objek_uji": {
+    "commit": "9d0ce837c8196612b0d09922032885d2af367dab",
+    "branch": "eksperimen/seeded",
+    "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+  },
+  "analisis_sonar": "2026-10-10T10:58:15+0000",
+  "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+  "tree_src_analisis_sonar": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+  "sumber_sonar": "beku",
+  "sonar_beku": {
+    "path": "hasil-eksperimen/20261019/sonar-beku.json",
+    "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+    "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+    "dibuat": "2026-10-19T11:58:38.644Z"
+  },
+  "sonar": {
+    "project": "MIlhamRidhoP_TA-ssdlc-devops-akademik_seeded",
+    "branch": "main",
+    "jumlah_issue": 26,
+    "jumlah_hotspot": 0,
+    "jumlah_alert": 5
+  },
+  "hash_laporan_sonar": "52be3d215c2c0d5850d08c7f7f238d4079ea0594610586003e877cf850e3a48e",
+  "hash_kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+  "jumlah_file": 43,
+  "commit_kode": {
+    "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+    "branch": "feat/sast-codeql",
+    "bersih": true,
+    "berubah": [],
+    "lingkup": [
+      "scripts",
+      "prompts",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      ".github/workflows",
+      ".gitignore",
+      "src",
+      "docker-compose.yml",
+      "Dockerfile"
+    ]
+  },
+  "pengaturan": {
+    "sampling": "bawaan",
+    "tingkat_thinking": "high",
+    "batas_output": 64000,
+    "tools": "none",
+    "fallback": "none",
+    "parameter_vendor": {
+      "thinking": "generationConfig.thinkingConfig.thinkingLevel",
+      "format": "generationConfig.responseFormat.text",
+      "transport": "streamGenerateContent?alt=sse"
+    },
+    "koneksi": {
+      "timeout_sdk_ms": 1200000,
+      "headers_timeout_ms": 1200000,
+      "body_timeout_ms": 1200000,
+      "connect_timeout_ms": 30000,
+      "fetch": "undici 7.30.1"
+    }
+  },
+  "tarif": {
+    "input": 2,
+    "input_cache_baca": 0.2,
+    "input_cache_tulis": null,
+    "output": 12,
+    "sumber": "https://ai.google.dev/gemini-api/docs/pricing (dicek 2026-10-19), prompt <= 200K token",
+    "catatan": "Token cache memakai tarif context caching. Biaya penyimpanan cache tidak berlaku untuk caching implisit (tidak ada token tulis cache). Halaman harga tidak menyebut eksplisit tarif caching implisit untuk model ini"
+  },
+  "sdk": {
+    "node": "v25.2.1",
+    "@anthropic-ai/sdk": "0.135.0",
+    "openai": "7.39.0",
+    "undici": "7.30.1",
+    "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+  },
+  "total_run_diminta": 3,
+  "galat": null,
+  "sidik_run": {
+    "versi_prompt": "v3",
+    "vendor": "google",
+    "model_diminta": "gemini-3.1-pro-preview",
+    "kondisi": "utama",
+    "objek_uji": {
+      "commit": "9d0ce837c8196612b0d09922032885d2af367dab",
+      "tree_src": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd"
+    },
+    "sumber_sonar": "beku",
+    "sonar_beku_sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+    "hash_kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+    "hash_laporan_sonar": "52be3d215c2c0d5850d08c7f7f238d4079ea0594610586003e877cf850e3a48e",
+    "hash_file_prompt": {
+      "alert-format.txt": "ba10996ab93faf92ef4894e02d1845d0a094dd97bfaaa24b23e3b3ebb2ba1a4d",
+      "detection.schema.json": "8181da09da098db355a3e33615bc9d9bb397c6a1c496e1280161a4dfb4bec45a",
+      "sonar-reference.txt": "03f43340fc93e0d0eef5d14bd3fb736d7d338489d478f863b4ab7ee6debc6b7b",
+      "source-header.txt": "f2e57de193a3767aa4cb524bcf84de2d24012651d6e5c412b85d465a9ac2020a",
+      "system.txt": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+      "task-detection.txt": "b61eccd776f58d14692c53c96b4b3ab779c46cd7188945d4e147d643aa2c29dc",
+      "task-verification.txt": "8ece204c2644a3f7ea9271203f03535fea3983f25a784aa1451f49c231366dd2",
+      "verification.schema.json": "6495806e0494586b57d48e81fc81af2f191132c42aa959db1508247348c9672a"
+    },
+    "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+    "prompt_user_kanonik": {
+      "deteksi": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c",
+      "SONAR-01": "6a33d36ca7e73149f335461bc9659e250bd4c2bc48e9af5bd22e995234067c37",
+      "SONAR-02": "65a566656d59706e6b46bce45817b3ffc669199544890c104408a704d677fa70",
+      "SONAR-03": "88c11a5dd2880060695ec16de28f9d2209ed729c5659a04f8eab5b0a03518622",
+      "SONAR-04": "be53464ffb7cebe908eafcc88d4f7d11f7174f6db0eb32e4a0c6e82c34315c0a",
+      "SONAR-05": "b9cac72a3af7d67e518271bf21313fee3cfa4d2af8f565f0817eec58ccd5b0d4"
+    },
+    "pengaturan": {
+      "sampling": "bawaan",
+      "tingkat_thinking": "high",
+      "batas_output": 64000,
+      "tools": "none",
+      "fallback": "none",
+      "parameter_vendor": {
+        "thinking": "generationConfig.thinkingConfig.thinkingLevel",
+        "format": "generationConfig.responseFormat.text",
+        "transport": "streamGenerateContent?alt=sse"
+      },
+      "koneksi": {
+        "timeout_sdk_ms": 1200000,
+        "headers_timeout_ms": 1200000,
+        "body_timeout_ms": 1200000,
+        "connect_timeout_ms": 30000,
+        "fetch": "undici 7.30.1"
+      }
+    },
+    "sdk": {
+      "node": "v25.2.1",
+      "@anthropic-ai/sdk": "0.135.0",
+      "openai": "7.39.0",
+      "undici": "7.30.1",
+      "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+    },
+    "commit_kode": "dbd81ac2d7dd19d56786dad683409580afaedff3"
+  },
+  "biaya_total_usd": 2.5696,
+  "runs": [
+    {
+      "run": 1,
+      "file": "run-1.json",
+      "file_raw": "run-1.raw.json",
+      "waktu_mulai": "2026-10-26T11:03:27.985Z",
+      "waktu_selesai": "2026-10-26T11:09:05.993Z",
+      "commit_kode": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "deteksi": {
+        "status": "ok",
+        "parse_ok": true,
+        "jumlah_temuan": 6,
+        "tanda": [],
+        "thinking": 25705
+      },
+      "verifikasi": [
+        {
+          "id_alert": "SONAR-01",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-02",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-03",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-04",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-05",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        }
+      ],
+      "panggilan": {
+        "total": 6,
+        "refusal": 0,
+        "truncated": 0,
+        "error": 0,
+        "parse_gagal": 0,
+        "deteksi_kosong": 0
+      },
+      "thinking_token": 37602,
+      "biaya_usd": 0.921276
+    },
+    {
+      "run": 2,
+      "file": "run-2.json",
+      "file_raw": "run-2.raw.json",
+      "waktu_mulai": "2026-10-26T11:09:05.997Z",
+      "waktu_selesai": "2026-10-26T11:14:17.932Z",
+      "commit_kode": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "deteksi": {
+        "status": "ok",
+        "parse_ok": true,
+        "jumlah_temuan": 6,
+        "tanda": [],
+        "thinking": 18532
+      },
+      "verifikasi": [
+        {
+          "id_alert": "SONAR-01",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-02",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-03",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-04",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-05",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        }
+      ],
+      "panggilan": {
+        "total": 6,
+        "refusal": 0,
+        "truncated": 0,
+        "error": 0,
+        "parse_gagal": 0,
+        "deteksi_kosong": 0
+      },
+      "thinking_token": 39441,
+      "biaya_usd": 0.81746
+    },
+    {
+      "run": 3,
+      "file": "run-3.json",
+      "file_raw": "run-3.raw.json",
+      "waktu_mulai": "2026-10-26T11:14:17.936Z",
+      "waktu_selesai": "2026-10-26T11:19:32.455Z",
+      "commit_kode": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "deteksi": {
+        "status": "ok",
+        "parse_ok": true,
+        "jumlah_temuan": 9,
+        "tanda": [],
+        "thinking": 20166
+      },
+      "verifikasi": [
+        {
+          "id_alert": "SONAR-01",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-02",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-03",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        },
+        {
+          "id_alert": "SONAR-04",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "false_positive"
+        },
+        {
+          "id_alert": "SONAR-05",
+          "status": "ok",
+          "parse_ok": true,
+          "putusan": "true_positive"
+        }
+      ],
+      "panggilan": {
+        "total": 6,
+        "refusal": 0,
+        "truncated": 0,
+        "error": 0,
+        "parse_gagal": 0,
+        "deteksi_kosong": 0
+      },
+      "thinking_token": 40003,
+      "biaya_usd": 0.830864
+    }
+  ]
+}

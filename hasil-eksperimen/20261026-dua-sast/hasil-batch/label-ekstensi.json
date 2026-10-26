@@ -1,0 +1,7 @@
+{
+  "CQL-02": { "label": "fp", "lokasi": "src/middleware/upload.js:34" },
+  "CQL-03": { "label": "fp", "lokasi": "src/middleware/upload.js:39" },
+  "CQL-14": { "label": "nyata", "lokasi": "src/routes/mahasiswaRoutes.js:19" },
+  "CQL-15": { "label": "nyata", "lokasi": "src/routes/mahasiswaRoutes.js:27" },
+  "CQL-16": { "label": "nyata", "lokasi": "src/routes/mahasiswaRoutes.js:29" }
+}

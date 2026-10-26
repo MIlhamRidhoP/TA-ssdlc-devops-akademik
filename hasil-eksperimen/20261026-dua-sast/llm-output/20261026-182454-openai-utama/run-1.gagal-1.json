@@ -1,0 +1,172 @@
+{
+  "run": 1,
+  "sebab": "deteksi_gagal_setelah_percobaan_ulang",
+  "detail_status": "stream terputus: terminated (sebab ECONNRESET; 11 event, terakhir response.output_item.added) (gagal setelah 3 percobaan)",
+  "deteksi": {
+    "versi_prompt": "v3",
+    "kondisi": "utama",
+    "tugas": "deteksi",
+    "run": 1,
+    "id_alert": null,
+    "vendor": "openai",
+    "model_diminta": "gpt-6.1-sol",
+    "model_menjawab": null,
+    "cara_akses": "api",
+    "waktu_mulai": "2026-10-26T11:24:54.936Z",
+    "waktu_selesai": "2026-10-26T11:29:12.692Z",
+    "pengaturan": {
+      "sampling": "bawaan",
+      "tingkat_thinking": "high",
+      "batas_output": 64000,
+      "tools": "none",
+      "fallback": "none",
+      "parameter_vendor": {
+        "thinking": "reasoning.effort",
+        "format": "text.format",
+        "cache": "prompt_cache_breakpoint (eksplisit) + implisit",
+        "transport": "responses.stream"
+      },
+      "koneksi": {
+        "timeout_sdk_ms": 1200000,
+        "headers_timeout_ms": 1200000,
+        "body_timeout_ms": 1200000,
+        "connect_timeout_ms": 30000,
+        "fetch": "undici 7.30.1"
+      }
+    },
+    "hash": {
+      "system": "e5f8a654b07795d483ea0c0975bff5e6d46c89f8bb305fa59591acb88c2b4888",
+      "template_tugas": "b61eccd776f58d14692c53c96b4b3ab779c46cd7188945d4e147d643aa2c29dc",
+      "skema": "8181da09da098db355a3e33615bc9d9bb397c6a1c496e1280161a4dfb4bec45a",
+      "kode_sumber": "76af7969bb095b8cddc350136eb90c63ee1f801b3336907d26423f0139b62c2b",
+      "laporan_sonar": null,
+      "alert": null,
+      "prompt_system_kanonik": "bb687afc7f13696bf922240f0923c7266aa3f28fd645971bf9d392733e19c7fa",
+      "prompt_user_kanonik": "568d6cbaa989f393a995306376ca6d507884265226f414338fb0093e9990906c"
+    },
+    "commit_objek_uji": "9d0ce837c8196612b0d09922032885d2af367dab",
+    "tree_src_objek_uji": "ef5ff340dcb93e8153e52262bb79b64ea031e3cd",
+    "analisis_sonar": "2026-10-10T10:58:15+0000",
+    "revisi_analisis_sonar": "467775e44fae16317a8c7c0098245153625978b8",
+    "sumber_sonar": "beku",
+    "sonar_beku": {
+      "path": "hasil-eksperimen/20261019/sonar-beku.json",
+      "sha256_file": "14946edae5803799e02ec3c939afe6777ec58b50f432ada9eac6297fe62bdfb6",
+      "sha256_isi": "9154f2a23d57427c500f8bf8976a5c792bb7a720d826358a71e12c321545ef1b",
+      "revisi": "467775e44fae16317a8c7c0098245153625978b8",
+      "dibuat": "2026-10-19T11:58:38.644Z"
+    },
+    "commit_kode": {
+      "head": "dbd81ac2d7dd19d56786dad683409580afaedff3",
+      "bersih": true
+    },
+    "status": "error",
+    "detail_status": "stream terputus: terminated (sebab ECONNRESET; 11 event, terakhir response.output_item.added) (gagal setelah 3 percobaan)",
+    "parse_ok": false,
+    "tanda": [],
+    "percobaan": 3,
+    "percobaan_gagal": [
+      {
+        "ke": 1,
+        "waktu_mulai": "2026-10-26T11:24:54.936Z",
+        "waktu_selesai": "2026-10-26T11:27:32.169Z",
+        "http_status": null,
+        "status": "error",
+        "detail_status": "stream terputus: terminated (sebab ECONNRESET; 25 event, terakhir response.output_item.added)",
+        "usage": "tidak_tercatat"
+      },
+      {
+        "ke": 2,
+        "waktu_mulai": "2026-10-26T11:27:47.181Z",
+        "waktu_selesai": "2026-10-26T11:27:48.606Z",
+        "http_status": null,
+        "status": "error",
+        "detail_status": "stream terputus: terminated (sebab ECONNRESET; 2 event, terakhir response.in_progress)",
+        "usage": "tidak_tercatat"
+      },
+      {
+        "ke": 3,
+        "waktu_mulai": "2026-10-26T11:28:18.694Z",
+        "waktu_selesai": "2026-10-26T11:29:12.692Z",
+        "http_status": null,
+        "status": "error",
+        "detail_status": "stream terputus: terminated (sebab ECONNRESET; 11 event, terakhir response.output_item.added)",
+        "usage": "tidak_tercatat"
+      }
+    ],
+    "durasi_ms": 257756,
+    "durasi_percobaan_terakhir_ms": 53998,
+    "usage": null,
+    "biaya_usd": null,
+    "biaya_percobaan_gagal_usd": "tidak_tercatat",
+    "sdk": {
+      "node": "v25.2.1",
+      "@anthropic-ai/sdk": "0.135.0",
+      "openai": "7.39.0",
+      "undici": "7.30.1",
+      "google": "REST v1beta streamGenerateContent (SSE) lewat fetch undici (tanpa SDK)"
+    }
+  },
+  "mentah": [
+    {
+      "ke": 1,
+      "waktu_mulai": "2026-10-26T11:24:54.936Z",
+      "waktu_selesai": "2026-10-26T11:27:32.169Z",
+      "http_status": null,
+      "status": "error",
+      "detail_status": "stream terputus: terminated (sebab ECONNRESET; 25 event, terakhir response.output_item.added)",
+      "usage": "tidak_tercatat",
+      "mentah": {
+        "galat": "terminated",
+        "status": null,
+        "error": null,
+        "parsial": {
+          "jumlah_event": 25,
+          "event_terakhir": "response.output_item.added",
+          "teks": "",
+          "refusal": ""
+        }
+      }
+    },
+    {
+      "ke": 2,
+      "waktu_mulai": "2026-10-26T11:27:47.181Z",
+      "waktu_selesai": "2026-10-26T11:27:48.606Z",
+      "http_status": null,
+      "status": "error",
+      "detail_status": "stream terputus: terminated (sebab ECONNRESET; 2 event, terakhir response.in_progress)",
+      "usage": "tidak_tercatat",
+      "mentah": {
+        "galat": "terminated",
+        "status": null,
+        "error": null,
+        "parsial": {
+          "jumlah_event": 2,
+          "event_terakhir": "response.in_progress",
+          "teks": "",
+          "refusal": ""
+        }
+      }
+    },
+    {
+      "ke": 3,
+      "waktu_mulai": "2026-10-26T11:28:18.694Z",
+      "waktu_selesai": "2026-10-26T11:29:12.692Z",
+      "http_status": null,
+      "status": "error",
+      "detail_status": "stream terputus: terminated (sebab ECONNRESET; 11 event, terakhir response.output_item.added)",
+      "usage": "tidak_tercatat",
+      "mentah": {
+        "galat": "terminated",
+        "status": null,
+        "error": null,
+        "parsial": {
+          "jumlah_event": 11,
+          "event_terakhir": "response.output_item.added",
+          "teks": "",
+          "refusal": ""
+        }
+      }
+    }
+  ]
+}
