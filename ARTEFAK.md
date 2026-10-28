@@ -1,15 +1,21 @@
 # Artefak penelitian
 
 Peta artefak untuk makalah ICICyTA 2026 dan cara memeriksa ulang angkanya. Repositori:
-`MIlhamRidhoP/TA-ssdlc-devops-akademik`. Satu nama tag hanya bisa menunjuk satu commit, jadi ada dua
-tag acuan:
+`MIlhamRidhoP/TA-ssdlc-devops-akademik`. Satu nama tag hanya bisa menunjuk satu commit, dan prompt
+(di branch alat) tidak pernah berada di satu tree yang sama dengan data (di branch objek uji), jadi
+tag acuan selalu berpasangan dua:
 
-- **`icicyta2026-artefak`**: ujung `eksperimen/seeded` (answer key, laporan beku, hasil dan skor
-  kedua batch, dan berkas ini).
-- **`icicyta2026-artefak-alat`**: ujung `feat/prompt-v2` (prompt v2 dan kode alat batch 22 Okt).
+- **`icicyta2026-artefak-v2`**: ujung `eksperimen/seeded` — answer key, laporan beku SonarCloud dan
+  CodeQL, JSON mentah kedua batch, skor dan tinjauan label (termasuk varian v2/v3 dan hasil
+  normalisasi klaster), PoC lanjutan, dan berkas ini.
+- **`icicyta2026-artefak-alat-v2`**: ujung `feat/sast-codeql` — prompt v2 **dan** v3, serta seluruh
+  kode alat dan penilai (termasuk `skor-verifikasi-mayoritas.js` dan
+  `skor-gabungan-normalisasi.js`).
 
-Kode alat batch 26 Okt (prompt v3 dan penilai dua perkakas) ada di branch `feat/sast-codeql`, commit
-`dbd81ac`.
+**Tag draf sebelumnya, tetap sah sebagai acuan versi lama, TIDAK dipindahkan:**
+`icicyta2026-artefak` (ujung `eksperimen/seeded` versi sebelum tinjauan label v2/v3 dan PoC
+lanjutan; tidak memuat `prompts/`) dan `icicyta2026-artefak-alat` (ujung `feat/prompt-v2`; memuat
+`prompts/v2/` saja, tidak ada `prompts/v3/`).
 
 ## Peringatan keamanan
 
@@ -60,12 +66,16 @@ Keterangan batch 26 Okt:
 
 ## Menyiapkan
 
+Dua checkout bersebelahan, masing-masing pada TAG-nya sendiri (bukan branch) — keduanya memang
+dirancang untuk dipakai berpasangan, satu sebagai objek uji (`--objek=`), satu sebagai kode alat
+yang dijalankan.
+
 ```bash
 git clone https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik.git objek-seeded
-git -C objek-seeded checkout eksperimen/seeded
+git -C objek-seeded checkout icicyta2026-artefak-v2
 
 git clone https://github.com/MIlhamRidhoP/TA-ssdlc-devops-akademik.git TA-ssdlc-devops-akademik
-git -C TA-ssdlc-devops-akademik checkout feat/sast-codeql
+git -C TA-ssdlc-devops-akademik checkout icicyta2026-artefak-alat-v2
 cd TA-ssdlc-devops-akademik
 npm ci
 ```
@@ -110,16 +120,17 @@ folder yang berbeda. Kedua kesamaan ini sudah diperiksa pada kode alat `dbd81ac`
 
 ### Baris "Combined, union" dan "Combined, 2 of 3" di Tabel III (eksperimen 1)
 
-Kode alat `c5acc34` pada `feat/sast-codeql`. Memakai `../objek-seeded` sebagai objek uji, seperti
-perintah di atas.
+Dari kedua checkout di atas (`icicyta2026-artefak-v2` dan `icicyta2026-artefak-alat-v2`), dijalankan
+dari `TA-ssdlc-devops-akademik/`:
 
 ```bash
-# Baris per-vendor dan union/2-dari-3 "ketat", triase v3 (lihat catatan di bawah soal prasyarat)
+# Baris per-vendor dan union/2-dari-3 "ketat", triase v3
 node scripts/skor-verifikasi-mayoritas.js --objek=../objek-seeded
 # Keluaran yang diharapkan (rata-rata 3 run): utama 0,794 | SONAR-03 real 0,711 | SONAR-01 FP 0,952
 
 node scripts/skor-gabungan-normalisasi.js --objek=../objek-seeded
-# Keluaran yang diharapkan (ketat, rata-rata 3 run): union F1 0,775 | 2-dari-3 F1 0,855
+# Keluaran yang diharapkan (ketat, jumlah 3 run): union TP 24 FP 11 FN 3 (P 0,687 R 0,889 F1 0,775);
+# 2-dari-3 TP 21 FP 1 FN 6 (P 0,952 R 0,778 F1 0,855)
 ```
 
 `skor-verifikasi-mayoritas.js` menghitung F1 verifikasi (false positive sebagai kelas positif)
@@ -131,13 +142,6 @@ gabungan. `skor-gabungan-normalisasi.js` menghitung ulang klaster lintas vendor 
 `llm/gabung.js` membandingkan string persis, dan memecah klaster yang semestinya satu, mis.
 `findOwned` vs `exports.findOwned`). Keduanya hanya memanggil fungsi yang sudah diekspor dari
 `skor-gabungan.js`/`llm/score.js`/`llm/gabung.js`, tidak mengubahnya.
-
-**Prasyarat belum lengkap di tag ini:** kedua skrip di atas membaca
-`hasil-eksperimen/20261022-gabungan/skor-tunggal-triase-v3.json` dan `triase-gabungan-v3.json`
-sebagai masukan bawaan (`--batch`), dan kedua berkas itu **belum ikut dicommit** pada commit yang
-menambahkan `skor-verifikasi-mayoritas.js`/`skor-gabungan-normalisasi.js` sendiri. Menjalankan
-kedua perintah di atas dari checkout bersih tag ini akan gagal dengan "file tidak ditemukan" sampai
-berkas triase v3 dan skor turunannya turut dicommit.
 
 ## Mengulang run model (berbayar)
 
