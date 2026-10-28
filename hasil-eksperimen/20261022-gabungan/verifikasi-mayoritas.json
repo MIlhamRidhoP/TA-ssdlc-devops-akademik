@@ -1,0 +1,319 @@
+{
+  "dibuat": "2026-10-28T18:57:09.679Z",
+  "catatan": "F1 verifikasi (FP sebagai kelas positif) untuk putusan mayoritas tiga vendor (suaraTerbanyak, SUARA_MINIMUM=2, scripts/llm/gabung.js), dihitung lewat entriVerifikasiGabungan dan kategoriVerifikasi (keduanya diekspor apa adanya dari scripts/skor-gabungan.js dan scripts/llm/score.js, tidak diubah). Dibuat untuk menjawab kenapa sel \"Majority of three\" x \"SONAR-03 real\" sebelumnya tidak dilaporkan: skor-gabungan.js tidak pernah memanggil kategoriVerifikasi untuk mode gabungan sama sekali, jadi sel itu bukan tak-terdefinisi, hanya belum pernah dihitung.",
+  "sumber": {
+    "label_alert_asal": "hasil-eksperimen\\20261022-gabungan\\skor-tunggal-triase-v3.json",
+    "gabungan_run": "hasil-eksperimen\\20261022-gabungan\\gabungan"
+  },
+  "varian": {
+    "utama": {
+      "label_dipakai": {
+        "SONAR-01": {
+          "label": "nyata",
+          "sumber": "otomatis",
+          "label_awal": "nyata",
+          "alasan_paksa": null,
+          "id_gt": [
+            "B1"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-02": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S5"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-03": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S5"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-04": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S2"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-05": {
+          "label": "nyata",
+          "sumber": "otomatis",
+          "label_awal": "nyata",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S3"
+          ],
+          "status_cocok": "cocok"
+        }
+      },
+      "per_run": [
+        {
+          "run": 1,
+          "jumlah": {
+            "identified_fp": 3,
+            "missed_fp": 0,
+            "misidentified_fp": 1,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 0.75,
+            "recall": 1,
+            "f1": 0.8571428571428571
+          }
+        },
+        {
+          "run": 2,
+          "jumlah": {
+            "identified_fp": 2,
+            "missed_fp": 1,
+            "misidentified_fp": 1,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 0.6666666666666666,
+            "recall": 0.6666666666666666,
+            "f1": 0.6666666666666666
+          }
+        },
+        {
+          "run": 3,
+          "jumlah": {
+            "identified_fp": 3,
+            "missed_fp": 0,
+            "misidentified_fp": 1,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 0.75,
+            "recall": 1,
+            "f1": 0.8571428571428571
+          }
+        }
+      ],
+      "rata_rata": {
+        "precision": 0.7222222222222222,
+        "recall": 0.8888888888888888,
+        "f1": 0.7936507936507936
+      }
+    },
+    "SONAR-03 real": {
+      "label_dipakai": {
+        "SONAR-01": {
+          "label": "nyata",
+          "sumber": "otomatis",
+          "label_awal": "nyata",
+          "alasan_paksa": null,
+          "id_gt": [
+            "B1"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-02": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S5"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-03": {
+          "label": "nyata",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S5"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-04": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S2"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-05": {
+          "label": "nyata",
+          "sumber": "otomatis",
+          "label_awal": "nyata",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S3"
+          ],
+          "status_cocok": "cocok"
+        }
+      },
+      "per_run": [
+        {
+          "run": 1,
+          "jumlah": {
+            "identified_fp": 2,
+            "missed_fp": 0,
+            "misidentified_fp": 2,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 0.5,
+            "recall": 1,
+            "f1": 0.6666666666666666
+          }
+        },
+        {
+          "run": 2,
+          "jumlah": {
+            "identified_fp": 2,
+            "missed_fp": 0,
+            "misidentified_fp": 1,
+            "correct_retention": 2
+          },
+          "metrik": {
+            "precision": 0.6666666666666666,
+            "recall": 1,
+            "f1": 0.8
+          }
+        },
+        {
+          "run": 3,
+          "jumlah": {
+            "identified_fp": 2,
+            "missed_fp": 0,
+            "misidentified_fp": 2,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 0.5,
+            "recall": 1,
+            "f1": 0.6666666666666666
+          }
+        }
+      ],
+      "rata_rata": {
+        "precision": 0.5555555555555555,
+        "recall": 1,
+        "f1": 0.7111111111111111
+      }
+    },
+    "SONAR-01 FP": {
+      "label_dipakai": {
+        "SONAR-01": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "nyata",
+          "alasan_paksa": null,
+          "id_gt": [
+            "B1"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-02": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S5"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-03": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S5"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-04": {
+          "label": "fp",
+          "sumber": "otomatis",
+          "label_awal": "fp",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S2"
+          ],
+          "status_cocok": "cocok"
+        },
+        "SONAR-05": {
+          "label": "nyata",
+          "sumber": "otomatis",
+          "label_awal": "nyata",
+          "alasan_paksa": null,
+          "id_gt": [
+            "S3"
+          ],
+          "status_cocok": "cocok"
+        }
+      },
+      "per_run": [
+        {
+          "run": 1,
+          "jumlah": {
+            "identified_fp": 4,
+            "missed_fp": 0,
+            "misidentified_fp": 0,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          }
+        },
+        {
+          "run": 2,
+          "jumlah": {
+            "identified_fp": 3,
+            "missed_fp": 1,
+            "misidentified_fp": 0,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 1,
+            "recall": 0.75,
+            "f1": 0.8571428571428571
+          }
+        },
+        {
+          "run": 3,
+          "jumlah": {
+            "identified_fp": 4,
+            "missed_fp": 0,
+            "misidentified_fp": 0,
+            "correct_retention": 1
+          },
+          "metrik": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          }
+        }
+      ],
+      "rata_rata": {
+        "precision": 1,
+        "recall": 0.9166666666666666,
+        "f1": 0.9523809523809524
+      }
+    }
+  }
+}

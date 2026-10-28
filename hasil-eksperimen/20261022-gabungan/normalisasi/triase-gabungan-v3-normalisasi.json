@@ -1,0 +1,83 @@
+{
+  "catatan": "Diturunkan dari hasil-eksperimen\\20261022-gabungan\\triase-gabungan-v3.json lewat skrip scripts/skor-gabungan-normalisasi.js. Setiap klaster ternormalisasi mewarisi label dari klaster lama yang memuat anggotanya, dicocokkan lewat identitas temuan asal (vendor, indeks di results.json per-vendor), bukan indeks posisi klaster. Klaster yang anggotanya berasal dari klaster lama berlabel BERBEDA dicatat di bagian \"konflik\" dengan status \"perlu keputusan\" dan TIDAK diberi entri di \"entri\" (default: tetap dihitung FP, konservatif).",
+  "metode_pewarisan": "identitas (vendor, idx_asal_di_results.json) -> posisi klaster lama -> label triase lama",
+  "konflik": [],
+  "entri": {
+    "run-1.json": {
+      "15": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/models/krsModel.js:46",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition pemeriksaan status KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-v2.js: race addItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan masuk ke KRS yang berstatus submitted pada 600/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u1-u2-addItem-vs-submit/ringkasan.json). Akar masalah sama dengan TOCTOU submit (krsController.js:110): addItem mengecek status draft lalu INSERT tanpa transaksi yang menyatukannya dengan transition submit. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 20, run-1.json]"
+      },
+      "16": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/models/krsModel.js:65",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition penghapusan item KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-remove-v2.js: race removeItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan hilang dari KRS yang berstatus submitted pada 599/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u3-removeItem-vs-submit/ringkasan.json). Akar masalah sama: removeItem mengecek status draft lalu DELETE tanpa transaksi yang menyatukannya dengan transition submit. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 21, run-1.json]"
+      },
+      "17": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition validasi kuota SKS",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15). [diwariskan ke klaster ternormalisasi dari klaster lama posisi 22, run-1.json]"
+      },
+      "18": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/models/profilModel.js:29",
+        "cwe": "CWE-362",
+        "jenis": "Race Condition batas jumlah email",
+        "dasar": "PoC E4 (2026-10-28), scripts/poc/email-race-v2.js: race 5 permintaan addEmail paralel vs batas MAKS_EMAIL, 3 batch x 200 percobaan. Jumlah email akhir melebihi MAKS_EMAIL (5) pada 599/600 percobaan (hasil-eksperimen/20261028-verifikasi-penuh/e4-email-race/). Akar masalah: createEmail mengecek count(*) < MAKS_EMAIL di dalam INSERT...SELECT tanpa penguncian, sama pola TOCTOU dengan U1/U2/U3. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 23, run-1.json]"
+      }
+    },
+    "run-2.json": {
+      "4": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition (TOCTOU)",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15). [diwariskan ke klaster ternormalisasi dari klaster lama posisi 4,22, run-2.json]"
+      },
+      "16": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:70",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition Status Penambahan KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-v2.js: race addItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan masuk ke KRS yang berstatus submitted pada 600/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u1-u2-addItem-vs-submit/ringkasan.json). Akar masalah sama dengan TOCTOU submit (krsController.js:110): addItem mengecek status draft lalu INSERT tanpa transaksi yang menyatukannya dengan transition submit. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 20, run-2.json]"
+      },
+      "17": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:87",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition Status Penghapusan KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-remove-v2.js: race removeItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan hilang dari KRS yang berstatus submitted pada 599/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u3-removeItem-vs-submit/ringkasan.json). Akar masalah sama: removeItem mengecek status draft lalu DELETE tanpa transaksi yang menyatukannya dengan transition submit. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 21, run-2.json]"
+      }
+    },
+    "run-3.json": {
+      "9": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:70",
+        "cwe": "CWE-367",
+        "jenis": "TOCTOU penambahan item KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-v2.js: race addItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan masuk ke KRS yang berstatus submitted pada 600/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u1-u2-addItem-vs-submit/ringkasan.json). Akar masalah sama dengan TOCTOU submit (krsController.js:110): addItem mengecek status draft lalu INSERT tanpa transaksi yang menyatukannya dengan transition submit. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 15, run-3.json]"
+      },
+      "10": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:87",
+        "cwe": "CWE-367",
+        "jenis": "TOCTOU penghapusan item KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-remove-v2.js: race removeItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan hilang dari KRS yang berstatus submitted pada 599/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u3-removeItem-vs-submit/ringkasan.json). Akar masalah sama: removeItem mengecek status draft lalu DELETE tanpa transaksi yang menyatukannya dengan transition submit. [diwariskan ke klaster ternormalisasi dari klaster lama posisi 16, run-3.json]"
+      },
+      "11": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "TOCTOU validasi kuota SKS",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15). [diwariskan ke klaster ternormalisasi dari klaster lama posisi 17, run-3.json]"
+      }
+    }
+  }
+}

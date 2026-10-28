@@ -1,0 +1,511 @@
+{
+  "dibuat": "2026-10-28T09:03:27.605Z",
+  "git_objek_uji": {
+    "commit": "afb52bfee81f57fb79a6bc80b189888123623e49",
+    "branch": "eksperimen/seeded",
+    "bersih": false,
+    "detail_kotor": "?? hasil-eksperimen/20261022-gabungan/normalisasi/\n?? hasil-eksperimen/20261022-gabungan/skor-gabungan-triase-konservatif-v2.json\n?? hasil-eksperimen/20261022-gabungan/skor-gabungan-triase-konservatif-v3.json\n?? hasil-eksperimen/20261022-gabungan/skor-gabungan-triase-v2.json\n?? hasil-eksperimen/20261022-gabungan/skor-gabungan-triase-v3.json\n?? hasil-eksperimen/20261022-gabungan/skor-tunggal-triase-konservatif-v2.json\n?? hasil-eksperimen/20261022-gabungan/skor-tunggal-triase-konservatif-v3.json\n?? hasil-eksperimen/20261022-gabungan/skor-tunggal-triase-v2.json\n?? hasil-eksperimen/20261022-gabungan/skor-tunggal-triase-v3.json\n?? hasil-eksperimen/20261022-gabungan/triase-gabungan-v2.json\n?? hasil-eksperimen/20261022-gabungan/triase-gabungan-v3.json\n?? hasil-eksperimen/20261022-gabungan/triase-tunggal-v2.json\n?? hasil-eksperimen/20261022-gabungan/triase-tunggal-v3.json\n?? hasil-eksperimen/20261028-poc-ulang/\n?? hasil-eksperimen/20261028-verifikasi-penuh/\n?? scripts/poc/email-race-v2.js\n?? scripts/poc/is-minor-bypass-v2.js\n?? scripts/poc/login-ratelimit-v2.js\n?? scripts/poc/requireconsent-crash-v2.js\n?? scripts/poc/toctou-krs-remove-v2.js\n?? scripts/poc/toctou-krs-v2.js"
+  },
+  "jumlah_konflik_triase": 0,
+  "a_union": {
+    "b": {
+      "per_run": [
+        {
+          "run": 1,
+          "ketat": {
+            "tp": 8,
+            "fp": 4,
+            "fn": 1,
+            "precision": 0.6666666666666666,
+            "recall": 0.8888888888888888,
+            "f1": 0.761904761904762
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.9411764705882353
+          }
+        },
+        {
+          "run": 2,
+          "ketat": {
+            "tp": 8,
+            "fp": 4,
+            "fn": 1,
+            "precision": 0.6666666666666666,
+            "recall": 0.8888888888888888,
+            "f1": 0.761904761904762
+          },
+          "tinjauan": {
+            "fp": 1,
+            "precision": 0.8888888888888888,
+            "f1": 0.8888888888888888
+          }
+        },
+        {
+          "run": 3,
+          "ketat": {
+            "tp": 8,
+            "fp": 3,
+            "fn": 1,
+            "precision": 0.7272727272727273,
+            "recall": 0.8888888888888888,
+            "f1": 0.7999999999999999
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.9411764705882353
+          }
+        }
+      ],
+      "jumlah_3_run_ketat": {
+        "tp": 24,
+        "fp": 11,
+        "fn": 3,
+        "precision": 0.6857142857142857,
+        "recall": 0.8888888888888888
+      },
+      "rata_rata_per_run_ketat": {
+        "precision": 0.6868686868686869,
+        "recall": 0.8888888888888888,
+        "f1": 0.7746031746031746
+      },
+      "rata_rata_per_run_tinjauan": {
+        "precision": 0.9629629629629629,
+        "f1": 0.9237472766884531,
+        "jumlah_fp_tinjauan_3_run": 1
+      }
+    },
+    "c": {
+      "per_run": [
+        {
+          "run": 1,
+          "ketat": {
+            "tp": 8,
+            "fp": 4,
+            "fn": 1,
+            "precision": 0.6666666666666666,
+            "recall": 0.8888888888888888,
+            "f1": 0.761904761904762
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.9411764705882353
+          }
+        },
+        {
+          "run": 2,
+          "ketat": {
+            "tp": 8,
+            "fp": 4,
+            "fn": 1,
+            "precision": 0.6666666666666666,
+            "recall": 0.8888888888888888,
+            "f1": 0.761904761904762
+          },
+          "tinjauan": {
+            "fp": 1,
+            "precision": 0.8888888888888888,
+            "f1": 0.8888888888888888
+          }
+        },
+        {
+          "run": 3,
+          "ketat": {
+            "tp": 8,
+            "fp": 3,
+            "fn": 1,
+            "precision": 0.7272727272727273,
+            "recall": 0.8888888888888888,
+            "f1": 0.7999999999999999
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.9411764705882353
+          }
+        }
+      ],
+      "jumlah_3_run_ketat": {
+        "tp": 24,
+        "fp": 11,
+        "fn": 3,
+        "precision": 0.6857142857142857,
+        "recall": 0.8888888888888888
+      },
+      "rata_rata_per_run_ketat": {
+        "precision": 0.6868686868686869,
+        "recall": 0.8888888888888888,
+        "f1": 0.7746031746031746
+      },
+      "rata_rata_per_run_tinjauan": {
+        "precision": 0.9629629629629629,
+        "f1": 0.9237472766884531,
+        "jumlah_fp_tinjauan_3_run": 1
+      }
+    }
+  },
+  "b_2dari3_laporan": {
+    "b": {
+      "per_run": [
+        {
+          "run": 1,
+          "ketat": {
+            "tp": 7,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1,
+            "recall": 0.7777777777777778,
+            "f1": 0.8750000000000001
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.8750000000000001
+          }
+        },
+        {
+          "run": 2,
+          "ketat": {
+            "tp": 6,
+            "fp": 1,
+            "fn": 3,
+            "precision": 0.8571428571428571,
+            "recall": 0.6666666666666666,
+            "f1": 0.75
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.8
+          }
+        },
+        {
+          "run": 3,
+          "ketat": {
+            "tp": 8,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.8888888888888888,
+            "f1": 0.9411764705882353
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.9411764705882353
+          }
+        }
+      ],
+      "jumlah_3_run_ketat": {
+        "tp": 21,
+        "fp": 1,
+        "fn": 6,
+        "precision": 0.9545454545454546,
+        "recall": 0.7777777777777778
+      },
+      "rata_rata_per_run_ketat": {
+        "precision": 0.9523809523809524,
+        "recall": 0.7777777777777777,
+        "f1": 0.8553921568627452
+      },
+      "rata_rata_per_run_tinjauan": {
+        "precision": 1,
+        "f1": 0.8720588235294118,
+        "jumlah_fp_tinjauan_3_run": 0
+      }
+    },
+    "c": {
+      "per_run": [
+        {
+          "run": 1,
+          "ketat": {
+            "tp": 7,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1,
+            "recall": 0.7777777777777778,
+            "f1": 0.8750000000000001
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.8750000000000001
+          }
+        },
+        {
+          "run": 2,
+          "ketat": {
+            "tp": 6,
+            "fp": 1,
+            "fn": 3,
+            "precision": 0.8571428571428571,
+            "recall": 0.6666666666666666,
+            "f1": 0.75
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.8
+          }
+        },
+        {
+          "run": 3,
+          "ketat": {
+            "tp": 8,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.8888888888888888,
+            "f1": 0.9411764705882353
+          },
+          "tinjauan": {
+            "fp": 0,
+            "precision": 1,
+            "f1": 0.9411764705882353
+          }
+        }
+      ],
+      "jumlah_3_run_ketat": {
+        "tp": 21,
+        "fp": 1,
+        "fn": 6,
+        "precision": 0.9545454545454546,
+        "recall": 0.7777777777777778
+      },
+      "rata_rata_per_run_ketat": {
+        "precision": 0.9523809523809524,
+        "recall": 0.7777777777777777,
+        "f1": 0.8553921568627452
+      },
+      "rata_rata_per_run_tinjauan": {
+        "precision": 1,
+        "f1": 0.8720588235294118,
+        "jumlah_fp_tinjauan_3_run": 0
+      }
+    }
+  },
+  "c_2dari3_butir": {
+    "per_run": [
+      {
+        "run": 1,
+        "tp": 7,
+        "fn": 2,
+        "fp_ketat": 0,
+        "p_ketat": 1,
+        "r": 0.7777777777777778,
+        "f1_ketat": 0.8750000000000001,
+        "fp_tinjauan": 0,
+        "p_tinjauan": 1,
+        "f1_tinjauan": 0.8750000000000001
+      },
+      {
+        "run": 2,
+        "tp": 6,
+        "fn": 3,
+        "fp_ketat": 1,
+        "p_ketat": 0.8571428571428571,
+        "r": 0.6666666666666666,
+        "f1_ketat": 0.75,
+        "fp_tinjauan": 0,
+        "p_tinjauan": 1,
+        "f1_tinjauan": 0.8
+      },
+      {
+        "run": 3,
+        "tp": 8,
+        "fn": 1,
+        "fp_ketat": 0,
+        "p_ketat": 1,
+        "r": 0.8888888888888888,
+        "f1_ketat": 0.9411764705882353,
+        "fp_tinjauan": 0,
+        "p_tinjauan": 1,
+        "f1_tinjauan": 0.9411764705882353
+      }
+    ],
+    "jumlah_3_run_ketat": {
+      "tp": 21,
+      "fn": 6,
+      "fp": 1,
+      "precision": 0.9545454545454546,
+      "recall": 0.7777777777777778
+    },
+    "rata_rata_per_run_ketat": {
+      "precision": 0.9523809523809524,
+      "f1": 0.8553921568627452,
+      "recall": 0.7777777777777777
+    },
+    "rata_rata_per_run_tinjauan": {
+      "precision": 1,
+      "f1": 0.8720588235294118
+    }
+  },
+  "jangkauan_jika_ada_konflik": null,
+  "fp_union_tersisa": [
+    {
+      "run": 1,
+      "file": "src/models/krsModel.js",
+      "baris": 46,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.addItem",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 1,
+      "file": "src/models/krsModel.js",
+      "baris": 65,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.removeItem",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 1,
+      "file": "src/controllers/krsController.js",
+      "baris": 110,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.submit",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 1,
+      "file": "src/models/profilModel.js",
+      "baris": 29,
+      "cwe": [
+        362
+      ],
+      "fungsi_wakil": "exports.createEmail",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 2,
+      "file": "src/controllers/krsController.js",
+      "baris": 110,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "submit",
+      "vendor_penemu": [
+        "google",
+        "openai"
+      ],
+      "kesepakatan": 2,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 2,
+      "file": "src/controllers/krsController.js",
+      "baris": 70,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.addItem",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 2,
+      "file": "src/controllers/krsController.js",
+      "baris": 87,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.removeItem",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 3,
+      "file": "src/controllers/krsController.js",
+      "baris": 70,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.addItem",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 3,
+      "file": "src/controllers/krsController.js",
+      "baris": 87,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.removeItem",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    },
+    {
+      "run": 3,
+      "file": "src/controllers/krsController.js",
+      "baris": 110,
+      "cwe": [
+        367
+      ],
+      "fungsi_wakil": "exports.submit",
+      "vendor_penemu": [
+        "openai"
+      ],
+      "kesepakatan": 1,
+      "status": "di luar ground truth",
+      "kategori_triase": "tp_di_luar_seeded"
+    }
+  ],
+  "fp_2dari3_tersisa": [
+    {
+      "run": 2,
+      "file": "src/controllers/krsController.js",
+      "baris": 110,
+      "cwe": [
+        367
+      ],
+      "status": "di luar ground truth"
+    }
+  ]
+}
