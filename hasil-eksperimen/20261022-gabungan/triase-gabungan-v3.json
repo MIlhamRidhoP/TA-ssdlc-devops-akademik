@@ -1,0 +1,90 @@
+{
+  "catatan": "Triase manual temuan gabungan batch 20261022, berkunci indeks temuan di berkas gabungan tiap run (bukan indeks per vendor). Dipakai scripts/skor-gabungan.js --triase. Objek uji eksperimen/seeded 6f7e729 (tree src ef5ff340). Kategori untuk temuan yang sama persis dengan berkas triase mode tunggal batch ini, dan dasarnya disalin dari hasil-eksperimen/20261019/triase-manual.json: PoC yang menjadi dasarnya menguji kode, bukan run, sehingga tetap berlaku. REVISI v2 (2026-10-28): enam entri (U2 addItem — run-1#20, run-2#20, run-3#15; U3 removeItem — run-1#21, run-2#21, run-3#16) dipindah dari \"teoretis\" ke \"tp_di_luar_seeded\" berdasarkan PoC ulang di hasil-eksperimen/20261028-poc-ulang/. U1 (run-1#22, run-2#4, run-2#22, run-3#17) dan U4 (run-1#23, profilModel.js:29) tidak diubah. REVISI v3 (2026-10-28): satu entri lagi (U4 email — run-1#23) dipindah dari \"teoretis\" ke \"tp_di_luar_seeded\" berdasarkan PoC E4 di hasil-eksperimen/20261028-verifikasi-penuh/.",
+  "belum_ditriase": "src/models/profilModel.js:29 CWE-362 (gabungan run-1 indeks 23) sengaja TIDAK dimasukkan: temuan ini tidak ada di batch 19 Oktober dan belum ada PoC maupun keputusan untuk kategorinya. Sesuai keputusan D3 di README batch, selama belum ditriase ia tetap dihitung FP dan muncul di belum_ditriase.",
+  "catatan_klaster": "Pada run 2 ada DUA temuan di src/controllers/krsController.js:110 dengan CWE-367 yang tidak terklaster menjadi satu (indeks 4 dari google, indeks 22 dari openai), karena keduanya melaporkan nama fungsi yang berbeda bentuk (\"submit\" dan \"exports.submit\") sehingga aturan lokasi di scripts/llm/gabung.js:53 menuntut kesamaan persis. Keduanya diberi kategori yang sama, tp_di_luar_seeded, sesuai preseden 19 Oktober.",
+  "entri": {
+    "run-1.json": {
+      "20": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/models/krsModel.js:46",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition pemeriksaan status KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-v2.js: race addItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan masuk ke KRS yang berstatus submitted pada 600/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u1-u2-addItem-vs-submit/ringkasan.json). Akar masalah sama dengan TOCTOU submit (krsController.js:110): addItem mengecek status draft lalu INSERT tanpa transaksi yang menyatukannya dengan transition submit."
+      },
+      "21": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/models/krsModel.js:65",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition penghapusan item KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-remove-v2.js: race removeItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan hilang dari KRS yang berstatus submitted pada 599/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u3-removeItem-vs-submit/ringkasan.json). Akar masalah sama: removeItem mengecek status draft lalu DELETE tanpa transaksi yang menyatukannya dengan transition submit."
+      },
+      "22": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition validasi kuota SKS",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+      },
+      "23": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/models/profilModel.js:29",
+        "cwe": "CWE-362",
+        "jenis": "Race Condition batas jumlah email",
+        "dasar": "PoC E4 (2026-10-28), scripts/poc/email-race-v2.js: race 5 permintaan addEmail paralel vs batas MAKS_EMAIL, 3 batch x 200 percobaan. Jumlah email akhir melebihi MAKS_EMAIL (5) pada 599/600 percobaan (hasil-eksperimen/20261028-verifikasi-penuh/e4-email-race/). Akar masalah: createEmail mengecek count(*) < MAKS_EMAIL di dalam INSERT...SELECT tanpa penguncian, sama pola TOCTOU dengan U1/U2/U3."
+      }
+    },
+    "run-2.json": {
+      "4": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition (TOCTOU)",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+      },
+      "20": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:70",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition Status Penambahan KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-v2.js: race addItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan masuk ke KRS yang berstatus submitted pada 600/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u1-u2-addItem-vs-submit/ringkasan.json). Akar masalah sama dengan TOCTOU submit (krsController.js:110): addItem mengecek status draft lalu INSERT tanpa transaksi yang menyatukannya dengan transition submit."
+      },
+      "21": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:87",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition Status Penghapusan KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-remove-v2.js: race removeItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan hilang dari KRS yang berstatus submitted pada 599/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u3-removeItem-vs-submit/ringkasan.json). Akar masalah sama: removeItem mengecek status draft lalu DELETE tanpa transaksi yang menyatukannya dengan transition submit."
+      },
+      "22": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "Race Condition Pemeriksaan Kuota SKS",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15). Temuan kedua di lokasi yang sama pada run ini; lihat catatan_klaster."
+      }
+    },
+    "run-3.json": {
+      "15": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:70",
+        "cwe": "CWE-367",
+        "jenis": "TOCTOU penambahan item KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-v2.js: race addItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan masuk ke KRS yang berstatus submitted pada 600/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u1-u2-addItem-vs-submit/ringkasan.json). Akar masalah sama dengan TOCTOU submit (krsController.js:110): addItem mengecek status draft lalu INSERT tanpa transaksi yang menyatukannya dengan transition submit."
+      },
+      "16": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:87",
+        "cwe": "CWE-367",
+        "jenis": "TOCTOU penghapusan item KRS",
+        "dasar": "PoC ulang (2026-10-28), scripts/poc/toctou-krs-remove-v2.js: race removeItem (5 permintaan paralel) vs submit, 3 batch x 200 percobaan. Item balapan hilang dari KRS yang berstatus submitted pada 599/600 percobaan (hasil-eksperimen/20261028-poc-ulang/u3-removeItem-vs-submit/ringkasan.json). Akar masalah sama: removeItem mengecek status draft lalu DELETE tanpa transaksi yang menyatukannya dengan transition submit."
+      },
+      "17": {
+        "kategori": "tp_di_luar_seeded",
+        "lokasi": "src/controllers/krsController.js:110",
+        "cwe": "CWE-367",
+        "jenis": "TOCTOU validasi kuota SKS",
+        "dasar": "PoC scripts/poc/toctou-krs.sh: race addItem vs submit menang (KRS submitted dengan total_sks 16 > kuota 15)."
+      }
+    }
+  }
+}
