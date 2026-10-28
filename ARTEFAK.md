@@ -39,6 +39,10 @@ Ada dua repositori kerja yang diambil dari repo yang sama: **alat** (kode analis
 | SARIF CodeQL | `eksperimen/seeded` | `hasil-eksperimen/20261026-dua-sast/sarif/` |
 | JSON mentah batch 26 Okt (enam folder, 270 panggilan sah) | `eksperimen/seeded` | `hasil-eksperimen/20261026-dua-sast/llm-output/` |
 | Skor dan ringkasan batch 26 Okt | `eksperimen/seeded` | `hasil-eksperimen/20261026-dua-sast/hasil-batch/` (`RINGKASAN.md`, `skor-<vendor>-p1.json`, `skor-<vendor>-ekst-p1.json`, `label-ekstensi.json`) |
+| Penilai F1 verifikasi mayoritas (Tabel III) | `feat/sast-codeql` | `scripts/skor-verifikasi-mayoritas.js` |
+| Penilai klaster gabungan ternormalisasi | `feat/sast-codeql` | `scripts/skor-gabungan-normalisasi.js` |
+| Keluaran kedua penilai di atas | `eksperimen/seeded` | `hasil-eksperimen/20261022-gabungan/verifikasi-mayoritas.json` dan `hasil-eksperimen/20261022-gabungan/normalisasi/` |
+| PoC lanjutan (E1-E4, E7-E9) | `eksperimen/seeded` | `hasil-eksperimen/20261028-poc-ulang/`, `hasil-eksperimen/20261028-verifikasi-penuh/`, `scripts/poc/*-v2.js` |
 
 Keterangan batch 26 Okt:
 
@@ -104,6 +108,37 @@ repo. Hasil yang diharapkan: bagian `rata_rata` pada `skor-tunggal-ulang.json` s
 `per_model` di `hasil-batch/skor-anthropic-p1.json`. Hanya stempel waktu `dinilai_pada` dan jalur
 folder yang berbeda. Kedua kesamaan ini sudah diperiksa pada kode alat `dbd81ac`.
 
+### Baris "Combined, union" dan "Combined, 2 of 3" di Tabel III (eksperimen 1)
+
+Kode alat `c5acc34` pada `feat/sast-codeql`. Memakai `../objek-seeded` sebagai objek uji, seperti
+perintah di atas.
+
+```bash
+# Baris per-vendor dan union/2-dari-3 "ketat", triase v3 (lihat catatan di bawah soal prasyarat)
+node scripts/skor-verifikasi-mayoritas.js --objek=../objek-seeded
+# Keluaran yang diharapkan (rata-rata 3 run): utama 0,794 | SONAR-03 real 0,711 | SONAR-01 FP 0,952
+
+node scripts/skor-gabungan-normalisasi.js --objek=../objek-seeded
+# Keluaran yang diharapkan (ketat, rata-rata 3 run): union F1 0,775 | 2-dari-3 F1 0,855
+```
+
+`skor-verifikasi-mayoritas.js` menghitung F1 verifikasi (false positive sebagai kelas positif)
+untuk putusan **mayoritas tiga vendor**, tiga pelabelan (utama, dan dua varian sensitivitas satu
+label diubah) — baris yang sebelumnya kosong ("n/a") di sel "Majority of three" x "SONAR-03 real"
+pada draf awal, karena `skor-gabungan.js` tidak pernah memanggil `kategoriVerifikasi` untuk mode
+gabungan. `skor-gabungan-normalisasi.js` menghitung ulang klaster lintas vendor dengan awalan
+`exports.`/`module.exports.` dibuang dari nama fungsi sebelum dibandingkan (`temuanCocok` di
+`llm/gabung.js` membandingkan string persis, dan memecah klaster yang semestinya satu, mis.
+`findOwned` vs `exports.findOwned`). Keduanya hanya memanggil fungsi yang sudah diekspor dari
+`skor-gabungan.js`/`llm/score.js`/`llm/gabung.js`, tidak mengubahnya.
+
+**Prasyarat belum lengkap di tag ini:** kedua skrip di atas membaca
+`hasil-eksperimen/20261022-gabungan/skor-tunggal-triase-v3.json` dan `triase-gabungan-v3.json`
+sebagai masukan bawaan (`--batch`), dan kedua berkas itu **belum ikut dicommit** pada commit yang
+menambahkan `skor-verifikasi-mayoritas.js`/`skor-gabungan-normalisasi.js` sendiri. Menjalankan
+kedua perintah di atas dari checkout bersih tag ini akan gagal dengan "file tidak ditemukan" sampai
+berkas triase v3 dan skor turunannya turut dicommit.
+
 ## Mengulang run model (berbayar)
 
 Ini memanggil API vendor dan membutuhkan kunci milik Anda sendiri di berkas `.env` (`GEMINI_API_KEY`,
@@ -144,6 +179,16 @@ alat yang menolak pohon kerja kotor dan cara melanjutkan run yang terputus (`--l
 `docs/panduan-batch-dua-sast.md` pada branch `feat/sast-codeql`. Catatan metode batch 22 Okt ada di
 `hasil-eksperimen/20261022-gabungan/README.md`; berkas itu ditulis sebelum batch dijalankan dan
 memakai jalur Windows milik penulis pada beberapa contoh perintahnya.
+
+### PoC lanjutan (E1-E4, E7-E9): kuota/addItem/removeItem/email race, requireConsent, is_minor, rate limit
+
+Enam skrip baru di `scripts/poc/` (tidak menimpa `scripts/poc/toctou-krs.sh` yang lama), menembak
+stack Docker Compose lokal, bukan API vendor. Perintah lengkap, definisi "menang" tiap skrip, dan
+keluaran mentahnya ada di `hasil-eksperimen/20261028-poc-ulang/README.md` dan
+`hasil-eksperimen/20261028-verifikasi-penuh/README.md`. Ringkasan: E1-E3 (race kuota/addItem/
+removeItem KRS) dan E4 (race batas email) terbukti (599-600 dari 600 percobaan); E9 (tanpa rate
+limit login) terbukti tapi duplikat B3; E7 (requireConsent) dan E8 (mass-assignment `is_minor`)
+direfutasi.
 
 ## Batas klaim
 
